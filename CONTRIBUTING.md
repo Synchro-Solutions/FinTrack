@@ -11,7 +11,7 @@ Dado que no contamos con bloqueos automáticos en la plataforma, la estabilidad 
 *   **Cero Commits Directos:** Está terminantemente prohibido hacer `git push` directamente a las ramas `main` o `develop`. Todo código sin excepción debe integrarse a través de un Pull Request (PR).
 *   **Prohibición de Force Pushes:** Nunca utilices `git push --force` sobre las ramas principales, ya que esto destruye el historial de trabajo de los demás.
 *   **Protección Manual de Ramas:** Las ramas `main` y `develop` son sagradas. No deben ser eliminadas ni alteradas directamente.
-*   **Validación Local Obligatoria:** Como no tenemos verificaciones de estado (status checks) automáticas bloqueando los PRs, es responsabilidad absoluta del desarrollador asegurarse de que el código compila y levanta correctamente en su máquina (tanto el backend en Spring Boot como el frontend en React) antes de solicitar una revisión.
+*   **Validación Local Obligatoria:** Como no tenemos verificaciones de estado (status checks) automáticas bloqueando los PRs, es responsabilidad absoluta del desarrollador asegurarse de que el código compila y levanta correctamente en su máquina antes de solicitar una revisión.
 
 ---
 
@@ -65,7 +65,7 @@ Todo el código nuevo debe ser revisado por un compañero antes de fusionarse.
 3.  **Código Limpio:** 
     *   Elimina cualquier `console.log()`, `System.out.println()` o código comentado que ya no se utilice.
     *   Asegúrate de que no haya advertencias (warnings) críticas en tu entorno de desarrollo.
-4.  **Asignación de Revisores:** Solicita explícitamente la revisión de al menos un miembro del equipo (Cristian, Roger, Roy o Emma). 
+4.  **Asignación de Revisores:** Solicita explícitamente la revisión de al menos un miembro del equipo.
 5.  **Aprobación y Fusión:** Una vez que el PR tiene la aprobación (Approve) del compañero asignado, el autor del PR (o el revisor, según se acuerde en el momento) puede realizar el *Merge*. **No fusiones tu propio código sin aprobación.**
 
 ### Política de Resolución de Conflictos

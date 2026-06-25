@@ -47,6 +47,8 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.gitlive.firebase.common)
+            implementation(libs.gitlive.firebase.auth)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -58,6 +60,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
+        iosMain.dependencies {
+            implementation(libs.gitlive.firebase.common)
+            implementation(libs.gitlive.firebase.auth)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
@@ -68,5 +74,6 @@ kotlin {
 }
 
 dependencies {
+    add("androidMainImplementation", platform(libs.firebase.bom))
     androidRuntimeClasspath(libs.compose.uiTooling)
 }

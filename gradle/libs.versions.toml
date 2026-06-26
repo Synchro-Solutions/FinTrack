@@ -14,6 +14,8 @@ junit = "4.13.2"
 kotlin = "2.4.0"
 kotlin-wrappers = "2026.6.1"
 material3 = "1.11.0-alpha07"
+coroutines = "1.10.2"
+datastore = "1.1.4"
 firebase-bom = "34.4.0"
 google-services = "4.4.4"
 gitlive-firebase = "2.3.0"
@@ -41,6 +43,9 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 gitlive-firebase-common = { module = "dev.gitlive:firebase-common", version.ref = "gitlive-firebase" }
 gitlive-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "gitlive-firebase" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fintrack.proyecto4.auth.AuthRepository
+
+import fintrack.proyecto4.auth.LocalAuthRepository
 import fintrack.proyecto4.auth.LoginUiState
 import fintrack.proyecto4.auth.LoginViewModel
 import fintrack.proyecto4.navigation.LocalNavController
@@ -50,9 +51,12 @@ import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun LoginScreen(authRepository: AuthRepository) {
+fun LoginScreen() {
     val navController = LocalNavController.current
-    val viewModel = viewModel { LoginViewModel(authRepository) }
+    val authRepository = LocalAuthRepository.current
+    val viewModel = viewModel(key = "login") {
+        LoginViewModel(checkNotNull(authRepository) { "AuthRepository not provided" })
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var email by remember { mutableStateOf("") }

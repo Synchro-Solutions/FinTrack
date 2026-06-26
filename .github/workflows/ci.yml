@@ -32,8 +32,11 @@ jobs:
       - name: Build androidApp debug
         run: ./gradlew :androidApp:assembleDebug --no-daemon -x test
 
+      - name: Listar tareas de verificacion disponibles
+        run: ./gradlew :shared:tasks --group=verification --no-daemon
+
       - name: Run unit tests
-        run: ./gradlew :shared:testDebugUnitTest --no-daemon
+        run: ./gradlew :shared:check --no-daemon
 
       - name: Lint
         run: ./gradlew lint --no-daemon

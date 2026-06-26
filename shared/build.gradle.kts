@@ -59,6 +59,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutines.core)
         }
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)
@@ -66,6 +67,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
         jsMain.dependencies {
             implementation(libs.wrappers.browser)

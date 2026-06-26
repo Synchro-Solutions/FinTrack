@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.datastore.preferences)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

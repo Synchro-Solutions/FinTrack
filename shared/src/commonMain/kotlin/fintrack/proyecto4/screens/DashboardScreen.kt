@@ -49,7 +49,12 @@ import fintrack.proyecto4.util.formatColonesCompacto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(
+    onNavigateToIngreso: () -> Unit = {},
+    onNavigateToGasto: () -> Unit = {},
+    onNavigateToOcr: () -> Unit = {},
+    onNavigateToReportes: () -> Unit = {}
+) {
     val viewModel = viewModel { DashboardViewModel() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -78,10 +83,10 @@ fun DashboardScreen() {
             item { Spacer(Modifier.height(20.dp)) }
             item {
                 QuickActionsRow(
-                    onIngreso  = { viewModel.navegarAIngreso() },
-                    onGasto    = { viewModel.navegarAGasto() },
-                    onOcr      = { viewModel.navegarAOcr() },
-                    onReportes = { viewModel.navegarAReportes() }
+                    onIngreso = onNavigateToIngreso,
+                    onGasto = onNavigateToGasto,
+                    onOcr = onNavigateToOcr,
+                    onReportes = onNavigateToReportes
                 )
             }
             item { Spacer(Modifier.height(24.dp)) }

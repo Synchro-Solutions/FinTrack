@@ -1,6 +1,9 @@
 package fintrack.proyecto4.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -55,8 +58,12 @@ fun FinTrackBottomBar(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = slideInVertically { it },
-        exit = slideOutVertically { it }
+        enter = slideInVertically(
+            animationSpec = tween(NavTransitionDurationMillis, easing = NavTransitionEasing)
+        ) { it } + fadeIn(tween(NavTransitionDurationMillis, easing = NavTransitionEasing)),
+        exit = slideOutVertically(
+            animationSpec = tween(NavTransitionDurationMillis, easing = NavTransitionEasing)
+        ) { it } + fadeOut(tween(NavTransitionDurationMillis, easing = NavTransitionEasing))
     ) {
         NavigationBar(
             containerColor = Color(0xFF0F1923),

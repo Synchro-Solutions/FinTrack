@@ -73,7 +73,7 @@ class FakeSessionStoreTest {
 
     @Test
     fun `setLockoutUntil persiste el timestamp correctamente`() = runTest {
-        val timestamp = System.currentTimeMillis() + 15 * 60_000L
+        val timestamp = 1_700_000_000_000L + 15 * 60_000L
         store.setLockoutUntil(timestamp)
         assertEquals(timestamp, store.getLockoutUntil())
     }
@@ -89,7 +89,7 @@ class FakeSessionStoreTest {
 
     @Test
     fun `clearFailedAttempts resetea el lockoutUntil a cero`() = runTest {
-        store.setLockoutUntil(System.currentTimeMillis() + 60_000L)
+        store.setLockoutUntil(1_700_000_000_000L + 60_000L)
         store.clearFailedAttempts()
         assertEquals(0L, store.getLockoutUntil())
     }
@@ -108,7 +108,7 @@ class FakeSessionStoreTest {
     fun `reset vuelve todos los valores al estado inicial`() = runTest {
         store.setRememberMe(true)
         store.setFailedAttempts(5)
-        store.setLockoutUntil(System.currentTimeMillis() + 60_000L)
+        store.setLockoutUntil(1_700_000_000_000L + 60_000L)
 
         store.reset()
 

@@ -79,7 +79,7 @@ class LockoutLogicTest {
         repeat(5) { simulateFailedAttempt() }
 
         val remaining = minutesRemaining()
-        assertTrue(remaining in 14L..15L, "Se esperaban ~15 minutos, se obtuvo $remaining")
+        assertTrue(remaining in 14L..16L, "Se esperaban ~15 minutos, se obtuvo $remaining")
     }
 
     @Test

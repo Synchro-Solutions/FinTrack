@@ -1,8 +1,20 @@
 package fintrack.proyecto4.navigation
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
+import fintrack.proyecto4.transaction.TransactionType
+
+/**
+ * Especificación de animación única compartida entre la transición de pantallas (NavHost)
+ * y la aparición/desaparición de la barra inferior (FinTrackBottomBar), para que ambas
+ * inicien y terminen exactamente al mismo tiempo y la transición se sienta uniforme.
+ */
+internal const val NavTransitionDurationMillis = 320
+internal val NavTransitionEasing = FastOutSlowInEasing
 
 /**
  * Pantallas disponibles en la aplicación con sus respectivos argumentos tipados.
@@ -14,6 +26,10 @@ sealed interface Screen {
     data object Presupuestos : Screen
     data object Metas : Screen
     data object Mas : Screen
+
+    data class TransactionForm(
+        val initialType: TransactionType
+    ) : Screen
 }
 
 val mainScreens = setOf(
@@ -100,15 +116,18 @@ fun NavHost(
     AnimatedContent(
         targetState = navController.currentScreen,
         transitionSpec = {
+            val offsetSpec = tween<IntOffset>(NavTransitionDurationMillis, easing = NavTransitionEasing)
+            val fadeSpec = tween<Float>(NavTransitionDurationMillis, easing = NavTransitionEasing)
+
             if (navController.lastDirection == NavDirection.PUSH) {
                 // Entra desde la derecha, sale por la izquierda
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width } + fadeOut()
+                (slideInHorizontally(offsetSpec) { width -> width } + fadeIn(fadeSpec)).togetherWith(
+                    slideOutHorizontally(offsetSpec) { width -> -width } + fadeOut(fadeSpec)
                 )
             } else {
                 // Entra desde la izquierda, sale por la derecha (retroceder)
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
+                (slideInHorizontally(offsetSpec) { width -> -width } + fadeIn(fadeSpec)).togetherWith(
+                    slideOutHorizontally(offsetSpec) { width -> width } + fadeOut(fadeSpec)
                 )
             }
         },

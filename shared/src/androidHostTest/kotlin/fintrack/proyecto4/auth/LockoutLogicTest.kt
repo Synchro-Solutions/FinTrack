@@ -31,7 +31,7 @@ class LockoutLogicTest {
         val attempts = store.getFailedAttempts() + 1
         return if (attempts >= 5) {
             store.setLockoutUntil(System.currentTimeMillis() + 15 * 60_000L)
-            store.clearFailedAttempts()
+            store.setFailedAttempts(0)
             true // bloqueado
         } else {
             store.setFailedAttempts(attempts)

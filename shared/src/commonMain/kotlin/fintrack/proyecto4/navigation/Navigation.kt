@@ -10,7 +10,19 @@ import androidx.compose.ui.Modifier
 sealed interface Screen {
     data object Login : Screen
     data object Dashboard : Screen
+    data object Movimientos : Screen
+    data object Presupuestos : Screen
+    data object Metas : Screen
+    data object Mas : Screen
 }
+
+val mainScreens = setOf(
+    Screen.Dashboard,
+    Screen.Movimientos,
+    Screen.Presupuestos,
+    Screen.Metas,
+    Screen.Mas
+)
 
 /**
  * Dirección de la navegación para aplicar la animación adecuada.

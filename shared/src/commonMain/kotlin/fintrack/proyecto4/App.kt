@@ -23,6 +23,8 @@ import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.TransactionFormScreen
+import fintrack.proyecto4.transaction.TransactionType
 
 @Composable
 fun App(authRepository: AuthRepository) {
@@ -68,7 +70,30 @@ fun App(authRepository: AuthRepository) {
                 ) { screen ->
                     when (screen) {
                         is Screen.Login -> LoginScreen(authRepository)
-                        is Screen.Dashboard -> DashboardScreen()
+
+                        is Screen.Dashboard -> DashboardScreen(
+                            onNavigateToIngreso = {
+                                navController.navigate(
+                                    Screen.TransactionForm(TransactionType.INCOME)
+                                )
+                            },
+                            onNavigateToGasto = {
+                                navController.navigate(
+                                    Screen.TransactionForm(TransactionType.EXPENSE)
+                                )
+                            }
+                        )
+
+                        is Screen.TransactionForm -> TransactionFormScreen(
+                            initialType = screen.initialType,
+                            onBack = {
+                                navController.goBack()
+                            },
+                            onSaved = {
+                                navController.replace(Screen.Movimientos)
+                            }
+                        )
+
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()

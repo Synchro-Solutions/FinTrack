@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
-import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
 import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
@@ -142,4 +141,3 @@ fun App(authRepository: AuthRepository) {
             }
         }
     }
-}

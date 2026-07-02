@@ -49,6 +49,12 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.auth)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.camerax.core)
+            implementation(libs.camerax.camera2)
+            implementation(libs.camerax.lifecycle)
+            implementation(libs.camerax.view)
+            implementation(libs.mlkit.textRecognition)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

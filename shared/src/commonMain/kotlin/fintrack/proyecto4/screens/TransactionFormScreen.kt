@@ -33,13 +33,15 @@ import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.TransactionFormViewModel
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
     onBack: () -> Unit = {},
-    onSaved: () -> Unit = {}
+    onSaved: () -> Unit = {},
+    onOcrClick: () -> Unit = {}
 ) {
     val viewModel = remember(initialType) {
         TransactionFormViewModel(initialType)
@@ -63,7 +65,7 @@ fun TransactionFormScreen(
     ) {
         TransactionHeader(
             onBack = onBack,
-            onOcrClick = { /* TODO: implementar captura OCR */ }
+            onOcrClick = onOcrClick
         )
 
         Column(
@@ -177,7 +179,7 @@ fun TransactionFormScreen(
 }
 
 @Composable
-private fun fintrackDatePickerColors() = DatePickerDefaults.colors(
+internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     containerColor = Color.White,
     todayContentColor = FinTrackColors.GreenPrimary,
     todayDateBorderColor = FinTrackColors.GreenPrimary,
@@ -189,14 +191,14 @@ private fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     navigationContentColor = FinTrackColors.GreenPrimary
 )
 
-private fun formatEpochMillisToDate(millis: Long): String {
+internal fun formatEpochMillisToDate(millis: Long): String {
     val date = LocalDate.fromEpochDays((millis / 86_400_000L).toInt())
-    val day = date.dayOfMonth.toString().padStart(2, '0')
-    val month = date.monthNumber.toString().padStart(2, '0')
+    val day = date.day.toString().padStart(2, '0')
+    val month = date.month.number.toString().padStart(2, '0')
     return "$day/$month/${date.year}"
 }
 
-private fun parseDateToEpochMillis(value: String): Long? {
+internal fun parseDateToEpochMillis(value: String): Long? {
     val parts = value.split("/")
     if (parts.size != 3) return null
     val day = parts[0].toIntOrNull() ?: return null
@@ -452,7 +454,7 @@ private fun PaymentMethodSection(
 }
 
 @Composable
-private fun SelectableChip(
+internal fun SelectableChip(
     text: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
@@ -488,9 +490,10 @@ private fun SelectableChip(
 }
 
 @Composable
-private fun DateField(
+internal fun DateField(
     value: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    placeholder: String = "dd/mm/aaaa"
 ) {
     Box(
         modifier = Modifier
@@ -503,7 +506,7 @@ private fun DateField(
             readOnly = true,
             placeholder = {
                 Text(
-                    text = "dd/mm/aaaa",
+                    text = placeholder,
                     color = FinTrackColors.TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -575,7 +578,7 @@ private fun SaveTransactionButton(
 }
 
 @Composable
-private fun formTextFieldColors() = TextFieldDefaults.colors(
+internal fun formTextFieldColors() = TextFieldDefaults.colors(
     focusedContainerColor = FinTrackColors.SurfaceSecondary,
     unfocusedContainerColor = FinTrackColors.SurfaceSecondary,
     disabledContainerColor = FinTrackColors.SurfaceSecondary,

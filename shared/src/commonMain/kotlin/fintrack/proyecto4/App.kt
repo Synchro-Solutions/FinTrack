@@ -48,24 +48,27 @@ import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
+import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LightAppColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
 private val DarkColorScheme = darkColorScheme(
     primary      = FinTrackColors.GreenPrimary,
-    background   = Color(0xFF080E1A),
-    surface      = Color(0xFF111827),
-    onBackground = Color(0xFFF1F5F9),
-    onSurface    = Color(0xFFF1F5F9)
+    background   = DarkAppColors.bg,
+    surface      = DarkAppColors.surface,
+    onBackground = DarkAppColors.textPrimary,
+    onSurface    = DarkAppColors.textPrimary
 )
 
 private val LightColorScheme = lightColorScheme(
     primary      = FinTrackColors.GreenPrimary,
-    background   = Color(0xFFF1F5F9),
-    surface      = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF0F172A),
-    onSurface    = Color(0xFF0F172A)
+    background   = LightAppColors.bg,
+    surface      = LightAppColors.surface,
+    onBackground = LightAppColors.textPrimary,
+    onSurface    = LightAppColors.textPrimary
 )
 
 @Composable
@@ -92,173 +95,167 @@ fun App(
         }
     }
 
+    val appColors = if (isDarkTheme) DarkAppColors else LightAppColors
     val colorScheme = if (isDarkTheme) DarkColorScheme else LightColorScheme
-    val bgColor = colorScheme.background
 
     MaterialTheme(colorScheme = colorScheme, typography = FinTrackTypography()) {
-        if (initialScreen == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(bgColor)
-            )
-            return@MaterialTheme
-        }
+        CompositionLocalProvider(LocalAppColors provides appColors) {
+            if (initialScreen == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(appColors.bg)
+                )
+                return@CompositionLocalProvider
+            }
 
-        val navController = remember(initialScreen) { NavController(initialScreen!!) }
-        val currentScreen by remember { derivedStateOf { navController.currentScreen } }
-        val showBottomBar = currentScreen in mainScreens
-        val scope = rememberCoroutineScope()
+            val navController = remember(initialScreen) { NavController(initialScreen!!) }
+            val currentScreen by remember { derivedStateOf { navController.currentScreen } }
+            val showBottomBar = currentScreen in mainScreens
+            val scope = rememberCoroutineScope()
 
-        val ocrAssistantViewModel = remember {
-            OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
-        }
+            val ocrAssistantViewModel = remember {
+                OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
+            }
 
-        CompositionLocalProvider(LocalNavController provides navController) {
-            Scaffold(
-                containerColor = Color(0xFF0F172A),
-                bottomBar = {
-                    FinTrackBottomBar(
-                        currentScreen = currentScreen,
-                        visible = showBottomBar,
-                        onTabSelected = { screen ->
-                            if (screen != currentScreen) {
-                                navController.replace(screen)
-                            }
-                        }
-                    )
-                }
-            ) { innerPadding ->
-                NavHost(
-                    navController = navController,
-                    modifier = Modifier.padding(innerPadding)
-                ) { screen ->
-                    when (screen) {
-                        is Screen.Login -> LoginScreen(
-                            authRepository = authRepository,
-                            onLoginSuccess = {
-                                scope.launch {
-                                    val uid = AuthClient.currentUserId()
-                                    val done = if (uid != null) {
-                                        onboardingRepository.isOnboardingComplete(uid)
-                                    } else true
-                                    if (done) navController.replace(Screen.Dashboard)
-                                    else navController.replace(Screen.Onboarding)
-                                }
+            CompositionLocalProvider(LocalNavController provides navController) {
+                Scaffold(
+                    containerColor = appColors.bg,
+                    bottomBar = {
+                        FinTrackBottomBar(
+                            currentScreen = currentScreen,
+                            visible = showBottomBar,
+                            onTabSelected = { screen ->
+                                if (screen != currentScreen) navController.replace(screen)
                             }
                         )
+                    }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
+                    ) { screen ->
+                        when (screen) {
+                            is Screen.Login -> LoginScreen(
+                                authRepository = authRepository,
+                                onLoginSuccess = {
+                                    scope.launch {
+                                        val uid = AuthClient.currentUserId()
+                                        val done = if (uid != null) {
+                                            onboardingRepository.isOnboardingComplete(uid)
+                                        } else true
+                                        if (done) navController.replace(Screen.Dashboard)
+                                        else navController.replace(Screen.Onboarding)
+                                    }
+                                }
+                            )
 
-                        is Screen.Onboarding -> {
-                            val uid = AuthClient.currentUserId() ?: ""
-                            val onboardingVm = remember(uid) {
-                                OnboardingViewModel(
-                                    repository = onboardingRepository,
-                                    uid = uid
+                            is Screen.Onboarding -> {
+                                val uid = AuthClient.currentUserId() ?: ""
+                                val onboardingVm = remember(uid) {
+                                    OnboardingViewModel(
+                                        repository = onboardingRepository,
+                                        uid = uid
+                                    )
+                                }
+                                OnboardingScreen(
+                                    viewModel = onboardingVm,
+                                    onFinished = { navController.replace(Screen.Dashboard) },
+                                    onPickPhoto = onPickProfilePhoto
                                 )
                             }
-                            OnboardingScreen(
-                                viewModel = onboardingVm,
-                                onFinished = { navController.replace(Screen.Dashboard) },
-                                onPickPhoto = onPickProfilePhoto
+
+                            is Screen.Dashboard -> DashboardScreen(
+                                onNavigateToIngreso = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
+                                },
+                                onNavigateToGasto = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                },
+                                onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
+                            )
+
+                            is Screen.TransactionForm -> TransactionFormScreen(
+                                initialType = screen.initialType,
+                                onBack = { navController.goBack() },
+                                onSaved = { navController.replace(Screen.Movimientos) },
+                                onOcrClick = {
+                                    ocrAssistantViewModel.reset()
+                                    navController.navigate(Screen.OcrAssistant)
+                                }
+                            )
+
+                            is Screen.OcrAssistant -> OcrAssistantScreen(
+                                viewModel = ocrAssistantViewModel,
+                                onBack = { navController.goBack() },
+                                onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
+                                onPickImageClick = {
+                                    onPickReceiptImage { path ->
+                                        if (path != null) ocrAssistantViewModel.processImage(path)
+                                    }
+                                },
+                                onReviewData = { result ->
+                                    navController.navigate(Screen.OcrConfirm(result))
+                                }
+                            )
+
+                            is Screen.OcrCamera -> ocrCameraContent(
+                                { path ->
+                                    ocrAssistantViewModel.processImage(path)
+                                    navController.goBack()
+                                },
+                                { navController.goBack() }
+                            )
+
+                            is Screen.OcrConfirm -> OcrConfirmScreen(
+                                result = screen.result,
+                                onCancel = { navController.popToRoot() },
+                                onSaved = { navController.replace(Screen.Movimientos) }
+                            )
+
+                            is Screen.Movimientos -> MovimientosScreen()
+                            is Screen.Presupuestos -> PresupuestosScreen()
+                            is Screen.Metas -> MetasScreen()
+
+                            is Screen.Mas -> MasScreen()
+                            is Screen.Ajustes -> AjustesScreen(
+                                isDarkTheme = isDarkTheme,
+                                onToggleTheme = { isDarkTheme = !isDarkTheme },
+                                onCerrarSesion = { navController.replace(Screen.Login) }
+                            )
+
+                            is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
+                            is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
+                                onBack = { navController.goBack() }
+                            )
+                            is Screen.CurrencyConverter -> CurrencyConverterScreen(
+                                onBack = { navController.goBack() }
+                            )
+                            is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
+                                onBack = { navController.goBack() },
+                                onSaved = { navController.goBack() }
+                            )
+                            is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
+                                title = "Liquidacion",
+                                description = "Aqui va la calculadora de liquidacion."
+                            )
+                            is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
+                                title = "Cesantia",
+                                description = "Aqui va la calculadora de cesantia."
+                            )
+                            is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
+                                title = "Vacaciones",
+                                description = "Aqui va la calculadora de vacaciones."
+                            )
+                            is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
+                                title = "Preaviso",
+                                description = "Aqui va la calculadora de preaviso."
+                            )
+                            is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
+                                title = "Historial",
+                                description = "Aqui va el historial de calculos guardados."
                             )
                         }
-
-                        is Screen.Dashboard -> DashboardScreen(
-                            onNavigateToIngreso = {
-                                navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
-                            },
-                            onNavigateToGasto = {
-                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
-                            },
-                            onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
-                        )
-
-                        is Screen.TransactionForm -> TransactionFormScreen(
-                            initialType = screen.initialType,
-                            onBack = {
-                                navController.goBack()
-                            },
-                            onSaved = {
-                                navController.replace(Screen.Movimientos)
-                            },
-                            onOcrClick = {
-                                ocrAssistantViewModel.reset()
-                                navController.navigate(Screen.OcrAssistant)
-                            }
-                        )
-
-                        is Screen.OcrAssistant -> OcrAssistantScreen(
-                            viewModel = ocrAssistantViewModel,
-                            onBack = { navController.goBack() },
-                            onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
-                            onPickImageClick = {
-                                onPickReceiptImage { path ->
-                                    if (path != null) ocrAssistantViewModel.processImage(path)
-                                }
-                            },
-                            onReviewData = { result ->
-                                navController.navigate(Screen.OcrConfirm(result))
-                            }
-                        )
-
-                        is Screen.OcrCamera -> ocrCameraContent(
-                            { path ->
-                                ocrAssistantViewModel.processImage(path)
-                                navController.goBack()
-                            },
-                            { navController.goBack() }
-                        )
-
-                        is Screen.OcrConfirm -> OcrConfirmScreen(
-                            result = screen.result,
-                            onCancel = { navController.popToRoot() },
-                            onSaved = { navController.replace(Screen.Movimientos) }
-                        )
-
-                        is Screen.Movimientos -> MovimientosScreen()
-                        is Screen.Presupuestos -> PresupuestosScreen()
-                        is Screen.Metas -> MetasScreen()
-
-                        is Screen.Mas -> MasScreen()
-                        is Screen.Ajustes -> AjustesScreen(
-                            isDarkTheme = isDarkTheme,
-                            onToggleTheme = { isDarkTheme = !isDarkTheme },
-                            onCerrarSesion = { navController.replace(Screen.Login) }
-                        )
-
-                        is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
-                        is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
-                            onBack = { navController.goBack() }
-                        )
-                        is Screen.CurrencyConverter -> CurrencyConverterScreen(
-                            onBack = { navController.goBack() }
-                        )
-                        is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
-                            onBack = { navController.goBack() },
-                            onSaved = {
-                                navController.goBack()
-                            }
-                        )
-                        is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
-                            title = "Liquidacion",
-                            description = "Aqui va la calculadora de liquidacion."
-                        )
-                        is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
-                            title = "Cesantia",
-                            description = "Aqui va la calculadora de cesantia."
-                        )
-                        is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
-                            title = "Vacaciones",
-                            description = "Aqui va la calculadora de vacaciones."
-                        )
-                        is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
-                            title = "Preaviso",
-                            description = "Aqui va la calculadora de preaviso."
-                        )
-                        is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
-                            title = "Historial",
-                            description = "Aqui va el historial de calculos guardados."
-                        )
                     }
                 }
             }

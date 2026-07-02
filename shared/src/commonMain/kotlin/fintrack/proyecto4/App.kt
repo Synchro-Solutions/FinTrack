@@ -12,6 +12,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import fintrack.proyecto4.theme.FinTrackTypography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
+import fintrack.proyecto4.screens.AjustesScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
@@ -48,16 +51,22 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
-/**
- * @param ocrCameraContent Contenido de la pantalla de captura en vivo (CameraX en Android).
- *   Recibe un callback con la ruta del archivo capturado y otro para cancelar.
- *   Se inyecta desde el entry point de cada plataforma (ver androidApp/MainActivity.kt);
- *   por defecto muestra un placeholder para plataformas donde la cámara no está integrada.
- * @param onPickReceiptImage Lanza el selector de imágenes de la plataforma; invoca el callback
- *   recibido con la ruta del archivo elegido, o null si el usuario canceló.
- * @param onRecognizeReceiptText Ejecuta OCR (ML Kit en Android) sobre la imagen indicada y
- *   retorna el texto plano detectado.
- */
+private val DarkColorScheme = darkColorScheme(
+    primary      = FinTrackColors.GreenPrimary,
+    background   = Color(0xFF080E1A),
+    surface      = Color(0xFF111827),
+    onBackground = Color(0xFFF1F5F9),
+    onSurface    = Color(0xFFF1F5F9)
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary      = FinTrackColors.GreenPrimary,
+    background   = Color(0xFFF1F5F9),
+    surface      = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF0F172A),
+    onSurface    = Color(0xFF0F172A)
+)
+
 @Composable
 fun App(
     authRepository: AuthRepository,
@@ -69,6 +78,7 @@ fun App(
     onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
+    var isDarkTheme by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val token = authRepository.getStoredToken()
@@ -81,12 +91,15 @@ fun App(
         }
     }
 
-    MaterialTheme(typography = FinTrackTypography()) {
+    val colorScheme = if (isDarkTheme) DarkColorScheme else LightColorScheme
+    val bgColor = colorScheme.background
+
+    MaterialTheme(colorScheme = colorScheme, typography = FinTrackTypography()) {
         if (initialScreen == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF0F172A))
+                    .background(bgColor)
             )
             return@MaterialTheme
         }
@@ -207,7 +220,13 @@ fun App(
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
-                        is Screen.Mas,
+
+                        is Screen.Mas -> AjustesScreen(
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onCerrarSesion = { navController.replace(Screen.Login) }
+                        )
+
                         is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }
@@ -218,8 +237,6 @@ fun App(
                         is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
                             onBack = { navController.goBack() },
                             onSaved = {
-                                // TODO: persistir el calculo (financial_calculation, calc_type=SALARIO_NETO)
-                                // cuando exista un repositorio/historial real.
                                 navController.goBack()
                             }
                         )
@@ -250,11 +267,6 @@ fun App(
     }
 }
 
-/**
- * Contenido por defecto de Screen.OcrCamera cuando la plataforma no inyectó una
- * implementación real (p.ej. Web/Desktop, donde CameraX/ML Kit no aplican: el
- * asistente OCR es una funcionalidad Android-specific para este sprint).
- */
 @Composable
 private fun OcrCameraUnavailablePlaceholder(onCancel: () -> Unit) {
     Column(

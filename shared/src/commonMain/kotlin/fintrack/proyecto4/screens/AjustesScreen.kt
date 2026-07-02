@@ -1,5 +1,6 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,35 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
-
-// ─── Colores adaptativos ──────────────────────────────────────────────────────
-
-private data class AjustesColors(
-    val bg: Color,
-    val surface: Color,
-    val textPrimary: Color,
-    val textSecondary: Color,
-    val textValue: Color,
-    val divider: Color,
-    val sectionHeader: Color,
-    val avatarBg: Color,
-    val chevron: Color
-)
-
-private fun ajustesColors(isDark: Boolean) = AjustesColors(
-    bg            = if (isDark) Color(0xFF080E1A) else Color(0xFFF1F5F9),
-    surface       = if (isDark) Color(0xFF111827) else Color(0xFFFFFFFF),
-    textPrimary   = if (isDark) Color(0xFFF1F5F9) else Color(0xFF0F172A),
-    textSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
-    textValue     = if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8),
-    divider       = if (isDark) Color(0xFF1E293B) else Color(0xFFE2E8F0),
-    sectionHeader = if (isDark) Color(0xFF475569) else Color(0xFF94A3B8),
-    avatarBg      = if (isDark) FinTrackColors.GreenDark else FinTrackColors.GreenPrimary,
-    chevron       = if (isDark) Color(0xFF475569) else Color(0xFFCBD5E1)
-)
-
-// ─── Pantalla principal ───────────────────────────────────────────────────────
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun AjustesScreen(
@@ -74,7 +49,7 @@ fun AjustesScreen(
     onToggleTheme: () -> Unit,
     onCerrarSesion: () -> Unit = {}
 ) {
-    val c = ajustesColors(isDarkTheme)
+    val c = LocalAppColors.current
 
     var notificaciones by remember { mutableStateOf(true) }
     var biometrico by remember { mutableStateOf(false) }
@@ -85,7 +60,7 @@ fun AjustesScreen(
             .background(c.bg)
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Header título ──────────────────────────────────────────────────
+        // ── Título ──────────────────────────────────────────────────────────
         Text(
             text = "Ajustes",
             fontSize = 22.sp,
@@ -94,7 +69,7 @@ fun AjustesScreen(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)
         )
 
-        // ── Tarjeta de perfil ──────────────────────────────────────────────
+        // ── Tarjeta de perfil ────────────────────────────────────────────────
         Row(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -108,37 +83,19 @@ fun AjustesScreen(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
-                    .background(c.avatarBg),
+                    .background(FinTrackColors.GreenPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "AV",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("AV", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
-
             Spacer(Modifier.width(14.dp))
-
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Ana Vargas",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = c.textPrimary
-                )
-                Text(
-                    text = "ana.vargas@gmail.com",
-                    fontSize = 13.sp,
-                    color = c.textSecondary
-                )
+                Text("Ana Vargas", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
+                Text("ana.vargas@gmail.com", fontSize = 13.sp, color = c.textSecondary)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Editar perfil →",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = FinTrackColors.GreenPrimary,
+                    "Editar perfil →", fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium, color = FinTrackColors.GreenPrimary,
                     modifier = Modifier.clickable { }
                 )
             }
@@ -146,58 +103,43 @@ fun AjustesScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // ── Sección PERFIL ─────────────────────────────────────────────────
-        SectionHeader("PERFIL", c.sectionHeader)
-        SectionCard(c.surface) {
+        // ── PERFIL ───────────────────────────────────────────────────────────
+        SectionHeader("PERFIL", c)
+        SectionCard(c) {
             ItemRow("Nombre visible", "Ana Vargas", c)
-            RowDivider(c.divider)
+            RowDivider(c)
             ItemRow("Correo", "ana.vargas@gmail.com", c)
-            RowDivider(c.divider)
+            RowDivider(c)
             ItemRow("Moneda principal", "CRC (₡)", c)
         }
 
         Spacer(Modifier.height(20.dp))
 
-        // ── Sección CONFIGURACIÓN FINANCIERA ──────────────────────────────
-        SectionHeader("CONFIGURACIÓN FINANCIERA", c.sectionHeader)
-        SectionCard(c.surface) {
+        // ── CONFIGURACIÓN FINANCIERA ─────────────────────────────────────────
+        SectionHeader("CONFIGURACIÓN FINANCIERA", c)
+        SectionCard(c) {
             ItemRow("Ingreso mensual estimado", "₡970.000", c)
-            RowDivider(c.divider)
+            RowDivider(c)
             ItemRow("Inicio del período", "1ro de cada mes", c)
-            RowDivider(c.divider)
+            RowDivider(c)
             ItemRow("Método de pago frecuente", "Tarjeta", c)
         }
 
         Spacer(Modifier.height(20.dp))
 
-        // ── Sección PREFERENCIAS ───────────────────────────────────────────
-        SectionHeader("PREFERENCIAS", c.sectionHeader)
-        SectionCard(c.surface) {
-            ToggleRow(
-                label = "Notificaciones push",
-                checked = notificaciones,
-                onCheckedChange = { notificaciones = it },
-                c = c
-            )
-            RowDivider(c.divider)
-            ToggleRow(
-                label = "Acceso biométrico",
-                checked = biometrico,
-                onCheckedChange = { biometrico = it },
-                c = c
-            )
-            RowDivider(c.divider)
-            ToggleRow(
-                label = "Tema oscuro",
-                checked = isDarkTheme,
-                onCheckedChange = { onToggleTheme() },
-                c = c
-            )
+        // ── PREFERENCIAS ─────────────────────────────────────────────────────
+        SectionHeader("PREFERENCIAS", c)
+        SectionCard(c) {
+            ToggleRow("Notificaciones push", notificaciones, { notificaciones = it }, c)
+            RowDivider(c)
+            ToggleRow("Acceso biométrico", biometrico, { biometrico = it }, c)
+            RowDivider(c)
+            ToggleRow("Tema oscuro", isDarkTheme, { onToggleTheme() }, c)
         }
 
         Spacer(Modifier.height(28.dp))
 
-        // ── Botón cerrar sesión ────────────────────────────────────────────
+        // ── Cerrar sesión ────────────────────────────────────────────────────
         Button(
             onClick = onCerrarSesion,
             modifier = Modifier
@@ -205,20 +147,10 @@ fun AjustesScreen(
                 .padding(horizontal = 16.dp)
                 .height(52.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent
-            ),
-            border = androidx.compose.foundation.BorderStroke(
-                width = 1.5.dp,
-                color = FinTrackColors.ErrorColor
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+            border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
         ) {
-            Text(
-                text = "Cerrar sesión",
-                color = FinTrackColors.ErrorColor,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -228,32 +160,32 @@ fun AjustesScreen(
 // ─── Componentes internos ─────────────────────────────────────────────────────
 
 @Composable
-private fun SectionHeader(title: String, color: Color) {
+private fun SectionHeader(title: String, c: AppColors) {
     Text(
         text = title,
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
-        color = color,
+        color = c.textSecondary,
         letterSpacing = 0.8.sp,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
     )
 }
 
 @Composable
-private fun SectionCard(surface: Color, content: @Composable () -> Unit) {
+private fun SectionCard(c: AppColors, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(surface)
+            .background(c.surface)
     ) {
         content()
     }
 }
 
 @Composable
-private fun ItemRow(label: String, value: String, c: AjustesColors) {
+private fun ItemRow(label: String, value: String, c: AppColors) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,22 +194,14 @@ private fun ItemRow(label: String, value: String, c: AjustesColors) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            fontSize = 15.sp,
-            color = c.textPrimary
-        )
+        Text(label, fontSize = 15.sp, color = c.textPrimary)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = value,
-                fontSize = 14.sp,
-                color = c.textValue
-            )
+            Text(value, fontSize = 14.sp, color = c.textSecondary)
             Spacer(Modifier.width(4.dp))
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = c.chevron,
+                tint = c.border,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -285,12 +209,7 @@ private fun ItemRow(label: String, value: String, c: AjustesColors) {
 }
 
 @Composable
-private fun ToggleRow(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    c: AjustesColors
-) {
+private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, c: AppColors) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -298,11 +217,7 @@ private fun ToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            fontSize = 15.sp,
-            color = c.textPrimary
-        )
+        Text(label, fontSize = 15.sp, color = c.textPrimary)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -310,17 +225,17 @@ private fun ToggleRow(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = FinTrackColors.GreenPrimary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = if (checked) FinTrackColors.GreenPrimary else c.divider
+                uncheckedTrackColor = c.divider
             )
         )
     }
 }
 
 @Composable
-private fun RowDivider(color: Color) {
+private fun RowDivider(c: AppColors) {
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 16.dp),
         thickness = 0.5.dp,
-        color = color
+        color = c.divider
     )
 }

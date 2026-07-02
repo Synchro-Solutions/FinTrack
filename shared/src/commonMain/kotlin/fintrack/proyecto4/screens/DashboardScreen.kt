@@ -37,12 +37,7 @@ import fintrack.proyecto4.dashboard.MonthlyChartData
 import fintrack.proyecto4.dashboard.MovimientoItem
 import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
-import fintrack.proyecto4.theme.FinTrackColors.BgApp
-import fintrack.proyecto4.theme.FinTrackColors.DividerColor
-import fintrack.proyecto4.theme.FinTrackColors.SurfacePrimary
-import fintrack.proyecto4.theme.FinTrackColors.SurfaceSecondary
-import fintrack.proyecto4.theme.FinTrackColors.TextPrimary
-import fintrack.proyecto4.theme.FinTrackColors.TextSecondary
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.util.formatColonesCompacto
@@ -59,10 +54,11 @@ fun DashboardScreen(
     val viewModel = viewModel { DashboardViewModel() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val colors = LocalAppColors.current
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = { viewModel.refresh() },
-        modifier = Modifier.fillMaxSize().background(BgApp)
+        modifier = Modifier.fillMaxSize().background(colors.bg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -119,7 +115,7 @@ fun DashboardScreen(
                     state.ultimosMovimientos.forEachIndexed { i, mov ->
                         MovimientoRow(mov)
                         if (i < state.ultimosMovimientos.lastIndex) {
-                            HorizontalDivider(color = DividerColor, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 4.dp))
+                            HorizontalDivider(color = colors.divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 4.dp))
                         }
                     }
                 }
@@ -137,6 +133,7 @@ private fun DashboardHeader(
     onBellClick: () -> Unit,
     onAvatarClick: () -> Unit = {}
 ) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     Row(
         modifier = Modifier
@@ -147,10 +144,10 @@ private fun DashboardHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("Hola,", color = TextSecondary, fontSize = 13.sp, fontFamily = montserrat)
+            Text("Hola,", color = colors.textSecondary, fontSize = 13.sp, fontFamily = montserrat)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    userName, color = TextPrimary, fontSize = 22.sp,
+                    userName, color = colors.textPrimary, fontSize = 22.sp,
                     fontWeight = FontWeight.Bold, fontFamily = montserrat
                 )
                 Spacer(Modifier.width(6.dp))
@@ -166,11 +163,11 @@ private fun DashboardHeader(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(SurfaceSecondary, CircleShape)
+                        .background(colors.surfaceSecondary, CircleShape)
                         .clickable(onClick = onBellClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
                 }
             }
             Box(
@@ -309,6 +306,7 @@ private fun QuickActionsRow(
     onIngreso: () -> Unit, onGasto: () -> Unit,
     onOcr: () -> Unit, onReportes: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val actions = listOf(
         Triple("Ingreso",   Icons.Default.TrendingUp,  FinTrackColors.GradientGreen),
@@ -337,7 +335,7 @@ private fun QuickActionsRow(
                     Icon(action.second, contentDescription = action.first, tint = Color.White, modifier = Modifier.size(26.dp))
                 }
                 Spacer(Modifier.height(7.dp))
-                Text(action.first, color = TextSecondary, fontSize = 11.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
+                Text(action.first, color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -347,6 +345,7 @@ private fun QuickActionsRow(
 
 @Composable
 private fun ChartSection(data: List<MonthlyChartData>) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(
@@ -354,8 +353,8 @@ private fun ChartSection(data: List<MonthlyChartData>) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Ingresos vs Gastos", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
-            Text("Últimos 6 meses", color = TextSecondary, fontSize = 11.sp, fontFamily = montserrat)
+            Text("Ingresos vs Gastos", color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
+            Text("Últimos 6 meses", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
         }
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -369,15 +368,17 @@ private fun ChartSection(data: List<MonthlyChartData>) {
 
 @Composable
 private fun LegendDot(color: Color, label: String) {
+    val colors = LocalAppColors.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(8.dp).background(color, CircleShape))
         Spacer(Modifier.width(5.dp))
-        Text(label, color = TextSecondary, fontSize = 11.sp, fontFamily = montserratFamily())
+        Text(label, color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserratFamily())
     }
 }
 
 @Composable
 private fun BarChart(data: List<MonthlyChartData>) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val maxVal = data.maxOfOrNull { maxOf(it.ingresos, it.gastos) }?.toFloat() ?: 1f
     val maxH = 90.dp
@@ -398,7 +399,7 @@ private fun BarChart(data: List<MonthlyChartData>) {
                     GradientBar(fraction = item.gastos / maxVal, width = 11.dp, brush = FinTrackColors.GradientRedV)
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(item.mes, color = TextSecondary, fontSize = 10.sp, fontFamily = montserrat)
+                Text(item.mes, color = colors.textSecondary, fontSize = 10.sp, fontFamily = montserrat)
             }
         }
     }
@@ -424,6 +425,7 @@ private val presupuestoEmojis = mapOf(
 
 @Composable
 private fun PresupuestoCard(item: PresupuestoItem) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val emoji = presupuestoEmojis[item.nombre] ?: "💰"
     Box(
@@ -432,7 +434,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
             .padding(bottom = 10.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfacePrimary)
+            .background(colors.surface)
             .padding(16.dp)
     ) {
         Column {
@@ -450,10 +452,10 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.nombre, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
+                    Text(item.nombre, color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
                     Text(
                         "${formatColones(item.gastado)} de ${formatColones(item.total)}",
-                        color = TextSecondary, fontSize = 11.sp, fontFamily = montserrat
+                        color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat
                     )
                 }
                 Text(
@@ -488,6 +490,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
 
 @Composable
 private fun MetaCard(item: MetaItem) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     Box(
         modifier = Modifier
@@ -495,7 +498,7 @@ private fun MetaCard(item: MetaItem) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(
-                Brush.linearGradient(listOf(FinTrackColors.BgApp, FinTrackColors.SurfaceSecondary))
+                Brush.linearGradient(listOf(colors.bg, colors.surfaceSecondary))
             )
             .padding(1.dp)
     ) {
@@ -503,7 +506,7 @@ private fun MetaCard(item: MetaItem) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(19.dp))
-                .background(SurfacePrimary)
+                .background(colors.surface)
                 .padding(18.dp)
         ) {
             Column {
@@ -524,8 +527,8 @@ private fun MetaCard(item: MetaItem) {
                         ) { Text("🛡", fontSize = 22.sp) }
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(item.nombre, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
-                            Text("Vence: ${item.fechaVencimiento}", color = TextSecondary, fontSize = 11.sp, fontFamily = montserrat)
+                            Text(item.nombre, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
+                            Text("Vence: ${item.fechaVencimiento}", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
                         }
                     }
                     Box(
@@ -541,7 +544,7 @@ private fun MetaCard(item: MetaItem) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(formatColones(item.ahorrado), color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
+                    Text(formatColones(item.ahorrado), color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
                     Text("${item.porcentaje}%", color = FinTrackColors.GreenPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
                 }
                 Spacer(Modifier.height(8.dp))
@@ -560,7 +563,7 @@ private fun MetaCard(item: MetaItem) {
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                Text("ahorrados", color = TextSecondary, fontSize = 11.sp, fontFamily = montserrat)
+                Text("ahorrados", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
             }
         }
     }
@@ -605,6 +608,7 @@ private val movimientoEmojis = mapOf(
 
 @Composable
 private fun MovimientoRow(item: MovimientoItem) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val emoji = movimientoEmojis[item.categoria] ?: "💳"
     val accentColor = if (item.esIngreso) FinTrackColors.GreenPrimary else FinTrackColors.ErrorColor
@@ -622,12 +626,12 @@ private fun MovimientoRow(item: MovimientoItem) {
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                item.nombre, color = TextPrimary, fontSize = 14.sp,
+                item.nombre, color = colors.textPrimary, fontSize = 14.sp,
                 fontWeight = FontWeight.Medium, fontFamily = montserrat,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             Text(
-                "${item.categoria} · ${item.fecha}", color = TextSecondary,
+                "${item.categoria} · ${item.fecha}", color = colors.textSecondary,
                 fontSize = 11.sp, fontFamily = montserrat
             )
         }
@@ -650,13 +654,14 @@ private fun MovimientoRow(item: MovimientoItem) {
 
 @Composable
 private fun SectionHeader(title: String, actionText: String, onAction: () -> Unit) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
+        Text(title, color = colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -672,11 +677,12 @@ private fun SectionHeader(title: String, actionText: String, onAction: () -> Uni
 
 @Composable
 private fun DarkCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val colors = LocalAppColors.current
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(SurfacePrimary)
+            .background(colors.surface)
             .padding(18.dp)
     ) {
         Column(content = content)

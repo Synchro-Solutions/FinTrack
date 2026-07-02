@@ -22,6 +22,7 @@ import fintrack.proyecto4.navigation.mainScreens
 import fintrack.proyecto4.screens.AjustesScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.LoginScreen
+import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
@@ -96,15 +97,12 @@ fun App(authRepository: AuthRepository) {
 
                         is Screen.Dashboard -> DashboardScreen(
                             onNavigateToIngreso = {
-                                navController.navigate(
-                                    Screen.TransactionForm(TransactionType.INCOME)
-                                )
+                                navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
                             },
                             onNavigateToGasto = {
-                                navController.navigate(
-                                    Screen.TransactionForm(TransactionType.EXPENSE)
-                                )
-                            }
+                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                            },
+                            onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
                         )
 
                         is Screen.TransactionForm -> TransactionFormScreen(
@@ -116,7 +114,8 @@ fun App(authRepository: AuthRepository) {
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
-                        is Screen.Mas -> AjustesScreen(
+                        is Screen.Mas -> MasScreen()
+                        is Screen.Ajustes -> AjustesScreen(
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onCerrarSesion = { navController.replace(Screen.Login) }

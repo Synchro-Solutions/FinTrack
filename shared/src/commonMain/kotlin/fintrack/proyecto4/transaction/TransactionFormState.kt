@@ -1,8 +1,9 @@
 package fintrack.proyecto4.transaction
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 enum class TransactionType {
     EXPENSE,
@@ -18,8 +19,8 @@ enum class PaymentMethod(val label: String) {
 
 fun todayAsFormFieldDate(): String {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    val day = today.dayOfMonth.toString().padStart(2, '0')
-    val month = today.monthNumber.toString().padStart(2, '0')
+    val day = today.day.toString().padStart(2, '0')
+    val month = today.month.number.toString().padStart(2, '0')
     return "$day/$month/${today.year}"
 }
 

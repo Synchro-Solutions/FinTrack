@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.transaction.TransactionType
 
 /**
@@ -29,6 +30,17 @@ sealed interface Screen {
 
     data class TransactionForm(
         val initialType: TransactionType
+    ) : Screen
+
+    /** Pantalla del asistente OCR (idle / procesando / éxito, ver UI-05). */
+    data object OcrAssistant : Screen
+
+    /** Captura en vivo con CameraX (contenido inyectado por la plataforma, ver INT-03). */
+    data object OcrCamera : Screen
+
+    /** Revisión/confirmación de los datos detectados antes de guardar la transacción. */
+    data class OcrConfirm(
+        val result: OcrResult
     ) : Screen
     
     data object FinancialCenter : Screen

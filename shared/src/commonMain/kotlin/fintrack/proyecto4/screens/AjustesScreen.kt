@@ -42,11 +42,13 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 
 @Composable
 fun AjustesScreen(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
+    onBack: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
 ) {
     val c = LocalAppColors.current
@@ -60,14 +62,38 @@ fun AjustesScreen(
             .background(c.bg)
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Título ──────────────────────────────────────────────────────────
-        Text(
-            text = "Ajustes",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = c.textPrimary,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)
-        )
+        // ── TopBar ───────────────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .padding(top = 12.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(c.surfaceSecondary)
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Volver",
+                    tint = c.textPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Ajustes",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textPrimary
+            )
+        }
+        Spacer(Modifier.height(8.dp))
 
         // ── Tarjeta de perfil ────────────────────────────────────────────────
         Row(

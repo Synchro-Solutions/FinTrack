@@ -221,6 +221,7 @@ fun App(
                             is Screen.Ajustes -> AjustesScreen(
                                 isDarkTheme = isDarkTheme,
                                 onToggleTheme = { isDarkTheme = !isDarkTheme },
+                                onBack = { navController.goBack() },
                                 onCerrarSesion = { navController.replace(Screen.Login) }
                             )
 

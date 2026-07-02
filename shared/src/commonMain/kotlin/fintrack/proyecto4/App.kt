@@ -39,6 +39,7 @@ import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
+import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
@@ -164,15 +165,12 @@ fun App(
 
                         is Screen.Dashboard -> DashboardScreen(
                             onNavigateToIngreso = {
-                                navController.navigate(
-                                    Screen.TransactionForm(TransactionType.INCOME)
-                                )
+                                navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
                             },
                             onNavigateToGasto = {
-                                navController.navigate(
-                                    Screen.TransactionForm(TransactionType.EXPENSE)
-                                )
-                            }
+                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                            },
+                            onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
                         )
 
                         is Screen.TransactionForm -> TransactionFormScreen(
@@ -221,7 +219,8 @@ fun App(
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
 
-                        is Screen.Mas -> AjustesScreen(
+                        is Screen.Mas -> MasScreen()
+                        is Screen.Ajustes -> AjustesScreen(
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onCerrarSesion = { navController.replace(Screen.Login) }

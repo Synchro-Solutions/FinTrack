@@ -15,8 +15,10 @@ kotlin = "2.4.0"
 kotlin-wrappers = "2026.6.1"
 material3 = "1.11.0-alpha07"
 coroutines = "1.10.2"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.7.1"
 datastore = "1.1.4"
+camerax = "1.4.1"
+mlkitTextRecognition = "16.0.1"
 firebase-bom = "34.4.0"
 google-services = "4.4.4"
 gitlive-firebase = "2.3.0"
@@ -48,6 +50,11 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+mlkit-textRecognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

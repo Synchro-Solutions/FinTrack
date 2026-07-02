@@ -42,6 +42,17 @@ sealed interface Screen {
     data class OcrConfirm(
         val result: OcrResult
     ) : Screen
+    
+    data object FinancialCenter : Screen
+    data object AguinaldoCalculator : Screen
+    data object CurrencyConverter : Screen
+    data object NetSalaryCalculator : Screen
+    data object Rule503020Calculator : Screen
+    data object LiquidacionCalculator : Screen
+    data object CesantiaCalculator : Screen
+    data object VacacionesCalculator : Screen
+    data object PreavisoCalculator : Screen
+    data object CalculationHistory : Screen
 }
 
 val mainScreens = setOf(

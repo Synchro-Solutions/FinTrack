@@ -20,13 +20,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
-import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
 import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
+import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.DashboardScreen
+import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
@@ -165,6 +166,44 @@ fun App(
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
                         is Screen.Mas -> MasScreen()
+                        
+                        is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
+                        is Screen.AguinaldoCalculator -> CalculatorPlaceholderScreen(
+                            title = "Aguinaldo",
+                            description = "Aqui va la calculadora de aguinaldo."
+                        )
+                        is Screen.CurrencyConverter -> CalculatorPlaceholderScreen(
+                            title = "Conversor de divisas",
+                            description = "Aqui va el conversor de divisas."
+                        )
+                        is Screen.NetSalaryCalculator -> CalculatorPlaceholderScreen(
+                            title = "Salario neto",
+                            description = "Aqui va la calculadora de salario neto."
+                        )
+                        is Screen.Rule503020Calculator -> CalculatorPlaceholderScreen(
+                            title = "Regla 50/30/20",
+                            description = "Aqui va la calculadora de regla 50/30/20."
+                        )
+                        is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
+                            title = "Liquidacion",
+                            description = "Aqui va la calculadora de liquidacion."
+                        )
+                        is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
+                            title = "Cesantia",
+                            description = "Aqui va la calculadora de cesantia."
+                        )
+                        is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
+                            title = "Vacaciones",
+                            description = "Aqui va la calculadora de vacaciones."
+                        )
+                        is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
+                            title = "Preaviso",
+                            description = "Aqui va la calculadora de preaviso."
+                        )
+                        is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
+                            title = "Historial",
+                            description = "Aqui va el historial de calculos guardados."
+                        )
                     }
                 }
             }

@@ -53,7 +53,8 @@ fun DashboardScreen(
     onNavigateToIngreso: () -> Unit = {},
     onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
-    onNavigateToReportes: () -> Unit = {}
+    onNavigateToReportes: () -> Unit = {},
+    onNavigateToAjustes: () -> Unit = {}
 ) {
     val viewModel = viewModel { DashboardViewModel() }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,7 +68,14 @@ fun DashboardScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            item { DashboardHeader(state.userName, state.notificationCount) { viewModel.marcarNotificacionesLeidas() } }
+            item {
+                DashboardHeader(
+                    userName = state.userName,
+                    notificationCount = state.notificationCount,
+                    onBellClick = { viewModel.marcarNotificacionesLeidas() },
+                    onAvatarClick = onNavigateToAjustes
+                )
+            }
             item { Spacer(Modifier.height(4.dp)) }
             item {
                 BalanceCard(
@@ -126,7 +134,8 @@ fun DashboardScreen(
 private fun DashboardHeader(
     userName: String,
     notificationCount: Int,
-    onBellClick: () -> Unit
+    onBellClick: () -> Unit,
+    onAvatarClick: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
     Row(
@@ -170,7 +179,8 @@ private fun DashboardHeader(
                     .background(
                         Brush.linearGradient(listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)),
                         CircleShape
-                    ),
+                    )
+                    .clickable(onClick = onAvatarClick),
                 contentAlignment = Alignment.Center
             ) {
                 Text(

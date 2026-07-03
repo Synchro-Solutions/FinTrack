@@ -103,6 +103,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val compactLayout = maxHeight < 780.dp
                 val ultraCompactLayout = maxHeight < 700.dp
+                val lowerBlockSpacing = if (ultraCompactLayout) 2.dp else if (compactLayout) 3.dp else 5.dp
 
                 Column(modifier = Modifier.fillMaxSize()) {
                     Text(
@@ -138,7 +139,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                         }
                     }
 
-                    Spacer(Modifier.height(if (ultraCompactLayout) 2.dp else if (compactLayout) 3.dp else 5.dp))
+                    Spacer(Modifier.height(lowerBlockSpacing))
 
                     ValidationSlot(
                         emptyMonths = emptyMonths,
@@ -148,7 +149,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                         ultraCompactLayout = ultraCompactLayout
                     )
 
-                    Spacer(Modifier.height(if (ultraCompactLayout) 2.dp else if (compactLayout) 4.dp else 5.dp))
+                    Spacer(Modifier.height(lowerBlockSpacing))
 
                     SalaryTotalRow(
                         totalSalary = totalSalary,
@@ -161,7 +162,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                         }
                     )
 
-                    Spacer(Modifier.height(if (ultraCompactLayout) 1.dp else if (compactLayout) 2.dp else 4.dp))
+                    Spacer(Modifier.height(lowerBlockSpacing))
 
                     SummaryCard(
                         estimatedAguinaldo = estimatedAguinaldo,
@@ -175,7 +176,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                         }
                     )
 
-                    Spacer(Modifier.height(if (ultraCompactLayout) 1.dp else 2.dp))
+                    Spacer(Modifier.height(lowerBlockSpacing))
 
                     if (!ultraCompactLayout) {
                         Text(

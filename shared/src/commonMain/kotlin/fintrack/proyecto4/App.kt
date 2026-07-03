@@ -26,11 +26,11 @@ import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
+import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
-import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
@@ -42,7 +42,7 @@ import fintrack.proyecto4.transaction.TransactionType
 
 /**
  * @param ocrCameraContent Contenido de la pantalla de captura en vivo (CameraX en Android).
- *   Recibe un callback [onCaptured] con la ruta del archivo capturado, y [onCancel].
+ *   Recibe un callback con la ruta del archivo capturado y otro para cancelar.
  *   Se inyecta desde el entry point de cada plataforma (ver androidApp/MainActivity.kt);
  *   por defecto muestra un placeholder para plataformas donde la cámara no está integrada.
  * @param onPickReceiptImage Lanza el selector de imágenes de la plataforma; invoca el callback
@@ -166,12 +166,10 @@ fun App(
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
-                        is Screen.Mas -> MasScreen()
-                        
+                        is Screen.Mas,
                         is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
-                        is Screen.AguinaldoCalculator -> CalculatorPlaceholderScreen(
-                            title = "Aguinaldo",
-                            description = "Aqui va la calculadora de aguinaldo."
+                        is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
+                            onBack = { navController.goBack() }
                         )
                         is Screen.CurrencyConverter -> CalculatorPlaceholderScreen(
                             title = "Conversor de divisas",

@@ -91,13 +91,42 @@ fun FinancialCenterScreen(historyCount: Int = 0) {
                     .padding(horizontal = 18.dp, vertical = 16.dp)
             ) {
                 Column {
-                    Text(
-                        text = "Centro financiero",
-                        fontSize = if (compact) 23.sp else 25.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontFamily = montserrat
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Centro financiero",
+                            fontSize = if (compact) 23.sp else 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontFamily = montserrat
+                        )
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(Color.White.copy(alpha = 0.14f))
+                                .clickable { navController.replace(Screen.Dashboard) }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Ir al inicio",
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "Inicio",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = montserrat
+                            )
+                        }
+                    }
                     Text(
                         text = "Calculadoras y herramientas para tus decisiones",
                         fontSize = 13.sp,

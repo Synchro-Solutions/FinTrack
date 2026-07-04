@@ -47,7 +47,6 @@ sealed interface Screen {
     data object AguinaldoCalculator : Screen
     data object CurrencyConverter : Screen
     data object NetSalaryCalculator : Screen
-    data object Rule503020Calculator : Screen
     data object LiquidacionCalculator : Screen
     data object CesantiaCalculator : Screen
     data object VacacionesCalculator : Screen

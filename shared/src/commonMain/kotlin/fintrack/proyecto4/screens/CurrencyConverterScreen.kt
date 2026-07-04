@@ -9,8 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,39 +58,57 @@ private val currencyNames = mapOf(
     "GBP" to "Libra esterlina"
 )
 
-/**
- * Tabla fija de tasas de referencia (unidades de CRC por 1 unidad de la moneda) usada
- * mientras no exista integración con una fuente en vivo.
- *
- * Punto de conexión futuro: reemplazar este mapa por una consulta a la API del BCCR
- * (Banco Central de Costa Rica) u otro proveedor de tipos de cambio. `getExchangeRate`
- * es la única función que debería cambiar de implementación para pasar de tasas fijas
- * a tasas en vivo (por ejemplo, convirtiéndola en `suspend` y consultando un repositorio).
- */
-private val exchangeRatesToCrc = mapOf(
-    "CRC" to 1.0,
-    "USD" to 520.5,
-    "EUR" to 560.0,
-    "MXN" to 30.5,
-    "GBP" to 660.0
+/** Símbolo de cada moneda, usado para mostrar el resultado (ej. "$96.15"). */
+private val currencySymbols = mapOf(
+    "CRC" to "₡",
+    "USD" to "$",
+    "EUR" to "€",
+    "MXN" to "$",
+    "GBP" to "£"
 )
 
-/** Retorna cuántas unidades de [toCurrency] equivalen a 1 unidad de [fromCurrency]. */
-fun getExchangeRate(fromCurrency: String, toCurrency: String): Double {
-    val fromRate = exchangeRatesToCrc[fromCurrency] ?: 1.0
-    val toRate = exchangeRatesToCrc[toCurrency] ?: 1.0
-    return fromRate / toRate
+/**
+ * Calcula el resultado de la conversión usando un tipo de cambio ingresado manualmente por el
+ * usuario (unidades de CRC por 1 unidad de moneda extranjera, como lo cotiza el BCCR).
+ *
+ * Si el origen es CRC, el monto se divide entre el tipo de cambio (colones -> divisa). Si el
+ * destino es CRC, el monto se multiplica por el tipo de cambio (divisa -> colones).
+ */
+fun convertWithManualRate(
+    amount: Double,
+    fromCurrency: String,
+    toCurrency: String,
+    exchangeRate: Double
+): Double = when {
+    fromCurrency == toCurrency -> amount
+    fromCurrency == "CRC" -> amount / exchangeRate
+    toCurrency == "CRC" -> amount * exchangeRate
+    else -> amount * exchangeRate
 }
-
-/** Convierte [amount] de [fromCurrency] a [toCurrency] pasando por CRC como moneda puente. */
-fun convertCurrency(amount: Double, fromCurrency: String, toCurrency: String): Double =
-    amount * getExchangeRate(fromCurrency, toCurrency)
 
 /** Formatea un monto con separador de miles (espacio) y 2 decimales. Ej: 52050.0 -> "52 050.00". */
 fun formatCurrencyAmount(amount: Double): String = formatDecimal(amount, decimals = 2)
 
+/** Formatea un monto con 2 decimales anteponiendo el símbolo de la moneda. Ej: "$96.15". */
+private fun formatAmountWithSymbol(amount: Double, currency: String): String =
+    "${currencySymbols[currency] ?: ""}${formatCurrencyAmount(amount)}"
+
 /** Formatea una tasa de cambio con 4 decimales, como en "1 USD = 520.5000 CRC". */
 private fun formatExchangeRate(rate: Double): String = formatDecimal(rate, decimals = 4)
+
+/** Describe la tasa manual ingresada en términos de "1 <divisa> = X CRC" cuando aplica. */
+private fun exchangeRateDescription(fromCurrency: String, toCurrency: String, rate: Double): String {
+    val foreignCurrency = when {
+        fromCurrency == "CRC" -> toCurrency
+        toCurrency == "CRC" -> fromCurrency
+        else -> null
+    }
+    return if (foreignCurrency != null) {
+        "1 $foreignCurrency = ${formatExchangeRate(rate)} CRC"
+    } else {
+        "Tipo de cambio $fromCurrency → $toCurrency: ${formatExchangeRate(rate)}"
+    }
+}
 
 private fun formatDecimal(value: Double, decimals: Int): String {
     val factor = 10.0.pow(decimals)
@@ -130,7 +146,7 @@ private fun sanitizeAmountInput(input: String): String {
 }
 
 /**
- * Formatea el monto mientras se escribe: agrupa la parte entera con '.' cada 3 dígitos
+ * Formatea un monto mientras se escribe: agrupa la parte entera con '.' cada 3 dígitos
  * (ej. "1000000" -> "1.000.000") y muestra la parte decimal separada por ',' (ej.
  * "1000000.5" -> "1.000.000,5"), sin alterar el valor sin formato usado para los cálculos.
  */
@@ -172,21 +188,23 @@ private object AmountVisualTransformation : VisualTransformation {
 
 @Composable
 fun CurrencyConverterScreen(
-    onBack: () -> Unit = {},
-    onSaveConversion: (amount: Double, fromCurrency: String, toCurrency: String, result: Double) -> Unit =
-        { _, _, _, _ -> }
+    onBack: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
 
     var amountText by remember { mutableStateOf("") }
+    var rateText by remember { mutableStateOf("") }
     var fromCurrency by remember { mutableStateOf("USD") }
     var toCurrency by remember { mutableStateOf("CRC") }
 
-    // Estos tres valores se recalculan solos en cada recomposición, es decir, cada vez
-    // que cambian monto, monedaOrigen o monedaDestino.
+    // Estos valores se recalculan solos en cada recomposición, es decir, cada vez que
+    // cambian monto, tipo de cambio, monedaOrigen o monedaDestino.
     val monto = amountText.toDoubleOrNull() ?: 0.0
-    val tipoCambio = getExchangeRate(fromCurrency, toCurrency)
-    val resultado = convertCurrency(monto, fromCurrency, toCurrency)
+    val tipoCambio = rateText.toDoubleOrNull() ?: 0.0
+    val amountIsInvalid = amountText.isNotBlank() && monto <= 0.0
+    val rateIsInvalid = rateText.isNotBlank() && tipoCambio <= 0.0
+    val isValidForResult = monto > 0.0 && tipoCambio > 0.0
+    val resultado = if (isValidForResult) convertWithManualRate(monto, fromCurrency, toCurrency, tipoCambio) else 0.0
 
     Column(
         modifier = Modifier
@@ -209,6 +227,9 @@ fun CurrencyConverterScreen(
                     onValueChange = { amountText = sanitizeAmountInput(it) },
                     montserrat = montserrat
                 )
+                if (amountIsInvalid) {
+                    FieldErrorText(text = "El monto debe ser mayor a 0", montserrat = montserrat)
+                }
             }
 
             CurrencySelector(
@@ -225,6 +246,26 @@ fun CurrencyConverterScreen(
                 montserrat = montserrat
             )
 
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionLabel(text = "TIPO DE CAMBIO", montserrat = montserrat)
+                AmountField(
+                    value = rateText,
+                    onValueChange = { rateText = sanitizeAmountInput(it) },
+                    montserrat = montserrat
+                )
+                if (rateIsInvalid) {
+                    FieldErrorText(text = "El tipo de cambio debe ser mayor a 0", montserrat = montserrat)
+                } else {
+                    Text(
+                        text = "Ingresa manualmente cuántos colones equivalen a 1 unidad de la moneda extranjera",
+                        color = FinTrackColors.TextSecondary,
+                        fontFamily = montserrat,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             ConversionResultCard(
                 amount = monto,
                 fromCurrency = fromCurrency,
@@ -232,22 +273,6 @@ fun CurrencyConverterScreen(
                 result = resultado,
                 exchangeRate = tipoCambio
             )
-
-            Button(
-                onClick = { onSaveConversion(monto, fromCurrency, toCurrency, resultado) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.BlueMeta)
-            ) {
-                Text(
-                    text = "Guardar conversión",
-                    fontFamily = montserrat,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }
         }
     }
 }
@@ -264,7 +289,23 @@ private fun SectionLabel(text: String, montserrat: FontFamily) {
     )
 }
 
-/** Chip redondeado para seleccionar una moneda; azul cuando está seleccionado, gris oscuro si no. */
+/** Texto de error de validación bajo un campo (monto o tipo de cambio inválidos). */
+@Composable
+private fun FieldErrorText(text: String, montserrat: FontFamily) {
+    Text(
+        text = text,
+        color = FinTrackColors.ErrorColor,
+        fontFamily = montserrat,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+/**
+ * Chip para seleccionar una moneda; azul cuando está seleccionado, gris oscuro si no.
+ * Bandera y código apilados verticalmente para que quepan 5 chips en una sola fila sin scroll,
+ * repartiéndose el ancho disponible en partes iguales ([Modifier.weight]).
+ */
 @Composable
 fun CurrencyChip(
     label: String,
@@ -273,20 +314,27 @@ fun CurrencyChip(
     modifier: Modifier = Modifier
 ) {
     val montserrat = montserratFamily()
-    Box(
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(if (selected) FinTrackColors.BlueMeta else FinTrackColors.SurfaceSecondary)
             .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
-            text = "${currencyFlags[label] ?: ""} $label".trim(),
+            text = currencyFlags[label] ?: "",
+            fontSize = 16.sp,
+            maxLines = 1
+        )
+        Text(
+            text = label,
             color = if (selected) FinTrackColors.White else FinTrackColors.TextSecondary,
             fontFamily = montserrat,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            fontSize = 14.sp
+            fontSize = 12.sp,
+            maxLines = 1
         )
     }
 }
@@ -300,16 +348,16 @@ private fun CurrencySelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionLabel(text = label, montserrat = montserrat)
-        FlowRow(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             availableCurrencies.forEach { currency ->
                 CurrencyChip(
                     label = currency,
                     selected = currency == selected,
-                    onClick = { onSelect(currency) }
+                    onClick = { onSelect(currency) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -390,7 +438,7 @@ fun ConversionResultCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "${formatCurrencyAmount(amount)} $fromCurrency =",
+            text = "${formatAmountWithSymbol(amount, fromCurrency)} $fromCurrency =",
             color = FinTrackColors.White.copy(alpha = 0.85f),
             fontFamily = montserrat,
             fontSize = 16.sp,
@@ -399,7 +447,7 @@ fun ConversionResultCard(
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "${formatCurrencyAmount(result)} $toCurrency",
+            text = "${formatAmountWithSymbol(result, toCurrency)} $toCurrency",
             color = FinTrackColors.White,
             fontFamily = montserrat,
             fontSize = 32.sp,
@@ -408,7 +456,7 @@ fun ConversionResultCard(
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "1 $fromCurrency = ${formatExchangeRate(exchangeRate)} $toCurrency",
+            text = exchangeRateDescription(fromCurrency, toCurrency, exchangeRate),
             color = FinTrackColors.White.copy(alpha = 0.75f),
             fontFamily = montserrat,
             fontSize = 13.sp,

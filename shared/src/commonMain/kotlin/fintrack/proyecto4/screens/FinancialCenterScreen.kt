@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -53,7 +52,6 @@ internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
     FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientViolet, Screen.AguinaldoCalculator),
     FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientIndigo, Screen.CurrencyConverter),
     FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.AutoMirrored.Filled.TrendingUp, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),
-    FinancialMenuItem("Regla 50/30/20", "Distribucion del ingreso", Icons.Default.AccountBalance, FinTrackColors.GradientIndigo, Screen.Rule503020Calculator),
     FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.AutoMirrored.Filled.TrendingDown, FinTrackColors.GradientRed, Screen.LiquidacionCalculator),
     FinancialMenuItem("Cesantia", "Auxilio de cesantia CR", Icons.Default.Home, FinTrackColors.GradientGreen, Screen.CesantiaCalculator),
     FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, FinTrackColors.GradientViolet, Screen.VacacionesCalculator),

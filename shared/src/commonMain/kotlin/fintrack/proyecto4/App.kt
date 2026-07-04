@@ -173,19 +173,11 @@ fun App(
                             onBack = { navController.goBack() }
                         )
                         is Screen.CurrencyConverter -> CurrencyConverterScreen(
-                            onBack = { navController.goBack() },
-                            onSaveConversion = { _, _, _, _ ->
-                                // TODO: persistir la conversión cuando exista un repositorio/historial real.
-                                navController.goBack()
-                            }
+                            onBack = { navController.goBack() }
                         )
                         is Screen.NetSalaryCalculator -> CalculatorPlaceholderScreen(
                             title = "Salario neto",
                             description = "Aqui va la calculadora de salario neto."
-                        )
-                        is Screen.Rule503020Calculator -> CalculatorPlaceholderScreen(
-                            title = "Regla 50/30/20",
-                            description = "Aqui va la calculadora de regla 50/30/20."
                         )
                         is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
                             title = "Liquidacion",

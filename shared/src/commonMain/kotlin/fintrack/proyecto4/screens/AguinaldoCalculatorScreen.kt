@@ -489,6 +489,9 @@ private fun AguinaldoIntroDialog(onDismiss: () -> Unit) {
     val montserrat = montserratFamily()
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = FinTrackColors.SurfacePrimary,
+        titleContentColor = FinTrackColors.TextPrimary,
+        textContentColor = FinTrackColors.TextSecondary,
         title = {
             Text(
                 text = "Como usar esta calculadora",
@@ -507,7 +510,7 @@ private fun AguinaldoIntroDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Entendido", fontFamily = montserrat)
+                Text("Entendido", fontFamily = montserrat, color = FinTrackColors.GreenPrimary)
             }
         }
     )

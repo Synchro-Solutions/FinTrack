@@ -20,8 +20,6 @@ import fintrack.proyecto4.savings.ui.GoalCard
 import fintrack.proyecto4.savings.ui.GoalCompletedDialog
 import fintrack.proyecto4.savings.ui.GoalDetailDialog
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
-import fintrack.proyecto4.theme.FinTrackColors
-import fintrack.proyecto4.theme.LocalAppColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,7 +37,6 @@ fun MetasScreen() {
         viewModel.loadGoals()
     }
 
-    val colors = LocalAppColors.current
     val activeCount = viewModel.activeGoals.size
     val maxGoals = 10
     val canCreateGoal = activeCount < maxGoals
@@ -47,17 +44,17 @@ fun MetasScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
+            .background(Color(0xFF0F172A))
             .padding(20.dp)
     ) {
         Column {
-            Text("Mis metas", color = colors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("Mis metas", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "$activeCount / $maxGoals metas activas",
-                color = if (canCreateGoal) FinTrackColors.GreenPrimary else FinTrackColors.ErrorColor,
+                color = if (canCreateGoal) Color(0xFF22C55E) else Color(0xFFEF4444),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -66,7 +63,7 @@ fun MetasScreen() {
 
             Text(
                 text = "Crea objetivos de ahorro y registra tus avances.",
-                color = colors.textSecondary,
+                color = Color(0xFF94A3B8),
                 fontSize = 14.sp
             )
 
@@ -76,10 +73,10 @@ fun MetasScreen() {
                 onClick = { if (canCreateGoal) showCreateDialog = true },
                 enabled = canCreateGoal,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinTrackColors.GreenPrimary,
+                    containerColor = Color(0xFF22C55E),
                     contentColor = Color.White,
-                    disabledContainerColor = colors.surfaceSecondary,
-                    disabledContentColor = colors.textSecondary
+                    disabledContainerColor = Color(0xFF334155),
+                    disabledContentColor = Color(0xFF94A3B8)
                 )
             ) {
                 Text(if (canCreateGoal) "+ Nueva meta" else "Límite alcanzado")
@@ -88,11 +85,11 @@ fun MetasScreen() {
             Spacer(modifier = Modifier.height(18.dp))
 
             if (viewModel.isLoading) {
-                CircularProgressIndicator(color = FinTrackColors.GreenPrimary)
+                CircularProgressIndicator(color = Color(0xFF22C55E))
             } else if (viewModel.activeGoals.isEmpty() && viewModel.completedGoals.isEmpty()) {
                 Text(
                     text = "Crea tu primera meta de ahorro.",
-                    color = colors.textSecondary,
+                    color = Color(0xFF94A3B8),
                     fontSize = 15.sp
                 )
             } else {
@@ -112,7 +109,7 @@ fun MetasScreen() {
                         item {
                             Text(
                                 text = "Completadas",
-                                color = colors.textPrimary,
+                                color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 10.dp)
@@ -220,9 +217,9 @@ fun MetasScreen() {
     viewModel.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
-            containerColor = colors.surface,
-            title = { Text("Validación", color = colors.textPrimary) },
-            text = { Text(message, color = colors.textSecondary) },
+            containerColor = Color(0xFF111C2E),
+            title = { Text("Validación", color = Color.White) },
+            text = { Text(message, color = Color(0xFFCBD5E1)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearError() }) {
                     Text("Aceptar")

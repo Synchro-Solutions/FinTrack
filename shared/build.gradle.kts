@@ -22,11 +22,13 @@ kotlin {
     js {
         browser()
     }
-    
+
+    /*
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
     }
+    */
     
     androidLibrary {
        namespace = "fintrack.proyecto4.shared"
@@ -34,7 +36,7 @@ kotlin {
        minSdk = libs.versions.android.minSdk.get().toInt()
     
        compilerOptions {
-           jvmTarget = JvmTarget.JVM_11
+           jvmTarget = JvmTarget.JVM_17
        }
        androidResources {
            enable = true
@@ -62,6 +64,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             implementation(compose.materialIconsExtended)
+            implementation(libs.gitlive.firebase.firestore)
         }
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)

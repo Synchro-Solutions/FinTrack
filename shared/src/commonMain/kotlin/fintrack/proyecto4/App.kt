@@ -28,6 +28,7 @@ import fintrack.proyecto4.navigation.mainScreens
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
+import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
@@ -171,9 +172,12 @@ fun App(
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }
                         )
-                        is Screen.CurrencyConverter -> CalculatorPlaceholderScreen(
-                            title = "Conversor de divisas",
-                            description = "Aqui va el conversor de divisas."
+                        is Screen.CurrencyConverter -> CurrencyConverterScreen(
+                            onBack = { navController.goBack() },
+                            onSaveConversion = { _, _, _, _ ->
+                                // TODO: persistir la conversión cuando exista un repositorio/historial real.
+                                navController.goBack()
+                            }
                         )
                         is Screen.NetSalaryCalculator -> CalculatorPlaceholderScreen(
                             title = "Salario neto",

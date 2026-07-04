@@ -60,7 +60,7 @@ val mainScreens = setOf(
     Screen.Movimientos,
     Screen.Presupuestos,
     Screen.Metas,
-    Screen.Mas
+    Screen.FinancialCenter
 )
 
 /**

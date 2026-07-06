@@ -34,6 +34,7 @@ import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
+import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
@@ -175,9 +176,13 @@ fun App(
                         is Screen.CurrencyConverter -> CurrencyConverterScreen(
                             onBack = { navController.goBack() }
                         )
-                        is Screen.NetSalaryCalculator -> CalculatorPlaceholderScreen(
-                            title = "Salario neto",
-                            description = "Aqui va la calculadora de salario neto."
+                        is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
+                            onBack = { navController.goBack() },
+                            onSaved = {
+                                // TODO: persistir el calculo (financial_calculation, calc_type=SALARIO_NETO)
+                                // cuando exista un repositorio/historial real.
+                                navController.goBack()D
+                            }
                         )
                         is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
                             title = "Liquidacion",

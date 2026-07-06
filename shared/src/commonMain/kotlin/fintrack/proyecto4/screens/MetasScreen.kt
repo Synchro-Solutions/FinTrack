@@ -1,22 +1,230 @@
 package fintrack.proyecto4.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fintrack.proyecto4.savings.model.GoalStatus
+import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.savings.ui.AddContributionDialog
+import fintrack.proyecto4.savings.ui.CreateGoalDialog
+import fintrack.proyecto4.savings.ui.EditGoalDialog
+import fintrack.proyecto4.savings.ui.GoalCard
+import fintrack.proyecto4.savings.ui.GoalCompletedDialog
+import fintrack.proyecto4.savings.ui.GoalDetailDialog
+import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun MetasScreen() {
+    val viewModel = remember { SavingsViewModel() }
+    val scope = rememberCoroutineScope()
+
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    var detailGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    var editGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    var completedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadGoals()
+    }
+
+    val activeCount = viewModel.activeGoals.size
+    val maxGoals = 10
+    val canCreateGoal = activeCount < maxGoals
+
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF0F172A)),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F172A))
+            .padding(20.dp)
     ) {
-        Text("Metas", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Column {
+            Text("Mis metas", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "$activeCount / $maxGoals metas activas",
+                color = if (canCreateGoal) Color(0xFF22C55E) else Color(0xFFEF4444),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Crea objetivos de ahorro y registra tus avances.",
+                color = Color(0xFF94A3B8),
+                fontSize = 14.sp
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Button(
+                onClick = { if (canCreateGoal) showCreateDialog = true },
+                enabled = canCreateGoal,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF22C55E),
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0xFF334155),
+                    disabledContentColor = Color(0xFF94A3B8)
+                )
+            ) {
+                Text(if (canCreateGoal) "+ Nueva meta" else "Límite alcanzado")
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(color = Color(0xFF22C55E))
+            } else if (viewModel.activeGoals.isEmpty() && viewModel.completedGoals.isEmpty()) {
+                Text(
+                    text = "Crea tu primera meta de ahorro.",
+                    color = Color(0xFF94A3B8),
+                    fontSize = 15.sp
+                )
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(viewModel.activeGoals) { goal ->
+                        GoalCard(
+                            goal = goal,
+                            onAddContribution = { selectedGoal = it },
+                            onViewDetail = { detailGoal = it }
+                        )
+                    }
+
+                    if (viewModel.completedGoals.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Completadas",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 10.dp)
+                            )
+                        }
+
+                        items(viewModel.completedGoals) { goal ->
+                            GoalCard(
+                                goal = goal,
+                                onAddContribution = { selectedGoal = it },
+                                onViewDetail = { detailGoal = it }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        CreateGoalDialog(
+            onDismiss = {
+                showCreateDialog = false
+                viewModel.clearError()
+            },
+            onSave = { name, amount, deadline, icon ->
+                scope.launch {
+                    val saved = viewModel.createGoal(name, amount, deadline, icon)
+                    if (saved) showCreateDialog = false
+                }
+            }
+        )
+    }
+
+    selectedGoal?.let { goal ->
+        AddContributionDialog(
+            goal = goal,
+            onDismiss = {
+                selectedGoal = null
+                viewModel.clearError()
+            },
+            onSave = { amount ->
+                scope.launch {
+                    val saved = viewModel.addContribution(goal.id, amount)
+
+                    if (saved) {
+                        selectedGoal = null
+
+                        val updatedGoal = viewModel.goals.firstOrNull { it.id == goal.id }
+                        if (updatedGoal?.status == GoalStatus.COMPLETED) {
+                            completedGoal = updatedGoal
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    completedGoal?.let { goal ->
+        GoalCompletedDialog(
+            goal = goal,
+            onDismiss = { completedGoal = null }
+        )
+    }
+
+    detailGoal?.let { goal ->
+        GoalDetailDialog(
+            goal = goal,
+            contributions = viewModel.getContributions(goal.id),
+            onDismiss = { detailGoal = null },
+            onCancelGoal = {
+                scope.launch {
+                    val cancelled = viewModel.cancelGoal(it.id)
+                    if (cancelled) detailGoal = null
+                }
+            },
+            onEditGoal = {
+                editGoal = it
+            }
+        )
+    }
+
+    editGoal?.let { goal ->
+        EditGoalDialog(
+            goal = goal,
+            onDismiss = { editGoal = null },
+            onSave = { name, deadline, icon ->
+                scope.launch {
+                    val updated = viewModel.updateGoal(
+                        goalId = goal.id,
+                        name = name,
+                        deadline = deadline,
+                        iconName = icon
+                    )
+
+                    if (updated) {
+                        editGoal = null
+                        detailGoal = null
+                    }
+                }
+            }
+        )
+    }
+
+    viewModel.errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            containerColor = Color(0xFF111C2E),
+            title = { Text("Validación", color = Color.White) },
+            text = { Text(message, color = Color(0xFFCBD5E1)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("Aceptar")
+                }
+            }
+        )
     }
 }

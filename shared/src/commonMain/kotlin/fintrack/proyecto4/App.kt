@@ -181,7 +181,7 @@ fun App(
                             onSaved = {
                                 // TODO: persistir el calculo (financial_calculation, calc_type=SALARIO_NETO)
                                 // cuando exista un repositorio/historial real.
-                                navController.goBack()D
+                                navController.goBack()
                             }
                         )
                         is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(

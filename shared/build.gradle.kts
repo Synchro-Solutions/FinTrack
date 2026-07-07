@@ -6,6 +6,15 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.sqldelight)
+}
+
+sqldelight {
+    databases {
+        create("FinTrackDatabase") {
+            packageName.set("fintrack.proyecto4.database")
+        }
+    }
 }
 
 kotlin {
@@ -49,6 +58,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.auth)
+            implementation(libs.sqldelight.android.driver)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -64,6 +74,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.auth)
+            implementation(libs.sqldelight.native.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

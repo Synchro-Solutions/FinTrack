@@ -15,6 +15,7 @@ import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.LoginScreen
+import fintrack.proyecto4.screens.RegisterScreen
 
 @Composable
 fun App(authRepository: AuthRepository) {
@@ -41,6 +42,8 @@ fun App(authRepository: AuthRepository) {
             NavHost(navController = navController) { screen ->
                 when (screen) {
                     is Screen.Login -> LoginScreen(authRepository)
+                    is Screen.Register -> RegisterScreen(authRepository)
+                    is Screen.InitialConfig -> Box(Modifier.fillMaxSize().background(Color.Black)) // Placeholder
                     is Screen.Dashboard -> DashboardScreen()
                 }
             }

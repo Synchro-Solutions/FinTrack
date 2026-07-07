@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
  */
 sealed interface Screen {
     data object Login : Screen
+    data object Register : Screen
+    data object InitialConfig : Screen
     data object Dashboard : Screen
 }
 

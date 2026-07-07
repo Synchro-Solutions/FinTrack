@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.datastore.preferences.preferencesDataStore
 import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
+import fintrack.proyecto4.database.DatabaseDriverFactory
+import fintrack.proyecto4.database.DatabaseHelper
 
 private val ComponentActivity.dataStore by preferencesDataStore(name = "fintrack_session")
 
@@ -16,7 +18,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val sessionStore = DataStoreSessionStore(dataStore)
-        val authRepository = FirebaseAuthRepository(sessionStore)
+        val databaseDriverFactory = DatabaseDriverFactory(this)
+        val databaseHelper = DatabaseHelper(databaseDriverFactory)
+        val authRepository = FirebaseAuthRepository(sessionStore, databaseHelper)
 
         setContent {
             App(authRepository = authRepository)

@@ -11,7 +11,18 @@ class DataStoreSessionStore(
     companion object {
         private val KEY_REMEMBER_ME = booleanPreferencesKey("remember_me")
         private val KEY_FAILED_ATTEMPTS = intPreferencesKey("failed_attempts")
-        private val KEY_LOCKOUT_UNTIL = longPreferencesKey("lockout_until")
+        private val KEY_LOCKOUT_UNTIL = longPreferencesKey("longout_until")
+        private val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
+    }
+
+    override suspend fun getAccessToken(): String? =
+        dataStore.data.first()[KEY_ACCESS_TOKEN]
+
+    override suspend fun setAccessToken(token: String?) {
+        dataStore.edit { prefs ->
+            if (token == null) prefs.remove(KEY_ACCESS_TOKEN)
+            else prefs[KEY_ACCESS_TOKEN] = token
+        }
     }
 
     override suspend fun getRememberMe(): Boolean =

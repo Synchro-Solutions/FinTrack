@@ -1,0 +1,30 @@
+CREATE TABLE app_user (
+    firebase_uid TEXT NOT NULL PRIMARY KEY,
+    email TEXT NOT NULL,
+    display_name TEXT
+);
+
+CREATE TABLE user_role (
+    user_id TEXT NOT NULL PRIMARY KEY,
+    role_id TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES app_user(firebase_uid)
+);
+
+CREATE TABLE user_profile (
+    user_id TEXT NOT NULL PRIMARY KEY,
+    currency_code TEXT NOT NULL DEFAULT 'CRC',
+    FOREIGN KEY(user_id) REFERENCES app_user(firebase_uid)
+);
+
+-- Consultas para el registro
+insertUser:
+INSERT INTO app_user(firebase_uid, email, display_name)
+VALUES (?, ?, ?);
+
+insertRole:
+INSERT INTO user_role(user_id, role_id)
+VALUES (?, ?);
+
+insertProfile:
+INSERT INTO user_profile(user_id, currency_code)
+VALUES (?, ?);

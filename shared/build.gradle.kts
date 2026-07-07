@@ -18,7 +18,7 @@ sqldelight {
 }
 
 kotlin {
-    listOf(
+    /*listOf(
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -26,16 +26,18 @@ kotlin {
             baseName = "Shared"
             isStatic = true
         }
-    }
+    }*/
     
     js {
         browser()
     }
-    
+
+    /*
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
     }
+    */
     
     androidLibrary {
        namespace = "fintrack.proyecto4.shared"
@@ -43,7 +45,7 @@ kotlin {
        minSdk = libs.versions.android.minSdk.get().toInt()
     
        compilerOptions {
-           jvmTarget = JvmTarget.JVM_11
+           jvmTarget = JvmTarget.JVM_17
        }
        androidResources {
            enable = true
@@ -59,6 +61,12 @@ kotlin {
             implementation(libs.gitlive.firebase.common)
             implementation(libs.gitlive.firebase.auth)
             implementation(libs.sqldelight.android.driver)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.camerax.core)
+            implementation(libs.camerax.camera2)
+            implementation(libs.camerax.lifecycle)
+            implementation(libs.camerax.view)
+            implementation(libs.mlkit.textRecognition)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -70,6 +78,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
+            implementation(compose.materialIconsExtended)
+            implementation(libs.gitlive.firebase.firestore)
         }
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)

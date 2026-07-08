@@ -7,16 +7,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun MasScreen() {
+    val colors = LocalAppColors.current
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF0F172A)),
+        modifier = Modifier.fillMaxSize().background(colors.bg),
         contentAlignment = Alignment.Center
     ) {
-        Text("Más", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Más", color = colors.textPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
     }
 }

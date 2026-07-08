@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
@@ -26,6 +27,9 @@ import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
+import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
+import fintrack.proyecto4.onboarding.OnboardingRepository
+import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
@@ -37,10 +41,12 @@ import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
+import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.transaction.TransactionType
+import kotlinx.coroutines.launch
 
 /**
  * @param ocrCameraContent Contenido de la pantalla de captura en vivo (CameraX en Android).
@@ -55,16 +61,24 @@ import fintrack.proyecto4.transaction.TransactionType
 @Composable
 fun App(
     authRepository: AuthRepository,
+    onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
+    onPickProfilePhoto: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
 
     LaunchedEffect(Unit) {
         val token = authRepository.getStoredToken()
-        initialScreen = if (token != null) Screen.Dashboard else Screen.Login
+        if (token != null) {
+            val uid = AuthClient.currentUserId()
+            val done = if (uid != null) onboardingRepository.isOnboardingComplete(uid) else true
+            initialScreen = if (done) Screen.Dashboard else Screen.Onboarding
+        } else {
+            initialScreen = Screen.Login
+        }
     }
 
     MaterialTheme(typography = FinTrackTypography()) {
@@ -80,10 +94,8 @@ fun App(
         val navController = remember(initialScreen) { NavController(initialScreen!!) }
         val currentScreen by remember { derivedStateOf { navController.currentScreen } }
         val showBottomBar = currentScreen in mainScreens
+        val scope = rememberCoroutineScope()
 
-        // Vive mientras dure la sesión de la app (igual que navController) para que el
-        // estado del asistente sobreviva a la navegación intermedia hacia Screen.OcrCamera.
-        // Se reinicia explícitamente (reset()) cada vez que se abre desde el botón de OCR.
         val ocrAssistantViewModel = remember {
             OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
         }
@@ -108,7 +120,34 @@ fun App(
                     modifier = Modifier.padding(innerPadding)
                 ) { screen ->
                     when (screen) {
-                        is Screen.Login -> LoginScreen(authRepository)
+                        is Screen.Login -> LoginScreen(
+                            authRepository = authRepository,
+                            onLoginSuccess = {
+                                scope.launch {
+                                    val uid = AuthClient.currentUserId()
+                                    val done = if (uid != null) {
+                                        onboardingRepository.isOnboardingComplete(uid)
+                                    } else true
+                                    if (done) navController.replace(Screen.Dashboard)
+                                    else navController.replace(Screen.Onboarding)
+                                }
+                            }
+                        )
+
+                        is Screen.Onboarding -> {
+                            val uid = AuthClient.currentUserId() ?: ""
+                            val onboardingVm = remember(uid) {
+                                OnboardingViewModel(
+                                    repository = onboardingRepository,
+                                    uid = uid
+                                )
+                            }
+                            OnboardingScreen(
+                                viewModel = onboardingVm,
+                                onFinished = { navController.replace(Screen.Dashboard) },
+                                onPickPhoto = onPickProfilePhoto
+                            )
+                        }
 
                         is Screen.Dashboard -> DashboardScreen(
                             onNavigateToIngreso = {

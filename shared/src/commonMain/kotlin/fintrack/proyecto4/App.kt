@@ -47,6 +47,7 @@ import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
+import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
@@ -216,49 +217,57 @@ fun App(
                                 onSaved = { navController.replace(Screen.Movimientos) }
                             )
 
-                            is Screen.Movimientos -> MovimientosScreen()
-                            is Screen.Presupuestos -> PresupuestosScreen()
-                            is Screen.Metas -> MetasScreen()
+                        is Screen.Movimientos -> MovimientosScreen()
+                        is Screen.Presupuestos -> PresupuestosScreen(
+                            budgetRepository = budgetRepository,
+                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
+                        )
+                        is Screen.NuevoPresupuesto -> CreateBudgetScreen(
+                            budgetRepository = budgetRepository,
+                            onBack = { navController.goBack() },
+                            onSaved = { navController.replace(Screen.Presupuestos) }
+                        )
+                        is Screen.Metas -> MetasScreen()
 
-                            is Screen.Mas -> MasScreen()
-                            is Screen.Ajustes -> AjustesScreen(
-                                isDarkTheme = isDarkTheme,
-                                onToggleTheme = { isDarkTheme = !isDarkTheme },
-                                onBack = { navController.goBack() },
-                                onCerrarSesion = { navController.replace(Screen.Login) }
-                            )
+                        is Screen.Mas -> MasScreen()
+                        is Screen.Ajustes -> AjustesScreen(
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onBack = { navController.goBack() },
+                            onCerrarSesion = { navController.replace(Screen.Login) }
+                        )
 
-                            is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
-                            is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
-                                onBack = { navController.goBack() }
-                            )
-                            is Screen.CurrencyConverter -> CurrencyConverterScreen(
-                                onBack = { navController.goBack() }
-                            )
-                            is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
-                                onBack = { navController.goBack() },
-                                onSaved = { navController.goBack() }
-                            )
-                            is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
-                                title = "Liquidacion",
-                                description = "Aqui va la calculadora de liquidacion."
-                            )
-                            is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
-                                title = "Cesantia",
-                                description = "Aqui va la calculadora de cesantia."
-                            )
-                            is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
-                                title = "Vacaciones",
-                                description = "Aqui va la calculadora de vacaciones."
-                            )
-                            is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
-                                title = "Preaviso",
-                                description = "Aqui va la calculadora de preaviso."
-                            )
-                            is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
-                                title = "Historial",
-                                description = "Aqui va el historial de calculos guardados."
-                            )
+                        is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
+                        is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
+                            onBack = { navController.goBack() }
+                        )
+                        is Screen.CurrencyConverter -> CurrencyConverterScreen(
+                            onBack = { navController.goBack() }
+                        )
+                        is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
+                            onBack = { navController.goBack() },
+                            onSaved = { navController.goBack() }
+                        )
+                        is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
+                            title = "Liquidacion",
+                            description = "Aqui va la calculadora de liquidacion."
+                        )
+                        is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
+                            title = "Cesantia",
+                            description = "Aqui va la calculadora de cesantia."
+                        )
+                        is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
+                            title = "Vacaciones",
+                            description = "Aqui va la calculadora de vacaciones."
+                        )
+                        is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
+                            title = "Preaviso",
+                            description = "Aqui va la calculadora de preaviso."
+                        )
+                        is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
+                            title = "Historial",
+                            description = "Aqui va el historial de calculos guardados."
+                        )
                         }
                     }
                 }

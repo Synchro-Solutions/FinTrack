@@ -15,16 +15,19 @@ class FirestoreBudgetRepository : BudgetRepository {
 
     override suspend fun getBudgets(uid: String): List<BudgetItem> {
         return try {
-            col(uid).get().documents.map { doc ->
-                BudgetItem(
-                    id = doc.id,
-                    categoryName = doc.get("categoryName"),
-                    categoryIcon = doc.get("categoryIcon"),
-                    categoryColor = colorFromHex(doc.get("categoryColorHex")),
-                    spent = doc.get<Double>("spent"),
-                    limit = doc.get<Double>("limit"),
-                    period = doc.get("period")
-                )
+            col(uid).get().documents.mapNotNull { doc ->
+                runCatching {
+                    BudgetItem(
+                        id = doc.id,
+                        categoryName = doc.get("categoryName"),
+                        categoryIcon = doc.get("categoryIcon"),
+                        categoryColor = colorFromHex(doc.get("categoryColorHex")),
+                        spent = doc.get<Double>("spent"),
+                        limit = doc.get<Double>("limit"),
+                        period = doc.get("period"),
+                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f }
+                    )
+                }.getOrNull()
             }
         } catch (e: Exception) {
             emptyList()
@@ -40,7 +43,8 @@ class FirestoreBudgetRepository : BudgetRepository {
                 "categoryColorHex" to colorToHex(item.categoryColor),
                 "spent" to item.spent,
                 "limit" to item.limit,
-                "period" to item.period
+                "period" to item.period,
+                "alertThreshold" to item.alertThreshold.toDouble()
             )
         )
     }

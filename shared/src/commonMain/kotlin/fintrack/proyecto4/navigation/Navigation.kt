@@ -24,6 +24,7 @@ sealed interface Screen {
     data object Login : Screen
     data object Register : Screen
     data object InitialConfig : Screen
+    data object Onboarding : Screen
     data object Dashboard : Screen
     data object Movimientos : Screen
     data object Presupuestos : Screen

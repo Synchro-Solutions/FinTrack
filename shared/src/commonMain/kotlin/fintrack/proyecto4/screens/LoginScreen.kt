@@ -50,7 +50,10 @@ import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun LoginScreen(authRepository: AuthRepository) {
+fun LoginScreen(
+    authRepository: AuthRepository,
+    onLoginSuccess: () -> Unit = {}
+) {
     val navController = LocalNavController.current
     val viewModel = viewModel { LoginViewModel(authRepository) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,8 +67,8 @@ fun LoginScreen(authRepository: AuthRepository) {
 
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.Success) {
-            navController.replace(Screen.Dashboard)
             viewModel.resetState()
+            onLoginSuccess()
         }
     }
 

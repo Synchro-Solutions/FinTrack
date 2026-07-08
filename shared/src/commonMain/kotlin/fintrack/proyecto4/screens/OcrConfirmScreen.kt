@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.TransactionFormViewModel
 import fintrack.proyecto4.transaction.TransactionType
@@ -44,10 +45,11 @@ fun OcrConfirmScreen(
         viewModel.prefillFromOcr(result)
     }
 
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         ScreenHeader(title = "Confirmar transacción OCR", onBack = onCancel)
 
@@ -70,7 +72,7 @@ fun OcrConfirmScreen(
                 placeholder = {
                     Text(
                         text = "Dato no detectado",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
@@ -80,7 +82,7 @@ fun OcrConfirmScreen(
                     .padding(top = 6.dp),
                 shape = RoundedCornerShape(16.dp),
                 textStyle = MaterialTheme.typography.titleMedium.copy(
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontWeight = FontWeight.Bold
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -106,7 +108,7 @@ fun OcrConfirmScreen(
                 placeholder = {
                     Text(
                         text = "Dato no detectado",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontSize = 13.sp,
                         fontFamily = montserratFamily()
                     )
@@ -118,7 +120,7 @@ fun OcrConfirmScreen(
                 shape = RoundedCornerShape(16.dp),
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 13.sp,
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontFamily = montserratFamily()
                 ),
                 singleLine = true,
@@ -129,7 +131,7 @@ fun OcrConfirmScreen(
 
             Text(
                 text = "CATEGORÍA",
-                color = Color(0xFF58708F),
+                color = colors.textSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = montserratFamily()
@@ -181,14 +183,14 @@ fun OcrConfirmScreen(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(14.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                         .clickable(onClick = onCancel),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancelar",
-                        tint = FinTrackColors.TextSecondary
+                        tint = colors.textSecondary
                     )
                 }
             }
@@ -219,7 +221,7 @@ fun OcrConfirmScreen(
             dismissButton = {
                 TextButton(
                     onClick = { showDatePicker = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = FinTrackColors.TextSecondary)
+                    colors = ButtonDefaults.textButtonColors(contentColor = colors.textSecondary)
                 ) {
                     Text("Cancelar")
                 }
@@ -258,10 +260,11 @@ private fun WarningBanner() {
 
 @Composable
 private fun OcrFieldLabel(text: String) {
+    val colors = LocalAppColors.current
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = text,
-            color = Color(0xFF58708F),
+            color = colors.textSecondary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFamily()

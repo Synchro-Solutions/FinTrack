@@ -33,6 +33,7 @@ import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 
 
@@ -45,11 +46,12 @@ fun OcrAssistantScreen(
     onReviewData: (OcrResult) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val colors = LocalAppColors.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         ScreenHeader(title = "Asistente OCR", onBack = onBack)
 
@@ -79,7 +81,7 @@ fun OcrAssistantScreen(
 
             Text(
                 text = "Escanear comprobante",
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = montserratFamily(),
@@ -90,7 +92,7 @@ fun OcrAssistantScreen(
 
             Text(
                 text = "Toma o sube una foto de tu factura, recibo o comprobante de pago",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 14.sp,
                 fontFamily = montserratFamily(),
                 textAlign = TextAlign.Center
@@ -124,14 +126,15 @@ private fun IdleContent(
     onTakePhotoClick: () -> Unit,
     onPickImageClick: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(4f / 3f)
                 .clip(RoundedCornerShape(20.dp))
-                .background(FinTrackColors.SurfaceSecondary)
-                .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(20.dp))
+                .background(colors.surfaceSecondary)
+                .border(1.dp, colors.border, RoundedCornerShape(20.dp))
                 .clickable(onClick = onTakePhotoClick),
             contentAlignment = Alignment.Center
         ) {
@@ -139,20 +142,20 @@ private fun IdleContent(
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = null,
-                    tint = FinTrackColors.TextSecondary,
+                    tint = colors.textSecondary,
                     modifier = Modifier.size(48.dp)
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = "Toca para tomar foto",
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = montserratFamily()
                 )
                 Text(
                     text = "o selecciona una imagen",
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 12.sp,
                     fontFamily = montserratFamily()
                 )
@@ -187,8 +190,8 @@ private fun IdleContent(
                 onClick = onPickImageClick,
                 modifier = Modifier.weight(1f).height(54.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, FinTrackColors.BorderDefault),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinTrackColors.TextPrimary)
+                border = BorderStroke(1.dp, colors.border),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary)
             ) {
                 Icon(
                     imageVector = Icons.Default.Description,
@@ -208,6 +211,7 @@ private fun IdleContent(
 
 @Composable
 private fun ProcessingContent() {
+    val colors = LocalAppColors.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(top = 48.dp)
@@ -219,14 +223,14 @@ private fun ProcessingContent() {
         Spacer(Modifier.height(20.dp))
         Text(
             text = "Procesando imagen...",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFamily()
         )
         Spacer(Modifier.height(4.dp))
         Text(
             text = "Detectando montos, fechas y comercio",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 13.sp,
             fontFamily = montserratFamily()
         )

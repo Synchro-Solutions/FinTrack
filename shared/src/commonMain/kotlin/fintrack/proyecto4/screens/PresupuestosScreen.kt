@@ -24,6 +24,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,10 @@ fun PresupuestosScreen(
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadBudgets()
+    }
 
     Scaffold(
         containerColor = FinTrackColors.BgApp,

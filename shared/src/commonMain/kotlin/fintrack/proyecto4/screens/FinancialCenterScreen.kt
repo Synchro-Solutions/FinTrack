@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 
 internal data class FinancialMenuItem(
@@ -63,13 +64,14 @@ internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
 fun FinancialCenterScreen(historyCount: Int = 0) {
     val navController = LocalNavController.current
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     val menuItems = financialMenuItems()
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         val compact = maxWidth < 360.dp
         val horizontalPadding = if (compact) 12.dp else 16.dp
@@ -169,14 +171,15 @@ private fun FinancialCard(
     onClick: () -> Unit
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, FinTrackColors.BorderDefault),
-        colors = CardDefaults.cardColors(containerColor = FinTrackColors.SurfacePrimary),
+        border = BorderStroke(1.dp, colors.border),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -220,7 +223,7 @@ private fun FinancialCard(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = FinTrackColors.TextSecondary.copy(alpha = 0.7f),
+                        tint = colors.textSecondary.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -228,7 +231,7 @@ private fun FinancialCard(
 
             Text(
                 text = item.title,
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 17.sp,
                 fontFamily = montserrat,
@@ -239,7 +242,7 @@ private fun FinancialCard(
 
             Text(
                 text = item.description,
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 12.sp,
                 lineHeight = 17.sp,
                 fontFamily = montserrat,

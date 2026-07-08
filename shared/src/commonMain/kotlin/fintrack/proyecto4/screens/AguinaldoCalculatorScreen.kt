@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 
@@ -74,6 +75,7 @@ private object AguinaldoIntroState {
 @Composable
 fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
     val amounts = remember { aguinaldoMonths.map { "" }.toMutableStateList() }
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
@@ -88,7 +90,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         ScreenHeader(
             title = "Calculadora de Aguinaldo",
@@ -181,7 +183,7 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                     if (!ultraCompactLayout) {
                         Text(
                             text = "Estimado. El aguinaldo real puede incluir otras compensaciones salariales.",
-                            color = FinTrackColors.TextSecondary,
+                            color = colors.textSecondary,
                             fontFamily = montserrat,
                             fontSize = if (compactLayout) 9.sp else if (largeTextMode) 11.sp else 10.sp,
                             textAlign = TextAlign.Center,
@@ -213,6 +215,7 @@ private fun SalaryRow(
     compactLayout: Boolean,
     ultraCompactLayout: Boolean
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,7 +234,7 @@ private fun SalaryRow(
     ) {
         Text(
             text = monthLabel,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserrat,
             fontSize = if (ultraCompactLayout) 12.sp else if (compactLayout) 13.sp else if (largeTextMode) 15.sp else 14.sp,
             modifier = Modifier.width(
@@ -266,6 +269,7 @@ private fun AmountInput(
     ultraCompactLayout: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = modifier
             .height(
@@ -279,8 +283,8 @@ private fun AmountInput(
                 }
             )
             .clip(RoundedCornerShape(12.dp))
-            .background(FinTrackColors.SurfaceSecondary)
-            .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(12.dp)),
+            .background(colors.surfaceSecondary)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.CenterStart
     ) {
         BasicTextField(
@@ -290,7 +294,7 @@ private fun AmountInput(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             visualTransformation = ThousandSeparatorVisualTransformation,
             textStyle = TextStyle(
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontFamily = montserrat,
                 fontSize = if (ultraCompactLayout) 13.sp else if (compactLayout) 15.sp else if (largeTextMode) 18.sp else 17.sp,
                 fontWeight = FontWeight.SemiBold
@@ -382,11 +386,12 @@ private fun SummaryCard(
     ultraCompactLayout: Boolean,
     onCopy: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = FinTrackColors.SurfacePrimary),
-        border = androidx.compose.foundation.BorderStroke(1.dp, FinTrackColors.BorderDefault)
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = if (ultraCompactLayout) 4.dp else if (compactLayout) 5.dp else 7.dp)) {
             Row(
@@ -405,13 +410,13 @@ private fun SummaryCard(
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copiar aguinaldo",
-                        tint = FinTrackColors.TextSecondary,
+                        tint = colors.textSecondary,
                         modifier = Modifier.height(14.dp)
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = "Copiar",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = if (ultraCompactLayout) 10.sp else if (compactLayout) 11.sp else if (largeTextMode) 13.sp else 12.sp
                     )
@@ -422,7 +427,7 @@ private fun SummaryCard(
 
             Text(
                 text = formatColones(estimatedAguinaldo),
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontFamily = montserrat,
                 fontSize = if (ultraCompactLayout) 19.sp else if (compactLayout) 23.sp else if (largeTextMode) 32.sp else 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -433,7 +438,7 @@ private fun SummaryCard(
             if (!ultraCompactLayout) {
                 Text(
                     text = "Cálculo: ${formatColones(totalSalary)} ÷ 12",
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontFamily = montserrat,
                     fontSize = if (compactLayout) 9.sp else if (largeTextMode) 11.sp else 10.sp,
                     fontWeight = FontWeight.Medium
@@ -452,6 +457,7 @@ private fun SalaryTotalRow(
     ultraCompactLayout: Boolean,
     onCopy: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -461,7 +467,7 @@ private fun SalaryTotalRow(
     ) {
         Text(
             text = "Suma de salarios: ${formatColones(totalSalary)}",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontFamily = montserrat,
             fontSize = if (ultraCompactLayout) 11.sp else if (compactLayout) 12.sp else if (largeTextMode) 15.sp else 14.sp,
             fontWeight = FontWeight.Medium
@@ -470,13 +476,13 @@ private fun SalaryTotalRow(
             Icon(
                 imageVector = Icons.Default.ContentCopy,
                 contentDescription = "Copiar suma de salarios",
-                tint = FinTrackColors.TextSecondary,
+                tint = colors.textSecondary,
                 modifier = Modifier.height(14.dp)
             )
             Spacer(Modifier.width(6.dp))
             Text(
                 text = "Copiar",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontFamily = montserrat,
                 fontSize = if (ultraCompactLayout) 10.sp else if (compactLayout) 11.sp else if (largeTextMode) 13.sp else 12.sp
             )
@@ -487,11 +493,12 @@ private fun SalaryTotalRow(
 @Composable
 private fun AguinaldoIntroDialog(onDismiss: () -> Unit) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FinTrackColors.SurfacePrimary,
-        titleContentColor = FinTrackColors.TextPrimary,
-        textContentColor = FinTrackColors.TextSecondary,
+        containerColor = colors.surface,
+        titleContentColor = colors.textPrimary,
+        textContentColor = colors.textSecondary,
         title = {
             Text(
                 text = "Como usar esta calculadora",

@@ -45,6 +45,7 @@ import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.BudgetStatus
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.util.formatColones
 
 @Composable
@@ -52,6 +53,7 @@ fun PresupuestosScreen(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     onNuevoPresupuesto: () -> Unit = {}
 ) {
+    val colors = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -61,7 +63,7 @@ fun PresupuestosScreen(
     }
 
     Scaffold(
-        containerColor = FinTrackColors.BgApp,
+        containerColor = colors.bg,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNuevoPresupuesto,
@@ -87,7 +89,7 @@ fun PresupuestosScreen(
 
             Text(
                 text = "Presupuestos",
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -111,6 +113,7 @@ fun PresupuestosScreen(
 
 @Composable
 private fun SummaryRow(state: BudgetListState) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -118,7 +121,7 @@ private fun SummaryRow(state: BudgetListState) {
         SummaryCard(
             label = "Límite total",
             amount = state.totalLimit,
-            amountColor = FinTrackColors.TextPrimary,
+            amountColor = colors.textPrimary,
             modifier = Modifier.weight(1f)
         )
         SummaryCard(
@@ -143,16 +146,17 @@ private fun SummaryCard(
     amountColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = label,
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium
         )
@@ -183,6 +187,7 @@ private fun BudgetList(budgets: List<BudgetItem>, modifier: Modifier = Modifier)
 
 @Composable
 private fun BudgetCard(budget: BudgetItem) {
+    val colors = LocalAppColors.current
     val progressColor = when (budget.status) {
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING  -> FinTrackColors.WarningColor
@@ -203,7 +208,7 @@ private fun BudgetCard(budget: BudgetItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(
@@ -225,13 +230,13 @@ private fun BudgetCard(budget: BudgetItem) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = budget.categoryName,
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = budget.period,
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 12.sp
                 )
             }
@@ -260,7 +265,7 @@ private fun BudgetCard(budget: BudgetItem) {
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp)),
             color = progressColor,
-            trackColor = FinTrackColors.SurfaceSecondary,
+            trackColor = colors.surfaceSecondary,
             strokeCap = StrokeCap.Round
         )
 
@@ -272,13 +277,13 @@ private fun BudgetCard(budget: BudgetItem) {
         ) {
             Text(
                 text = "${formatColones(budget.spent.toLong())} gastados",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 12.sp
             )
             Text(
                 text = "${formatColones(budget.remaining.toLong())} restante",
                 color = if (budget.status == BudgetStatus.OK) FinTrackColors.GreenPrimary
-                        else FinTrackColors.TextSecondary,
+                        else colors.textSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -290,6 +295,7 @@ private fun BudgetCard(budget: BudgetItem) {
 
 @Composable
 private fun EmptyBudgetState(modifier: Modifier = Modifier) {
+    val colors = LocalAppColors.current
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -299,14 +305,14 @@ private fun EmptyBudgetState(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(20.dp))
         Text(
             text = "Sin presupuestos aún",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(8.dp))
         Text(
             text = "No tienes presupuestos.\nToca + para crear uno.",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 14.sp,
             lineHeight = 20.sp,
             textAlign = TextAlign.Center

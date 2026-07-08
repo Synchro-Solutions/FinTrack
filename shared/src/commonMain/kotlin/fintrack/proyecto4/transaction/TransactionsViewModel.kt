@@ -35,10 +35,38 @@ class TransactionsViewModel(
     }
 
     fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(searchQuery = query, visibleCount = TransactionsUiState.PageSize) }
     }
 
     fun updateFilter(filter: TransactionsFilter) {
-        _uiState.update { it.copy(filter = filter) }
+        _uiState.update { it.copy(filter = filter, visibleCount = TransactionsUiState.PageSize) }
+    }
+
+    fun updateDateScope(scope: DateScope) {
+        _uiState.update { it.copy(dateScope = scope, visibleCount = TransactionsUiState.PageSize) }
+    }
+
+    fun updateCategoryFilter(category: String?) {
+        _uiState.update { it.copy(categoryFilter = category, visibleCount = TransactionsUiState.PageSize) }
+    }
+
+    fun updatePaymentMethodFilter(method: PaymentMethod?) {
+        _uiState.update { it.copy(paymentMethodFilter = method, visibleCount = TransactionsUiState.PageSize) }
+    }
+
+    fun clearAdvancedFilters() {
+        _uiState.update {
+            it.copy(
+                dateScope = DateScope.ALL,
+                categoryFilter = null,
+                paymentMethodFilter = null,
+                visibleCount = TransactionsUiState.PageSize
+            )
+        }
+    }
+
+    /** US-13: pagina de a 20 resultados; cada llamada revela 20 más de la lista filtrada. */
+    fun loadMore() {
+        _uiState.update { it.copy(visibleCount = it.visibleCount + TransactionsUiState.PageSize) }
     }
 }

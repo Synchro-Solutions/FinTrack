@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.screens.common.ScreenHeader
+import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
@@ -33,7 +34,11 @@ import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionFormViewModel
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+/** Cuánto se muestra el Snackbar de éxito antes de navegar fuera de la pantalla. */
+private const val SuccessSnackbarDelayMillis = 900L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,13 +56,17 @@ fun OcrConfirmScreen(
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
     val colors = LocalAppColors.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(result) {
         viewModel.prefillFromOcr(result)
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -91,7 +100,8 @@ fun OcrConfirmScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-                    .padding(top = 6.dp),
+                    .padding(top = 6.dp)
+                    .then(missingFieldBorder(isMissing = state.amount.isBlank())),
                 shape = RoundedCornerShape(16.dp),
                 textStyle = MaterialTheme.typography.titleMedium.copy(
                     color = colors.textPrimary,
@@ -108,7 +118,8 @@ fun OcrConfirmScreen(
             DateField(
                 value = state.date,
                 onClick = { showDatePicker = true },
-                placeholder = "Dato no detectado"
+                placeholder = "Dato no detectado",
+                isMissing = state.date.isBlank()
             )
 
             Spacer(Modifier.height(18.dp))
@@ -128,7 +139,8 @@ fun OcrConfirmScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp)
-                    .padding(top = 6.dp),
+                    .padding(top = 6.dp)
+                    .then(missingFieldBorder(isMissing = state.description.isBlank())),
                 shape = RoundedCornerShape(16.dp),
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 13.sp,
@@ -195,8 +207,21 @@ fun OcrConfirmScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = { viewModel.saveTransaction(onSaved) },
-                    enabled = state.isValid && state.paymentMethod != null,
+                    onClick = {
+                        viewModel.saveTransaction {
+                            scope.launch {
+                                launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Movimiento registrado exitosamente",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                                delay(SuccessSnackbarDelayMillis)
+                                onSaved()
+                            }
+                        }
+                    },
+                    enabled = state.isValid && state.paymentMethod != null && !isSaving,
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -204,12 +229,20 @@ fun OcrConfirmScreen(
                         disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
                     )
                 ) {
-                    Text(
-                        text = "Confirmar y guardar",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = montserratFamily()
-                    )
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Confirmar y guardar",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = montserratFamily()
+                        )
+                    }
                 }
 
                 Box(
@@ -230,9 +263,18 @@ fun OcrConfirmScreen(
         }
     }
 
+    SuccessSnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+    )
+    }
+
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = parseDateToEpochMillis(state.date)
+            initialSelectedDateMillis = parseDateToEpochMillis(state.date),
+            selectableDates = NotFutureSelectableDates
         )
 
         DatePickerDialog(
@@ -295,6 +337,19 @@ private fun WarningBanner() {
         )
     }
 }
+
+/**
+ * US-17/US-18: OcrResult no trae un score de confianza por campo (solo detecta o no),
+ * así que se usa "campo vacío tras el prefill" como equivalente práctico de "confianza
+ * baja" y se resalta con borde de advertencia para que el usuario lo revise antes de
+ * confirmar. El borde desaparece en cuanto el usuario completa el campo.
+ */
+private fun missingFieldBorder(isMissing: Boolean): Modifier =
+    if (isMissing) {
+        Modifier.border(1.5.dp, FinTrackColors.WarningColor, RoundedCornerShape(16.dp))
+    } else {
+        Modifier
+    }
 
 @Composable
 private fun OcrFieldLabel(text: String) {

@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 private const val UltimosMovimientosCount = 4
 
@@ -34,30 +38,38 @@ class DashboardViewModel(
     fun loadDashboard() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            // TODO: cargar KPIs/gráfica/presupuestos/meta reales desde repositorio
-            val ultimosMovimientos = try {
+            // TODO: cargar gráfica/presupuestos/meta reales desde repositorio
+            val transactions = try {
                 transactionRepository.getTransactions(uid)
-                    .sortedByDescending { it.createdAt }
-                    .take(UltimosMovimientosCount)
-                    .map { it.toMovimientoItem() }
             } catch (e: Exception) {
                 emptyList()
             }
+
+            val ingresos = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+            val gastos = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            val balance = ingresos - gastos
+            val ahorroPercent = if (ingresos > 0) ((balance * 100) / ingresos).toInt() else 0
+
+            val ultimosMovimientos = transactions
+                .sortedByDescending { it.createdAt }
+                .take(UltimosMovimientosCount)
+                .map { it.toMovimientoItem() }
+
             _uiState.update { state ->
                 state.copy(
                     isLoading = false,
                     userName = "Ana Vargas",
-                    mesActual = "Junio 2024",
+                    mesActual = currentMonthLabel(),
                     kpis = KpiData(
-                        ingresos = 1_000_000,
-                        gastos = 239_000,
-                        balance = 781_000,
-                        ahorroPercent = 77
+                        ingresos = ingresos,
+                        gastos = gastos,
+                        balance = balance,
+                        ahorroPercent = ahorroPercent
                     ),
                     chartData = sampleChartData(),
                     presupuestos = samplePresupuestos(),
                     metaPrincipal = sampleMeta(),
-                    consejoFinanciero = "Tu tasa de ahorro del 77% supera el objetivo del 20%. Mantén el ritmo y alcanzarás tu fondo de emergencia en 3 meses.",
+                    consejoFinanciero = "Sigue registrando tus movimientos para llevar un control preciso de tu ahorro mensual.",
                     ultimosMovimientos = ultimosMovimientos,
                     notificationCount = 2,
                     ocrPendingCount = 0
@@ -106,6 +118,27 @@ class DashboardViewModel(
 
     fun verTodasMetas() {
         // TODO: navegar a lista completa de metas
+    }
+
+    /** "Saldo disponible — {mes actual}" en el Dashboard: siempre el mes/año de hoy. */
+    private fun currentMonthLabel(): String {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        return "${today.month.toSpanishLabel()} ${today.year}"
+    }
+
+    private fun Month.toSpanishLabel(): String = when (this) {
+        Month.JANUARY -> "Enero"
+        Month.FEBRUARY -> "Febrero"
+        Month.MARCH -> "Marzo"
+        Month.APRIL -> "Abril"
+        Month.MAY -> "Mayo"
+        Month.JUNE -> "Junio"
+        Month.JULY -> "Julio"
+        Month.AUGUST -> "Agosto"
+        Month.SEPTEMBER -> "Septiembre"
+        Month.OCTOBER -> "Octubre"
+        Month.NOVEMBER -> "Noviembre"
+        Month.DECEMBER -> "Diciembre"
     }
 
     // ── Datos de muestra para desarrollo ────────────────────────────────────

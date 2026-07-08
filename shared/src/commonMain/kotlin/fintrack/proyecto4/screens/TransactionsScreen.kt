@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingDown
@@ -19,10 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fintrack.proyecto4.auth.AuthClient
@@ -30,7 +36,9 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.DateScope
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
@@ -55,6 +63,7 @@ fun TransactionsScreen(
     val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
+    var showFilters by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -68,10 +77,19 @@ fun TransactionsScreen(
         TransactionsHeader(onAddClick = onAddClick)
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            SearchField(
-                value = state.searchQuery,
-                onValueChange = viewModel::updateSearchQuery
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SearchField(
+                        value = state.searchQuery,
+                        onValueChange = viewModel::updateSearchQuery
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                FiltersButton(
+                    activeCount = state.activeFilterCount,
+                    onClick = { showFilters = true }
+                )
+            }
 
             Spacer(Modifier.height(14.dp))
 
@@ -90,9 +108,10 @@ fun TransactionsScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
             ) {
-                items(state.filteredTransactions, key = { it.id }) { transaction ->
+                items(state.pagedTransactions, key = { it.id }) { transaction ->
                     TransactionRow(
                         transaction = transaction,
+                        searchQuery = state.searchQuery,
                         onClick = { onTransactionClick(transaction) }
                     )
                     HorizontalDivider(
@@ -100,9 +119,23 @@ fun TransactionsScreen(
                         thickness = 0.5.dp
                     )
                 }
+                if (state.hasMoreToLoad) {
+                    item { LoadMoreButton(onClick = viewModel::loadMore) }
+                }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+
+    if (showFilters) {
+        FiltersDialog(
+            state = state,
+            onDateScopeSelected = viewModel::updateDateScope,
+            onCategorySelected = viewModel::updateCategoryFilter,
+            onPaymentMethodSelected = viewModel::updatePaymentMethodFilter,
+            onClear = viewModel::clearAdvancedFilters,
+            onDismiss = { showFilters = false }
+        )
     }
 }
 
@@ -152,7 +185,7 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
         onValueChange = onValueChange,
         placeholder = {
             Text(
-                text = "Buscar movimiento...",
+                text = "Buscar movimiento o monto...",
                 color = colors.textSecondary,
                 fontSize = 14.sp,
                 fontFamily = montserratFamily()
@@ -176,6 +209,35 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
+private fun FiltersButton(activeCount: Int, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
+    BadgedBox(
+        badge = {
+            if (activeCount > 0) {
+                Badge(containerColor = FinTrackColors.GreenPrimary) {
+                    Text("$activeCount", color = Color.White, fontSize = 9.sp)
+                }
+            }
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(54.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.subtleSurface)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.FilterList,
+                contentDescription = "Filtros",
+                tint = colors.textPrimary
+            )
+        }
+    }
+}
+
+@Composable
 private fun FilterRow(selected: TransactionsFilter, onFilterSelected: (TransactionsFilter) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SelectableChip(
@@ -196,8 +258,142 @@ private fun FilterRow(selected: TransactionsFilter, onFilterSelected: (Transacti
     }
 }
 
+/**
+ * US-13: filtros avanzados (rango de fechas, categoría, método de pago) separados de los
+ * chips Todos/Ingresos/Gastos para no saturar la barra principal del historial.
+ */
 @Composable
-private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
+private fun FiltersDialog(
+    state: fintrack.proyecto4.transaction.TransactionsUiState,
+    onDateScopeSelected: (DateScope) -> Unit,
+    onCategorySelected: (String?) -> Unit,
+    onPaymentMethodSelected: (PaymentMethod?) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surface)
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "Filtros",
+                color = colors.textPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+
+            Spacer(Modifier.height(18.dp))
+            FilterSectionLabel("RANGO DE FECHAS")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SelectableChip(
+                    text = "Este mes",
+                    selected = state.dateScope == DateScope.CURRENT_MONTH,
+                    onClick = { onDateScopeSelected(DateScope.CURRENT_MONTH) }
+                )
+                SelectableChip(
+                    text = "Todo el historial",
+                    selected = state.dateScope == DateScope.ALL,
+                    onClick = { onDateScopeSelected(DateScope.ALL) }
+                )
+            }
+
+            if (state.availableCategories.isNotEmpty()) {
+                Spacer(Modifier.height(18.dp))
+                FilterSectionLabel("CATEGORÍA")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SelectableChip(
+                        text = "Todas",
+                        selected = state.categoryFilter == null,
+                        onClick = { onCategorySelected(null) }
+                    )
+                    state.availableCategories.forEach { category ->
+                        SelectableChip(
+                            text = category,
+                            selected = state.categoryFilter == category,
+                            onClick = { onCategorySelected(category) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(18.dp))
+            FilterSectionLabel("MÉTODO DE PAGO")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SelectableChip(
+                    text = "Todos",
+                    selected = state.paymentMethodFilter == null,
+                    onClick = { onPaymentMethodSelected(null) }
+                )
+                PaymentMethod.values().forEach { method ->
+                    SelectableChip(
+                        text = method.label,
+                        selected = state.paymentMethodFilter == method,
+                        onClick = { onPaymentMethodSelected(method) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(22.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TextButton(onClick = onClear) {
+                    Text("Limpiar filtros", color = colors.textSecondary, fontFamily = montserrat)
+                }
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                ) {
+                    Text("Cerrar", color = Color.White, fontFamily = montserrat)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterSectionLabel(text: String) {
+    Text(
+        text = text,
+        color = Color(0xFF58708F),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        fontFamily = montserratFamily()
+    )
+}
+
+@Composable
+private fun LoadMoreButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Cargar más",
+            color = FinTrackColors.GreenPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = montserratFamily()
+        )
+    }
+}
+
+@Composable
+private fun TransactionRow(transaction: Transaction, searchQuery: String, onClick: () -> Unit) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val isIncome = transaction.type == TransactionType.INCOME
@@ -227,7 +423,7 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = transaction.description,
+                text = highlightedText(transaction.description, searchQuery),
                 color = colors.textPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -235,18 +431,27 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = buildString {
-                    append(transaction.category)
-                    transaction.paymentMethod?.let { append(" · ${it.label}") }
-                    append(" · ${transaction.date}")
-                },
-                color = colors.textSecondary,
-                fontSize = 11.sp,
-                fontFamily = montserrat,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row {
+                Text(
+                    text = highlightedText(transaction.category, searchQuery),
+                    color = colors.textSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = montserrat,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = buildString {
+                        transaction.paymentMethod?.let { append(" · ${it.label}") }
+                        append(" · ${transaction.date}")
+                    },
+                    color = colors.textSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = montserrat,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Box(
             modifier = Modifier
@@ -262,6 +467,21 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                 fontFamily = montserrat
             )
         }
+    }
+}
+
+/** US-50: resalta la subcadena de [text] que coincide con [query] (búsqueda por texto). */
+private fun highlightedText(text: String, query: String): AnnotatedString {
+    val trimmed = query.trim()
+    if (trimmed.isBlank()) return AnnotatedString(text)
+    val index = text.indexOf(trimmed, ignoreCase = true)
+    if (index < 0) return AnnotatedString(text)
+    return buildAnnotatedString {
+        append(text.substring(0, index))
+        withStyle(SpanStyle(color = FinTrackColors.GreenPrimary, fontWeight = FontWeight.Bold)) {
+            append(text.substring(index, index + trimmed.length))
+        }
+        append(text.substring(index + trimmed.length))
     }
 }
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.ScreenHeader
+import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
@@ -28,7 +29,11 @@ import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import fintrack.proyecto4.util.formatColones
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** Cuánto se muestra el Snackbar de éxito antes de navegar fuera de la pantalla. */
+private const val SuccessSnackbarDelayMillis = 900L
 
 /**
  * Ver y editar detalle de una transacción (US-14). La transacción llega completa desde la
@@ -49,6 +54,7 @@ fun TransactionDetailScreen(
     var isDeleting by remember { mutableStateOf(false) }
     var deleteError by remember { mutableStateOf<String?>(null) }
     val colors = LocalAppColors.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val accentColor = if (transaction.type == TransactionType.INCOME) {
         FinTrackColors.GreenPrimary
@@ -56,6 +62,7 @@ fun TransactionDetailScreen(
         FinTrackColors.ErrorColor
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier.fillMaxSize().background(colors.bg)
     ) {
@@ -175,6 +182,14 @@ fun TransactionDetailScreen(
         }
     }
 
+    SuccessSnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+    )
+    }
+
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -189,6 +204,13 @@ fun TransactionDetailScreen(
                             try {
                                 transactionRepository.deleteTransaction(uid, transaction.id)
                                 isDeleting = false
+                                launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Movimiento eliminado exitosamente",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                                delay(SuccessSnackbarDelayMillis)
                                 onDeleted()
                             } catch (e: Exception) {
                                 isDeleting = false

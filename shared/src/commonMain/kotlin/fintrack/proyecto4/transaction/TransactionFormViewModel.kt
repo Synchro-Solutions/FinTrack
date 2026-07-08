@@ -48,7 +48,7 @@ class TransactionFormViewModel(
     }
 
     fun updateDescription(description: String) {
-        _uiState.update { it.copy(description = description) }
+        _uiState.update { it.copy(description = description.take(MaxDescriptionLength)) }
     }
 
     fun selectCategory(category: String) {

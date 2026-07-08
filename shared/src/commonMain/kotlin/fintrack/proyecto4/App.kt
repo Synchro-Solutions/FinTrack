@@ -32,13 +32,13 @@ import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
-import fintrack.proyecto4.screens.RegisterScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.RegisterScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.transaction.TransactionType
@@ -90,12 +90,6 @@ fun App(
         }
 
         CompositionLocalProvider(LocalNavController provides navController) {
-            NavHost(navController = navController) { screen ->
-                when (screen) {
-                    is Screen.Login -> LoginScreen(authRepository)
-                    is Screen.Register -> RegisterScreen(authRepository)
-                    is Screen.InitialConfig -> Box(Modifier.fillMaxSize().background(Color.Black)) // Placeholder
-                    is Screen.Dashboard -> DashboardScreen()
             Scaffold(
                 containerColor = Color(0xFF0F172A),
                 bottomBar = {
@@ -116,6 +110,12 @@ fun App(
                 ) { screen ->
                     when (screen) {
                         is Screen.Login -> LoginScreen(authRepository)
+                        is Screen.Register -> RegisterScreen(authRepository)
+                        is Screen.InitialConfig -> Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                        )
 
                         is Screen.Dashboard -> DashboardScreen(
                             onNavigateToIngreso = {

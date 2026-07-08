@@ -13,6 +13,7 @@ import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
+import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
 import java.io.File
 import java.io.FileOutputStream
 
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
     // Debe registrarse durante la inicialización de la Activity (antes de STARTED),
     // por eso vive como propiedad y no dentro de un Composable.
     private var onImagePicked: ((String?) -> Unit)? = null
+    private var onProfilePhotoPicked: ((String?) -> Unit)? = null
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -32,17 +34,27 @@ class MainActivity : ComponentActivity() {
         callback?.invoke(uri?.let { copyUriToOcrFile(it) })
     }
 
+    private val pickProfilePhotoLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val callback = onProfilePhotoPicked
+        onProfilePhotoPicked = null
+        callback?.invoke(uri?.let { copyUriToOcrFile(it) })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
+        val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
 
         setContent {
             App(
                 authRepository = authRepository,
+                onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
@@ -50,6 +62,12 @@ class MainActivity : ComponentActivity() {
                 onPickReceiptImage = { onPicked ->
                     onImagePicked = onPicked
                     pickImageLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                onPickProfilePhoto = { onPicked ->
+                    onProfilePhotoPicked = onPicked
+                    pickProfilePhotoLauncher.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
                 },

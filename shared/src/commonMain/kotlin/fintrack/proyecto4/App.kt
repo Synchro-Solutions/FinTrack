@@ -189,6 +189,34 @@ fun App(
                                 }
                             )
 
+                            is Screen.OcrAssistant -> OcrAssistantScreen(
+                                viewModel = ocrAssistantViewModel,
+                                onBack = { navController.goBack() },
+                                onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
+                                onPickImageClick = {
+                                    onPickReceiptImage { path ->
+                                        if (path != null) ocrAssistantViewModel.processImage(path)
+                                    }
+                                },
+                                onReviewData = { result ->
+                                    navController.navigate(Screen.OcrConfirm(result))
+                                }
+                            )
+
+                            is Screen.OcrCamera -> ocrCameraContent(
+                                { path ->
+                                    ocrAssistantViewModel.processImage(path)
+                                    navController.goBack()
+                                },
+                                { navController.goBack() }
+                            )
+
+                            is Screen.OcrConfirm -> OcrConfirmScreen(
+                                result = screen.result,
+                                onCancel = { navController.popToRoot() },
+                                onSaved = { navController.replace(Screen.Movimientos) }
+                            )
+
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,

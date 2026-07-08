@@ -40,3 +40,13 @@ val LightAppColors = AppColors(
 )
 
 val LocalAppColors = compositionLocalOf { DarkAppColors }
+
+/**
+ * Superficie "gris" con más contraste que [AppColors.surfaceSecondary] frente a [AppColors.bg].
+ * En modo oscuro ambos ya se distinguen bien, pero en modo claro son casi idénticos
+ * (surfaceSecondary 0xFFEFF4F8 vs bg 0xFFF1F5F9), por lo que campos de texto y badges se
+ * veían "planos"/invisibles. Fix temporal: en modo claro usa el mismo gris ya usado por las
+ * chips de categoría/método de pago (0xFFE1E7F0), que sí tiene contraste notorio.
+ */
+val AppColors.subtleSurface: Color
+    get() = if (isDark) surfaceSecondary else Color(0xFFE1E7F0)

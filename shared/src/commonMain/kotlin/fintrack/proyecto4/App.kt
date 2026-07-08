@@ -43,18 +43,21 @@ import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
-import fintrack.proyecto4.screens.MovimientosScreen
+import fintrack.proyecto4.screens.TransactionsScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
@@ -74,11 +77,22 @@ private val LightColorScheme = lightColorScheme(
     onSurface    = LightAppColors.textPrimary
 )
 
+/**
+ * @param ocrCameraContent Contenido de la pantalla de captura en vivo (CameraX en Android).
+ *   Recibe un callback con la ruta del archivo capturado y otro para cancelar.
+ *   Se inyecta desde el entry point de cada plataforma (ver androidApp/MainActivity.kt);
+ *   por defecto muestra un placeholder para plataformas donde la cámara no está integrada.
+ * @param onPickReceiptImage Lanza el selector de imágenes de la plataforma; invoca el callback
+ *   recibido con la ruta del archivo elegido, o null si el usuario canceló.
+ * @param onRecognizeReceiptText Ejecuta OCR (ML Kit en Android) sobre la imagen indicada y
+ *   retorna el texto plano detectado.
+ */
 @Composable
 fun App(
     authRepository: AuthRepository,
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -170,54 +184,90 @@ fun App(
                             }
 
                             is Screen.Dashboard -> DashboardScreen(
+                                transactionRepository = transactionRepository,
                                 onNavigateToIngreso = {
                                     navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
                                 },
                                 onNavigateToGasto = {
                                     navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
                                 },
-                                onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
+                                onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
+                                onNavigateToMovimientos = { navController.replace(Screen.Movimientos) }
                             )
 
-                            is Screen.TransactionForm -> TransactionFormScreen(
-                                initialType = screen.initialType,
-                                onBack = { navController.goBack() },
-                                onSaved = { navController.replace(Screen.Movimientos) },
-                                onOcrClick = {
-                                    ocrAssistantViewModel.reset()
-                                    navController.navigate(Screen.OcrAssistant)
+                        is Screen.TransactionForm -> TransactionFormScreen(
+                            initialType = screen.initialType,
+                            editingTransaction = screen.editingTransaction,
+                            transactionRepository = transactionRepository,
+                            onBack = {
+                                navController.goBack()
+                            },
+                            onSaved = {
+                                navController.replace(Screen.Movimientos)
+                            },
+                            onOcrClick = {
+                                ocrAssistantViewModel.reset()
+                                navController.navigate(Screen.OcrAssistant)
+                            }
+                        )
+
+                        is Screen.TransactionDetail -> TransactionDetailScreen(
+                            transaction = screen.transaction,
+                            transactionRepository = transactionRepository,
+                            onBack = { navController.goBack() },
+                            onEdit = { transaction ->
+                                navController.navigate(
+                                    Screen.TransactionForm(transaction.type, transaction)
+                                )
+                            },
+                            onDeleted = { navController.goBack() }
+                        )
+
+                        is Screen.OcrAssistant -> OcrAssistantScreen(
+                            viewModel = ocrAssistantViewModel,
+                            onBack = { navController.goBack() },
+                            onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
+                            onPickImageClick = {
+                                onPickReceiptImage { path ->
+                                    if (path != null) ocrAssistantViewModel.processImage(path)
                                 }
-                            )
+                            },
+                            onReviewData = { result ->
+                                navController.navigate(Screen.OcrConfirm(result))
+                            }
+                        )
 
-                            is Screen.OcrAssistant -> OcrAssistantScreen(
-                                viewModel = ocrAssistantViewModel,
-                                onBack = { navController.goBack() },
-                                onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
-                                onPickImageClick = {
-                                    onPickReceiptImage { path ->
-                                        if (path != null) ocrAssistantViewModel.processImage(path)
-                                    }
-                                },
-                                onReviewData = { result ->
-                                    navController.navigate(Screen.OcrConfirm(result))
-                                }
-                            )
+                        is Screen.OcrCamera -> ocrCameraContent(
+                            { path ->
+                                ocrAssistantViewModel.processImage(path)
+                                navController.goBack()
+                            },
+                            { navController.goBack() }
+                        )
 
-                            is Screen.OcrCamera -> ocrCameraContent(
-                                { path ->
-                                    ocrAssistantViewModel.processImage(path)
-                                    navController.goBack()
-                                },
-                                { navController.goBack() }
-                            )
+                        is Screen.OcrConfirm -> OcrConfirmScreen(
+                            result = screen.result,
+                            transactionRepository = transactionRepository,
+                            onCancel = {
+                                // Screen.OcrAssistant solo se alcanza desde el formulario manual
+                                // (ver onOcrClick más arriba), así que siempre queda justo debajo
+                                // en el backstack: dos goBack() cancelan todo el flujo OCR y
+                                // regresan al formulario manual donde el usuario estaba.
+                                navController.goBack()
+                                navController.goBack()
+                            },
+                            onSaved = { navController.replace(Screen.Movimientos) }
+                        )
 
-                            is Screen.OcrConfirm -> OcrConfirmScreen(
-                                result = screen.result,
-                                onCancel = { navController.popToRoot() },
-                                onSaved = { navController.replace(Screen.Movimientos) }
-                            )
-
-                        is Screen.Movimientos -> MovimientosScreen()
+                        is Screen.Movimientos -> TransactionsScreen(
+                            transactionRepository = transactionRepository,
+                            onAddClick = {
+                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                            },
+                            onTransactionClick = { transaction ->
+                                navController.navigate(Screen.TransactionDetail(transaction))
+                            }
+                        )
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
                             onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
@@ -276,6 +326,11 @@ fun App(
     }
 }
 
+/**
+ * Contenido por defecto de Screen.OcrCamera cuando la plataforma no inyectó una
+ * implementación real (p.ej. Web/Desktop, donde CameraX/ML Kit no aplican: el
+ * asistente OCR es una funcionalidad Android-specific para este sprint).
+ */
 @Composable
 private fun OcrCameraUnavailablePlaceholder(onCancel: () -> Unit) {
     Column(

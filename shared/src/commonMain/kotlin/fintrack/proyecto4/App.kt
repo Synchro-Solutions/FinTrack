@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
+import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
@@ -62,6 +64,7 @@ import kotlinx.coroutines.launch
 fun App(
     authRepository: AuthRepository,
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
+    budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -205,7 +208,9 @@ fun App(
                         )
 
                         is Screen.Movimientos -> MovimientosScreen()
-                        is Screen.Presupuestos -> PresupuestosScreen()
+                        is Screen.Presupuestos -> PresupuestosScreen(
+                            budgetRepository = budgetRepository
+                        )
                         is Screen.Metas -> MetasScreen()
                         is Screen.Mas,
                         is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)

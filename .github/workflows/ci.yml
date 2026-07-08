@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew :androidApp:assembleDebug --no-daemon -x test
 
       - name: Run unit tests
-        run: ./gradlew :shared:testAndroidHostTest --no-daemon
+        run: ./gradlew :shared:testDebugUnitTest --no-daemon
 
       - name: Lint
         run: ./gradlew lint --no-daemon

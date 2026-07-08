@@ -1,5 +1,7 @@
 package fintrack.proyecto4
 
+import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,8 +16,10 @@ import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
+import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 
 private val ComponentActivity.dataStore by preferencesDataStore(name = "fintrack_session")
 
@@ -25,6 +29,23 @@ class MainActivity : ComponentActivity() {
     // por eso vive como propiedad y no dentro de un Composable.
     private var onImagePicked: ((String?) -> Unit)? = null
     private var onProfilePhotoPicked: ((String?) -> Unit)? = null
+
+    /**
+     * FinTrack es una app en español (Costa Rica) sin selector de idioma, pero componentes
+     * de Material3 como el DatePicker (calendario del formulario de transacción, OCR, metas)
+     * usan las cadenas localizadas que trae la librería según el locale del dispositivo. Si
+     * el dispositivo/emulador está en inglés, el calendario sale en inglés aunque el resto de
+     * la UI esté en español a mano. Forzar el locale de la app a es-CR aquí (antes de que se
+     * infle cualquier recurso) soluciona esto en todos los DatePicker de la app de una vez,
+     * en vez de tener que localizar cada uso por separado.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val locale = Locale("es", "CR")
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -50,12 +71,14 @@ class MainActivity : ComponentActivity() {
         val authRepository = FirebaseAuthRepository(sessionStore)
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
+        val transactionRepository = FirestoreTransactionRepository()
 
         setContent {
             App(
                 authRepository = authRepository,
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
+                transactionRepository = transactionRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },

@@ -38,6 +38,7 @@ import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.transaction.TransactionType
@@ -125,6 +126,7 @@ fun App(
 
                         is Screen.TransactionForm -> TransactionFormScreen(
                             initialType = screen.initialType,
+                            editingTransactionId = screen.editingTransactionId,
                             onBack = {
                                 navController.goBack()
                             },
@@ -135,6 +137,17 @@ fun App(
                                 ocrAssistantViewModel.reset()
                                 navController.navigate(Screen.OcrAssistant)
                             }
+                        )
+
+                        is Screen.TransactionDetail -> TransactionDetailScreen(
+                            transactionId = screen.transactionId,
+                            onBack = { navController.goBack() },
+                            onEdit = { transaction ->
+                                navController.navigate(
+                                    Screen.TransactionForm(transaction.type, transaction.id)
+                                )
+                            },
+                            onDeleted = { navController.goBack() }
                         )
 
                         is Screen.OcrAssistant -> OcrAssistantScreen(
@@ -161,11 +174,25 @@ fun App(
 
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
-                            onCancel = { navController.popToRoot() },
+                            onCancel = {
+                                // Screen.OcrAssistant solo se alcanza desde el formulario manual
+                                // (ver onOcrClick más arriba), así que siempre queda justo debajo
+                                // en el backstack: dos goBack() cancelan todo el flujo OCR y
+                                // regresan al formulario manual donde el usuario estaba.
+                                navController.goBack()
+                                navController.goBack()
+                            },
                             onSaved = { navController.replace(Screen.Movimientos) }
                         )
 
-                        is Screen.Movimientos -> MovimientosScreen()
+                        is Screen.Movimientos -> MovimientosScreen(
+                            onAddClick = {
+                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                            },
+                            onTransactionClick = { id ->
+                                navController.navigate(Screen.TransactionDetail(id))
+                            }
+                        )
                         is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
                         is Screen.Mas,

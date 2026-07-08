@@ -1,20 +1,38 @@
 package fintrack.proyecto4.transaction
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.ocr.OcrResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
+/**
+ * @param editingTransactionId Si no es null, el formulario carga y edita la transacción
+ *   existente con ese id (US-14) en vez de crear una nueva. Se busca directamente en el
+ *   caché en memoria de [TransactionRepository] (poblado previamente por la pantalla de
+ *   Movimientos), sin ida y vuelta a Firestore.
+ */
 class TransactionFormViewModel(
-    initialType: TransactionType = TransactionType.EXPENSE
+    initialType: TransactionType = TransactionType.EXPENSE,
+    private val editingTransactionId: String? = null,
+    private val repository: TransactionRepository = TransactionRepository()
 ) : ViewModel() {
 
+    val isEditing: Boolean get() = editingTransactionId != null
+
     private val _uiState = MutableStateFlow(
-        TransactionFormState(type = initialType)
+        editingTransactionId
+            ?.let { id -> repository.getTransaction(id) }
+            ?.toFormState()
+            ?: TransactionFormState(type = initialType)
     )
 
     val uiState: StateFlow<TransactionFormState> = _uiState.asStateFlow()
+
+    private val _saveError = MutableStateFlow<String?>(null)
+    val saveError: StateFlow<String?> = _saveError.asStateFlow()
 
     fun changeType(type: TransactionType) {
         _uiState.value = _uiState.value.copy(
@@ -73,7 +91,49 @@ class TransactionFormViewModel(
         )
     }
 
-    fun saveTransaction() {
-        // TODO: conectar con repositorio cuando exista persistencia real
+    fun saveTransaction(onResult: (Result<Transaction>) -> Unit = {}) {
+        val state = _uiState.value
+        if (!state.isValid) return
+
+        val amount = state.amount.toLongOrNull()
+        if (amount == null) {
+            _saveError.value = "Ingrese un monto válido"
+            return
+        }
+
+        viewModelScope.launch {
+            val result = if (editingTransactionId != null) {
+                repository.updateTransaction(
+                    id = editingTransactionId,
+                    type = state.type,
+                    amount = amount,
+                    description = state.description,
+                    category = state.selectedCategory.orEmpty(),
+                    paymentMethod = state.paymentMethod,
+                    date = state.date
+                )
+            } else {
+                repository.createTransaction(
+                    type = state.type,
+                    amount = amount,
+                    description = state.description,
+                    category = state.selectedCategory.orEmpty(),
+                    paymentMethod = state.paymentMethod,
+                    date = state.date
+                )
+            }
+
+            _saveError.value = result.exceptionOrNull()?.message
+            onResult(result)
+        }
     }
+
+    private fun Transaction.toFormState() = TransactionFormState(
+        type = type,
+        amount = amount.toString(),
+        description = description,
+        selectedCategory = category,
+        paymentMethod = paymentMethod,
+        date = date
+    )
 }

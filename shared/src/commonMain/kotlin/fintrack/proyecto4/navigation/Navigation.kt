@@ -29,7 +29,14 @@ sealed interface Screen {
     data object Mas : Screen
 
     data class TransactionForm(
-        val initialType: TransactionType
+        val initialType: TransactionType,
+        /** Si no es null, el formulario edita esta transacción en vez de crear una nueva (US-14). */
+        val editingTransactionId: String? = null
+    ) : Screen
+
+    /** Ver/editar/eliminar el detalle de una transacción ya guardada (US-14). */
+    data class TransactionDetail(
+        val transactionId: String
     ) : Screen
 
     /** Pantalla del asistente OCR (idle / procesando / éxito, ver UI-05). */

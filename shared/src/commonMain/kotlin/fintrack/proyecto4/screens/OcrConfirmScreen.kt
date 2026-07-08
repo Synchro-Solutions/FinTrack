@@ -38,6 +38,7 @@ fun OcrConfirmScreen(
 ) {
     val viewModel = remember { TransactionFormViewModel(TransactionType.EXPENSE) }
     val state by viewModel.uiState.collectAsState()
+    val saveError by viewModel.saveError.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(result) {
@@ -150,7 +151,31 @@ fun OcrConfirmScreen(
                 }
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(18.dp))
+
+            Text(
+                text = "MÉTODO DE PAGO",
+                color = Color(0xFF58708F),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily()
+            )
+            PaymentMethodSection(
+                selectedPaymentMethod = state.paymentMethod,
+                onPaymentMethodSelected = viewModel::selectPaymentMethod
+            )
+
+            if (saveError != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = saveError ?: "",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontFamily = montserratFamily()
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -158,10 +183,11 @@ fun OcrConfirmScreen(
             ) {
                 Button(
                     onClick = {
-                        viewModel.saveTransaction()
-                        onSaved()
+                        viewModel.saveTransaction { result ->
+                            if (result.isSuccess) onSaved()
+                        }
                     },
-                    enabled = state.isValid,
+                    enabled = state.isValid && state.paymentMethod != null,
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(

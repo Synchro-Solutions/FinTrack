@@ -18,8 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,24 +37,17 @@ import kotlinx.datetime.number
 @Composable
 fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
+    editingTransactionId: String? = null,
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
     onOcrClick: () -> Unit = {}
 ) {
-    val viewModel = remember(initialType) {
-        TransactionFormViewModel(initialType)
+    val viewModel = remember(initialType, editingTransactionId) {
+        TransactionFormViewModel(initialType, editingTransactionId)
     }
     val state by viewModel.uiState.collectAsState()
+    val saveError by viewModel.saveError.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
-    val amountFocusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(initialType) {
-        viewModel.reset(initialType)
-    }
-
-    LaunchedEffect(Unit) {
-        amountFocusRequester.requestFocus()
-    }
 
     Column(
         modifier = Modifier
@@ -64,6 +55,7 @@ fun TransactionFormScreen(
             .background(FinTrackColors.BgApp)
     ) {
         TransactionHeader(
+            title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
             onBack = onBack,
             onOcrClick = onOcrClick
         )
@@ -86,8 +78,7 @@ fun TransactionFormScreen(
             FormLabel("MONTO (₡) *")
             AmountField(
                 value = state.amount,
-                onValueChange = viewModel::updateAmount,
-                focusRequester = amountFocusRequester
+                onValueChange = viewModel::updateAmount
             )
 
             Spacer(Modifier.height(18.dp))
@@ -123,14 +114,26 @@ fun TransactionFormScreen(
                 onClick = { showDatePicker = true }
             )
 
+            if (saveError != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = saveError ?: "",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontFamily = montserratFamily()
+                )
+            }
+
             Spacer(Modifier.height(22.dp))
 
             SaveTransactionButton(
                 type = state.type,
+                editing = viewModel.isEditing,
                 enabled = state.isValid,
                 onClick = {
-                    viewModel.saveTransaction()
-                    onSaved()
+                    viewModel.saveTransaction { result ->
+                        if (result.isSuccess) onSaved()
+                    }
                 }
             )
         }
@@ -212,7 +215,7 @@ internal fun parseDateToEpochMillis(value: String): Long? {
 }
 
 @Composable
-private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
+private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () -> Unit) {
     val montserrat = montserratFamily()
 
     Row(
@@ -234,7 +237,7 @@ private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
         Spacer(Modifier.width(18.dp))
 
         Text(
-            text = "Nuevo movimiento",
+            text = title,
             color = FinTrackColors.TextPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
@@ -337,8 +340,7 @@ private fun FormLabel(text: String) {
 @Composable
 private fun AmountField(
     value: String,
-    onValueChange: (String) -> Unit,
-    focusRequester: FocusRequester
+    onValueChange: (String) -> Unit
 ) {
     TextField(
         value = value,
@@ -353,8 +355,7 @@ private fun AmountField(
         modifier = Modifier
             .fillMaxWidth()
             .height(58.dp)
-            .padding(top = 6.dp)
-            .focusRequester(focusRequester),
+            .padding(top = 6.dp),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
             color = FinTrackColors.TextPrimary,
@@ -421,7 +422,7 @@ private fun CategorySection(
 }
 
 @Composable
-private fun PaymentMethodSection(
+internal fun PaymentMethodSection(
     selectedPaymentMethod: PaymentMethod?,
     onPaymentMethodSelected: (PaymentMethod) -> Unit
 ) {
@@ -547,12 +548,14 @@ internal fun DateField(
 @Composable
 private fun SaveTransactionButton(
     type: TransactionType,
+    editing: Boolean,
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    val text = when (type) {
-        TransactionType.EXPENSE -> "Guardar gasto"
-        TransactionType.INCOME -> "Guardar ingreso"
+    val text = when {
+        editing -> "Guardar cambios"
+        type == TransactionType.EXPENSE -> "Guardar gasto"
+        else -> "Guardar ingreso"
     }
 
     Button(

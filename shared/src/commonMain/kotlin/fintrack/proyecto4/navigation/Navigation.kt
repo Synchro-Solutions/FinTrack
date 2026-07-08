@@ -30,6 +30,7 @@ sealed interface Screen {
     data object Presupuestos : Screen
     data object Metas : Screen
     data object Mas : Screen
+    data object Ajustes : Screen
 
     data class TransactionForm(
         val initialType: TransactionType

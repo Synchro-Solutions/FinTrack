@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 private data class NavItem(
     val label: String,
@@ -60,8 +61,9 @@ fun FinTrackBottomBar(
             animationSpec = tween(NavTransitionDurationMillis, easing = NavTransitionEasing)
         ) { it } + fadeOut(tween(NavTransitionDurationMillis, easing = NavTransitionEasing))
     ) {
+        val colors = LocalAppColors.current
         NavigationBar(
-            containerColor = Color(0xFF0F1923),
+            containerColor = colors.navBar,
             tonalElevation = 0.dp
         ) {
             navItems.forEach { item ->
@@ -109,8 +111,8 @@ fun FinTrackBottomBar(
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = FinTrackColors.GreenPrimary,
                         selectedTextColor = FinTrackColors.GreenPrimary,
-                        unselectedIconColor = FinTrackColors.WhiteAlpha70,
-                        unselectedTextColor = FinTrackColors.WhiteAlpha70,
+                        unselectedIconColor = colors.textSecondary,
+                        unselectedTextColor = colors.textSecondary,
                         indicatorColor = FinTrackColors.GreenPrimary.copy(alpha = 0.15f)
                     )
                 )

@@ -22,11 +22,13 @@ internal val NavTransitionEasing = FastOutSlowInEasing
  */
 sealed interface Screen {
     data object Login : Screen
+    data object Onboarding : Screen
     data object Dashboard : Screen
     data object Movimientos : Screen
     data object Presupuestos : Screen
     data object Metas : Screen
     data object Mas : Screen
+    data object Ajustes : Screen
 
     data class TransactionForm(
         val initialType: TransactionType,
@@ -50,6 +52,7 @@ sealed interface Screen {
         val result: OcrResult
     ) : Screen
     
+    data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object AguinaldoCalculator : Screen
     data object CurrencyConverter : Screen

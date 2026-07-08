@@ -39,6 +39,7 @@ import fintrack.proyecto4.screens.MovimientosScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
+import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.theme.FinTrackColors
@@ -170,7 +171,14 @@ fun App(
 
                         is Screen.Movimientos -> MovimientosScreen()
                         is Screen.Presupuestos -> PresupuestosScreen(
-                            budgetRepository = budgetRepository
+                            budgetRepository = budgetRepository,
+                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
+                        )
+
+                        is Screen.NuevoPresupuesto -> CreateBudgetScreen(
+                            budgetRepository = budgetRepository,
+                            onBack = { navController.goBack() },
+                            onSaved = { navController.replace(Screen.Presupuestos) }
                         )
                         is Screen.Metas -> MetasScreen()
                         is Screen.Mas,

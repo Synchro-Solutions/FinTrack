@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
+import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
@@ -76,6 +78,7 @@ private val LightColorScheme = lightColorScheme(
 fun App(
     authRepository: AuthRepository,
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
+    budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },

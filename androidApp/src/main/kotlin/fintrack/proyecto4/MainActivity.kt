@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.datastore.preferences.preferencesDataStore
 import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
+import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
@@ -48,11 +49,13 @@ class MainActivity : ComponentActivity() {
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
         val onboardingRepository = FirestoreOnboardingRepository()
+        val budgetRepository = FirestoreBudgetRepository()
 
         setContent {
             App(
                 authRepository = authRepository,
                 onboardingRepository = onboardingRepository,
+                budgetRepository = budgetRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },

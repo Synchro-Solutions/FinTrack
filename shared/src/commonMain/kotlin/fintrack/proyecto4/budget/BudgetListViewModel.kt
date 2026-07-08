@@ -1,0 +1,36 @@
+package fintrack.proyecto4.budget
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class BudgetListViewModel(
+    private val repository: BudgetRepository,
+    private val uid: String
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(BudgetListState())
+    val state: StateFlow<BudgetListState> = _state
+
+    init {
+        loadBudgets()
+    }
+
+    fun loadBudgets() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val budgets = repository.getBudgets(uid)
+                .sortedByDescending { it.usagePct }
+            _state.value = BudgetListState(budgets = budgets, isLoading = false)
+        }
+    }
+
+    fun deleteBudget(budgetId: String) {
+        viewModelScope.launch {
+            repository.deleteBudget(uid, budgetId)
+            loadBudgets()
+        }
+    }
+}

@@ -3,13 +3,26 @@ package fintrack.proyecto4.dashboard
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.Transaction
+import fintrack.proyecto4.transaction.TransactionRepository
+import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class DashboardViewModel : ViewModel() {
+private const val UltimosMovimientosCount = 4
+
+/**
+ * @param uid Usuario actualmente autenticado (ver AuthClient.currentUserId()). Se usa para
+ *   obtener los últimos movimientos reales del usuario en sesión desde [transactionRepository].
+ */
+class DashboardViewModel(
+    private val transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    private val uid: String = ""
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -21,7 +34,15 @@ class DashboardViewModel : ViewModel() {
     fun loadDashboard() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            // TODO: cargar datos reales desde repositorio
+            // TODO: cargar KPIs/gráfica/presupuestos/meta reales desde repositorio
+            val ultimosMovimientos = try {
+                transactionRepository.getTransactions(uid)
+                    .sortedByDescending { it.createdAt }
+                    .take(UltimosMovimientosCount)
+                    .map { it.toMovimientoItem() }
+            } catch (e: Exception) {
+                emptyList()
+            }
             _uiState.update { state ->
                 state.copy(
                     isLoading = false,
@@ -37,7 +58,7 @@ class DashboardViewModel : ViewModel() {
                     presupuestos = samplePresupuestos(),
                     metaPrincipal = sampleMeta(),
                     consejoFinanciero = "Tu tasa de ahorro del 77% supera el objetivo del 20%. Mantén el ritmo y alcanzarás tu fondo de emergencia en 3 meses.",
-                    ultimosMovimientos = sampleMovimientos(),
+                    ultimosMovimientos = ultimosMovimientos,
                     notificationCount = 2,
                     ocrPendingCount = 0
                 )
@@ -87,10 +108,6 @@ class DashboardViewModel : ViewModel() {
         // TODO: navegar a lista completa de metas
     }
 
-    fun verTodosMovimientos() {
-        // TODO: navegar a lista completa de movimientos
-    }
-
     // ── Datos de muestra para desarrollo ────────────────────────────────────
 
     private fun sampleChartData() = listOf(
@@ -118,10 +135,12 @@ class DashboardViewModel : ViewModel() {
         prioridad = "Alta prioridad"
     )
 
-    private fun sampleMovimientos() = listOf(
-        MovimientoItem("1", "Salario mensual", "Salario", "06-01", 850_000, true),
-        MovimientoItem("2", "Supermercado", "Alimentación", "06-03", 45_000, false),
-        MovimientoItem("3", "Gasolina", "Transporte", "06-04", 16_000, false),
-        MovimientoItem("4", "Electricidad CNFL", "Servicios", "06-05", 28_000, false)
+    private fun Transaction.toMovimientoItem() = MovimientoItem(
+        id = id,
+        nombre = description,
+        categoria = category,
+        fecha = date,
+        monto = amount,
+        esIngreso = type == TransactionType.INCOME
     )
 }

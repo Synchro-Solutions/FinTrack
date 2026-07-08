@@ -24,11 +24,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LightAppColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
+import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionFormViewModel
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
@@ -37,22 +43,30 @@ import kotlinx.datetime.number
 @Composable
 fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
-    editingTransactionId: String? = null,
+    editingTransaction: Transaction? = null,
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
     onOcrClick: () -> Unit = {}
 ) {
-    val viewModel = remember(initialType, editingTransactionId) {
-        TransactionFormViewModel(initialType, editingTransactionId)
+    val uid = AuthClient.currentUserId() ?: ""
+    // remember (no viewModel(key=...)) a propósito: cada visita a esta pantalla debe partir
+    // de un formulario en blanco (o precargado solo con la transacción a editar). Con
+    // viewModel(key=...) el ViewModelStore de la Activity reutilizaba la misma instancia
+    // entre visitas consecutivas de "nueva transacción" (misma key), dejando los campos de
+    // la transacción anterior visibles al crear una nueva.
+    val viewModel = remember(uid, editingTransaction?.id, initialType) {
+        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction)
     }
-    val state by viewModel.uiState.collectAsState()
-    val saveError by viewModel.saveError.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val saveError by viewModel.saveError.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    val colors = LocalAppColors.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         TransactionHeader(
             title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
@@ -130,11 +144,7 @@ fun TransactionFormScreen(
                 type = state.type,
                 editing = viewModel.isEditing,
                 enabled = state.isValid,
-                onClick = {
-                    viewModel.saveTransaction { result ->
-                        if (result.isSuccess) onSaved()
-                    }
-                }
+                onClick = { viewModel.saveTransaction(onSaved) }
             )
         }
     }
@@ -166,7 +176,7 @@ fun TransactionFormScreen(
                 TextButton(
                     onClick = { showDatePicker = false },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = FinTrackColors.TextSecondary
+                        contentColor = colors.textSecondary
                     )
                 ) {
                     Text("Cancelar")
@@ -181,9 +191,24 @@ fun TransactionFormScreen(
     }
 }
 
+/**
+ * El calendario se muestra siempre como una tarjeta blanca, sin importar el tema activo de
+ * la app (igual que en muchos selectores de fecha nativos). Por eso TODOS los colores de
+ * contenido se fijan explícitamente a los de [LightAppColors] en vez de dejarlos heredar del
+ * MaterialTheme: si no se fijan, en modo oscuro el color de texto por defecto es claro
+ * (pensado para fondos oscuros) y queda casi invisible sobre esta tarjeta blanca.
+ */
 @Composable
 internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     containerColor = Color.White,
+    titleContentColor = LightAppColors.textSecondary,
+    headlineContentColor = LightAppColors.textPrimary,
+    weekdayContentColor = LightAppColors.textSecondary,
+    subheadContentColor = LightAppColors.textPrimary,
+    yearContentColor = LightAppColors.textPrimary,
+    dayContentColor = LightAppColors.textPrimary,
+    disabledDayContentColor = LightAppColors.textSecondary.copy(alpha = 0.4f),
+    dividerColor = LightAppColors.divider,
     todayContentColor = FinTrackColors.GreenPrimary,
     todayDateBorderColor = FinTrackColors.GreenPrimary,
     selectedDayContainerColor = FinTrackColors.GreenPrimary,
@@ -216,19 +241,20 @@ internal fun parseDateToEpochMillis(value: String): Long? {
 
 @Composable
 private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () -> Unit) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Volver",
-            tint = FinTrackColors.TextPrimary,
+            tint = colors.textPrimary,
             modifier = Modifier
                 .size(24.dp)
                 .clickable(onClick = onBack)
@@ -238,7 +264,7 @@ private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () 
 
         Text(
             text = title,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat,
@@ -248,7 +274,7 @@ private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () 
         Icon(
             imageVector = Icons.Default.CameraAlt,
             contentDescription = "Escanear con OCR",
-            tint = FinTrackColors.TextPrimary,
+            tint = colors.textPrimary,
             modifier = Modifier
                 .size(24.dp)
                 .clickable(onClick = onOcrClick)
@@ -342,13 +368,14 @@ private fun AmountField(
     value: String,
     onValueChange: (String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = {
             Text(
                 text = "0",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -358,7 +385,7 @@ private fun AmountField(
             .padding(top = 6.dp),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold
         ),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -372,13 +399,14 @@ private fun DescriptionField(
     value: String,
     onValueChange: (String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = {
             Text(
                 text = "Ej. Supermercado, Salario...",
-                color = Color(0xFF7C8FA8),
+                color = colors.textSecondary,
                 fontSize = 13.sp,
                 fontFamily = montserratFamily()
             )
@@ -390,7 +418,7 @@ private fun DescriptionField(
         shape = RoundedCornerShape(16.dp),
         textStyle = LocalTextStyle.current.copy(
             fontSize = 13.sp,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserratFamily()
         ),
         singleLine = true,
@@ -496,6 +524,7 @@ internal fun DateField(
     onClick: () -> Unit,
     placeholder: String = "dd/mm/aaaa"
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -508,7 +537,7 @@ internal fun DateField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -516,7 +545,7 @@ internal fun DateField(
                 Icon(
                     imageVector = Icons.Default.CalendarToday,
                     contentDescription = "Seleccionar fecha",
-                    tint = FinTrackColors.TextSecondary
+                    tint = colors.textSecondary
                 )
             },
             modifier = Modifier
@@ -524,7 +553,7 @@ internal fun DateField(
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = FinTrackColors.TextPrimary
+                color = colors.textPrimary
             ),
             singleLine = true,
             colors = formTextFieldColors()
@@ -581,14 +610,17 @@ private fun SaveTransactionButton(
 }
 
 @Composable
-internal fun formTextFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = FinTrackColors.SurfaceSecondary,
-    unfocusedContainerColor = FinTrackColors.SurfaceSecondary,
-    disabledContainerColor = FinTrackColors.SurfaceSecondary,
-    focusedIndicatorColor = Color.Transparent,
-    unfocusedIndicatorColor = Color.Transparent,
-    disabledIndicatorColor = Color.Transparent,
-    cursorColor = FinTrackColors.GreenPrimary,
-    focusedTextColor = FinTrackColors.TextPrimary,
-    unfocusedTextColor = FinTrackColors.TextPrimary
-)
+internal fun formTextFieldColors(): TextFieldColors {
+    val colors = LocalAppColors.current
+    return TextFieldDefaults.colors(
+        focusedContainerColor = colors.subtleSurface,
+        unfocusedContainerColor = colors.subtleSurface,
+        disabledContainerColor = colors.subtleSurface,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+        cursorColor = FinTrackColors.GreenPrimary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary
+    )
+}

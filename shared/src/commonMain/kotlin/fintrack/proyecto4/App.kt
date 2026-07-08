@@ -43,7 +43,7 @@ import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
-import fintrack.proyecto4.screens.MovimientosScreen
+import fintrack.proyecto4.screens.TransactionsScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
@@ -56,6 +56,8 @@ import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
@@ -65,6 +67,14 @@ private val DarkColorScheme = darkColorScheme(
     surface      = DarkAppColors.surface,
     onBackground = DarkAppColors.textPrimary,
     onSurface    = DarkAppColors.textPrimary
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary      = FinTrackColors.GreenPrimary,
+    background   = LightAppColors.bg,
+    surface      = LightAppColors.surface,
+    onBackground = LightAppColors.textPrimary,
+    onSurface    = LightAppColors.textPrimary
 )
 
 /**
@@ -82,6 +92,7 @@ fun App(
     authRepository: AuthRepository,
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -173,27 +184,21 @@ fun App(
                             }
 
                             is Screen.Dashboard -> DashboardScreen(
+                                transactionRepository = transactionRepository,
                                 onNavigateToIngreso = {
                                     navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
                                 },
                                 onNavigateToGasto = {
                                     navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
                                 },
-                                onNavigateToAjustes = { navController.navigate(Screen.Ajustes) }
+                                onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
+                                onNavigateToMovimientos = { navController.replace(Screen.Movimientos) }
                             )
 
-                            is Screen.TransactionForm -> TransactionFormScreen(
-                                initialType = screen.initialType,
-                                onBack = { navController.goBack() },
-                                onSaved = { navController.replace(Screen.Movimientos) },
-                                onOcrClick = {
-                                    ocrAssistantViewModel.reset()
-                                    navController.navigate(Screen.OcrAssistant)
-                                }
-                            )
                         is Screen.TransactionForm -> TransactionFormScreen(
                             initialType = screen.initialType,
-                            editingTransactionId = screen.editingTransactionId,
+                            editingTransaction = screen.editingTransaction,
+                            transactionRepository = transactionRepository,
                             onBack = {
                                 navController.goBack()
                             },
@@ -206,25 +211,13 @@ fun App(
                             }
                         )
 
-                            is Screen.OcrAssistant -> OcrAssistantScreen(
-                                viewModel = ocrAssistantViewModel,
-                                onBack = { navController.goBack() },
-                                onTakePhotoClick = { navController.navigate(Screen.OcrCamera) },
-                                onPickImageClick = {
-                                    onPickReceiptImage { path ->
-                                        if (path != null) ocrAssistantViewModel.processImage(path)
-                                    }
-                                },
-                                onReviewData = { result ->
-                                    navController.navigate(Screen.OcrConfirm(result))
-                                }
-                            )
                         is Screen.TransactionDetail -> TransactionDetailScreen(
-                            transactionId = screen.transactionId,
+                            transaction = screen.transaction,
+                            transactionRepository = transactionRepository,
                             onBack = { navController.goBack() },
                             onEdit = { transaction ->
                                 navController.navigate(
-                                    Screen.TransactionForm(transaction.type, transaction.id)
+                                    Screen.TransactionForm(transaction.type, transaction)
                                 )
                             },
                             onDeleted = { navController.goBack() }
@@ -244,21 +237,17 @@ fun App(
                             }
                         )
 
-                            is Screen.OcrCamera -> ocrCameraContent(
-                                { path ->
-                                    ocrAssistantViewModel.processImage(path)
-                                    navController.goBack()
-                                },
-                                { navController.goBack() }
-                            )
+                        is Screen.OcrCamera -> ocrCameraContent(
+                            { path ->
+                                ocrAssistantViewModel.processImage(path)
+                                navController.goBack()
+                            },
+                            { navController.goBack() }
+                        )
 
-                            is Screen.OcrConfirm -> OcrConfirmScreen(
-                                result = screen.result,
-                                onCancel = { navController.popToRoot() },
-                                onSaved = { navController.replace(Screen.Movimientos) }
-                            )
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
+                            transactionRepository = transactionRepository,
                             onCancel = {
                                 // Screen.OcrAssistant solo se alcanza desde el formulario manual
                                 // (ver onOcrClick más arriba), así que siempre queda justo debajo
@@ -270,7 +259,15 @@ fun App(
                             onSaved = { navController.replace(Screen.Movimientos) }
                         )
 
-                        is Screen.Movimientos -> MovimientosScreen()
+                        is Screen.Movimientos -> TransactionsScreen(
+                            transactionRepository = transactionRepository,
+                            onAddClick = {
+                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                            },
+                            onTransactionClick = { transaction ->
+                                navController.navigate(Screen.TransactionDetail(transaction))
+                            }
+                        )
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
                             onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
@@ -280,15 +277,6 @@ fun App(
                             onBack = { navController.goBack() },
                             onSaved = { navController.replace(Screen.Presupuestos) }
                         )
-                        is Screen.Movimientos -> MovimientosScreen(
-                            onAddClick = {
-                                navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
-                            },
-                            onTransactionClick = { id ->
-                                navController.navigate(Screen.TransactionDetail(id))
-                            }
-                        )
-                        is Screen.Presupuestos -> PresupuestosScreen()
                         is Screen.Metas -> MetasScreen()
 
                         is Screen.Mas -> MasScreen()

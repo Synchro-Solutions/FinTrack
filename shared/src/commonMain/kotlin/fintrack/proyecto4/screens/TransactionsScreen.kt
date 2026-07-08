@@ -25,28 +25,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fintrack.proyecto4.movimientos.MovimientosFilter
-import fintrack.proyecto4.movimientos.MovimientosViewModel
+import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import fintrack.proyecto4.transaction.TransactionsFilter
+import fintrack.proyecto4.transaction.TransactionsViewModel
 import fintrack.proyecto4.util.formatColones
 
 /**
  * Pantalla de historial de movimientos (Sprint 4), siguiendo el wireframe
  * "Pantalla Historial transacciones": buscador, filtros Todos/Ingresos/Gastos y lista.
- * Se conecta a [TransactionRepository][fintrack.proyecto4.transaction.TransactionRepository]
- * a través de [MovimientosViewModel], por lo que refleja automáticamente cualquier
- * transacción guardada desde el formulario manual o el flujo OCR (US-17/US-18).
+ * Se conecta a [TransactionRepository] a través de [TransactionsViewModel], por lo que
+ * refleja automáticamente cualquier transacción guardada desde el formulario manual o el
+ * flujo OCR (US-17/US-18) para el usuario actualmente autenticado.
  */
 @Composable
-fun MovimientosScreen(
+fun TransactionsScreen(
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onAddClick: () -> Unit = {},
-    onTransactionClick: (String) -> Unit = {}
+    onTransactionClick: (Transaction) -> Unit = {}
 ) {
-    val viewModel = viewModel { MovimientosViewModel() }
+    val uid = AuthClient.currentUserId() ?: ""
+    val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val colors = LocalAppColors.current
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -55,9 +63,9 @@ fun MovimientosScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
-        MovimientosHeader(onAddClick = onAddClick)
+        TransactionsHeader(onAddClick = onAddClick)
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             SearchField(
@@ -77,7 +85,7 @@ fun MovimientosScreen(
 
         when {
             state.isLoading && state.transactions.isEmpty() -> LoadingState()
-            state.filteredTransactions.isEmpty() -> EmptyMovimientosState(hasAny = state.transactions.isNotEmpty())
+            state.filteredTransactions.isEmpty() -> EmptyTransactionsState(hasAny = state.transactions.isNotEmpty())
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
@@ -85,10 +93,10 @@ fun MovimientosScreen(
                 items(state.filteredTransactions, key = { it.id }) { transaction ->
                     TransactionRow(
                         transaction = transaction,
-                        onClick = { onTransactionClick(transaction.id) }
+                        onClick = { onTransactionClick(transaction) }
                     )
                     HorizontalDivider(
-                        color = FinTrackColors.DividerColor,
+                        color = colors.divider,
                         thickness = 0.5.dp
                     )
                 }
@@ -99,7 +107,8 @@ fun MovimientosScreen(
 }
 
 @Composable
-private fun MovimientosHeader(onAddClick: () -> Unit) {
+private fun TransactionsHeader(onAddClick: () -> Unit) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     Row(
         modifier = Modifier
@@ -111,7 +120,7 @@ private fun MovimientosHeader(onAddClick: () -> Unit) {
     ) {
         Text(
             text = "Movimientos",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat
@@ -137,13 +146,14 @@ private fun MovimientosHeader(onAddClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchField(value: String, onValueChange: (String) -> Unit) {
+    val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = {
             Text(
                 text = "Buscar movimiento...",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 14.sp,
                 fontFamily = montserratFamily()
             )
@@ -152,7 +162,7 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                tint = FinTrackColors.TextSecondary
+                tint = colors.textSecondary
             )
         },
         singleLine = true,
@@ -160,34 +170,35 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
             .fillMaxWidth()
             .height(54.dp),
         shape = RoundedCornerShape(16.dp),
-        textStyle = MaterialTheme.typography.bodyMedium.copy(color = FinTrackColors.TextPrimary),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.textPrimary),
         colors = formTextFieldColors()
     )
 }
 
 @Composable
-private fun FilterRow(selected: MovimientosFilter, onFilterSelected: (MovimientosFilter) -> Unit) {
+private fun FilterRow(selected: TransactionsFilter, onFilterSelected: (TransactionsFilter) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SelectableChip(
             text = "Todos",
-            selected = selected == MovimientosFilter.TODOS,
-            onClick = { onFilterSelected(MovimientosFilter.TODOS) }
+            selected = selected == TransactionsFilter.ALL,
+            onClick = { onFilterSelected(TransactionsFilter.ALL) }
         )
         SelectableChip(
             text = "Ingresos",
-            selected = selected == MovimientosFilter.INGRESOS,
-            onClick = { onFilterSelected(MovimientosFilter.INGRESOS) }
+            selected = selected == TransactionsFilter.INCOME,
+            onClick = { onFilterSelected(TransactionsFilter.INCOME) }
         )
         SelectableChip(
             text = "Gastos",
-            selected = selected == MovimientosFilter.GASTOS,
-            onClick = { onFilterSelected(MovimientosFilter.GASTOS) }
+            selected = selected == TransactionsFilter.EXPENSE,
+            onClick = { onFilterSelected(TransactionsFilter.EXPENSE) }
         )
     }
 }
 
 @Composable
 private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val isIncome = transaction.type == TransactionType.INCOME
     val accentColor = if (isIncome) FinTrackColors.GreenPrimary else FinTrackColors.ErrorColor
@@ -217,7 +228,7 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = transaction.description,
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = montserrat,
@@ -230,20 +241,27 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                     transaction.paymentMethod?.let { append(" · ${it.label}") }
                     append(" · ${transaction.date}")
                 },
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 11.sp,
                 fontFamily = montserrat,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Text(
-            text = "${if (isIncome) "+" else "-"}${formatColones(transaction.amount)}",
-            color = accentColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = montserrat
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(colors.subtleSurface)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = "${if (isIncome) "+" else "-"}${formatColones(transaction.amount)}",
+                color = accentColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = montserrat
+            )
+        }
     }
 }
 
@@ -255,7 +273,8 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun EmptyMovimientosState(hasAny: Boolean) {
+private fun EmptyTransactionsState(hasAny: Boolean) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     Column(
         modifier = Modifier
@@ -268,20 +287,20 @@ private fun EmptyMovimientosState(hasAny: Boolean) {
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(FinTrackColors.SurfaceSecondary),
+                .background(colors.surfaceSecondary),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Receipt,
                 contentDescription = null,
-                tint = FinTrackColors.TextSecondary,
+                tint = colors.textSecondary,
                 modifier = Modifier.size(28.dp)
             )
         }
         Spacer(Modifier.height(16.dp))
         Text(
             text = if (hasAny) "Sin resultados" else "Aún no tienes movimientos",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = montserrat
@@ -293,7 +312,7 @@ private fun EmptyMovimientosState(hasAny: Boolean) {
             } else {
                 "Presiona + para registrar tu primer ingreso o gasto."
             },
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 12.sp,
             fontFamily = montserrat
         )

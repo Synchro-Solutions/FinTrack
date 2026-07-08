@@ -1,19 +1,16 @@
-package fintrack.proyecto4.movimientos
+package fintrack.proyecto4.transaction
 
-import fintrack.proyecto4.transaction.Transaction
-import fintrack.proyecto4.transaction.TransactionType
-
-enum class MovimientosFilter {
-    TODOS,
-    INGRESOS,
-    GASTOS
+enum class TransactionsFilter {
+    ALL,
+    INCOME,
+    EXPENSE
 }
 
-data class MovimientosUiState(
+data class TransactionsUiState(
     val isLoading: Boolean = false,
     val transactions: List<Transaction> = emptyList(),
     val searchQuery: String = "",
-    val filter: MovimientosFilter = MovimientosFilter.TODOS,
+    val filter: TransactionsFilter = TransactionsFilter.ALL,
     val errorMessage: String? = null
 ) {
     val filteredTransactions: List<Transaction>
@@ -21,9 +18,9 @@ data class MovimientosUiState(
             .asSequence()
             .filter { transaction ->
                 when (filter) {
-                    MovimientosFilter.TODOS -> true
-                    MovimientosFilter.INGRESOS -> transaction.type == TransactionType.INCOME
-                    MovimientosFilter.GASTOS -> transaction.type == TransactionType.EXPENSE
+                    TransactionsFilter.ALL -> true
+                    TransactionsFilter.INCOME -> transaction.type == TransactionType.INCOME
+                    TransactionsFilter.EXPENSE -> transaction.type == TransactionType.EXPENSE
                 }
             }
             .filter { transaction ->

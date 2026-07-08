@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.TransactionFormViewModel
@@ -58,10 +59,11 @@ fun TransactionFormScreen(
         amountFocusRequester.requestFocus()
     }
 
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         TransactionHeader(
             onBack = onBack,
@@ -163,7 +165,7 @@ fun TransactionFormScreen(
                 TextButton(
                     onClick = { showDatePicker = false },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = FinTrackColors.TextSecondary
+                        contentColor = colors.textSecondary
                     )
                 ) {
                     Text("Cancelar")
@@ -179,8 +181,10 @@ fun TransactionFormScreen(
 }
 
 @Composable
-internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
-    containerColor = Color.White,
+internal fun fintrackDatePickerColors() = run {
+    val colors = LocalAppColors.current
+    DatePickerDefaults.colors(
+    containerColor = colors.surface,
     todayContentColor = FinTrackColors.GreenPrimary,
     todayDateBorderColor = FinTrackColors.GreenPrimary,
     selectedDayContainerColor = FinTrackColors.GreenPrimary,
@@ -189,7 +193,7 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     selectedYearContentColor = Color.White,
     currentYearContentColor = FinTrackColors.GreenPrimary,
     navigationContentColor = FinTrackColors.GreenPrimary
-)
+)}
 
 internal fun formatEpochMillisToDate(millis: Long): String {
     val date = LocalDate.fromEpochDays((millis / 86_400_000L).toInt())
@@ -214,18 +218,19 @@ internal fun parseDateToEpochMillis(value: String): Long? {
 @Composable
 private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Volver",
-            tint = FinTrackColors.TextPrimary,
+            tint = colors.textPrimary,
             modifier = Modifier
                 .size(24.dp)
                 .clickable(onClick = onBack)
@@ -235,7 +240,7 @@ private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
 
         Text(
             text = "Nuevo movimiento",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat,
@@ -245,7 +250,7 @@ private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
         Icon(
             imageVector = Icons.Default.CameraAlt,
             contentDescription = "Escanear con OCR",
-            tint = FinTrackColors.TextPrimary,
+            tint = colors.textPrimary,
             modifier = Modifier
                 .size(24.dp)
                 .clickable(onClick = onOcrClick)
@@ -258,12 +263,13 @@ private fun TransactionTypeTabs(
     selectedType: TransactionType,
     onTypeSelected: (TransactionType) -> Unit
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFE1E7F0))
+            .background(colors.surfaceSecondary)
     ) {
         TransactionTypeTab(
             text = "Gasto",
@@ -325,9 +331,10 @@ private fun TransactionTypeTab(
 
 @Composable
 private fun FormLabel(text: String) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = Color(0xFF58708F),
+        color = colors.textSecondary,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = montserratFamily()
@@ -340,13 +347,14 @@ private fun AmountField(
     onValueChange: (String) -> Unit,
     focusRequester: FocusRequester
 ) {
+    val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = {
             Text(
                 text = "0",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -357,7 +365,7 @@ private fun AmountField(
             .focusRequester(focusRequester),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold
         ),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -371,13 +379,14 @@ private fun DescriptionField(
     value: String,
     onValueChange: (String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = {
             Text(
                 text = "Ej. Supermercado, Salario...",
-                color = Color(0xFF7C8FA8),
+                color = colors.textSecondary,
                 fontSize = 13.sp,
                 fontFamily = montserratFamily()
             )
@@ -389,7 +398,7 @@ private fun DescriptionField(
         shape = RoundedCornerShape(16.dp),
         textStyle = LocalTextStyle.current.copy(
             fontSize = 13.sp,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserratFamily()
         ),
         singleLine = true,
@@ -461,6 +470,7 @@ internal fun SelectableChip(
     onClick: () -> Unit
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     Box(
         modifier = modifier
@@ -468,11 +478,11 @@ internal fun SelectableChip(
             .clip(RoundedCornerShape(18.dp))
             .background(
                 if (selected) FinTrackColors.GreenPrimary
-                else Color(0xFFE1E7F0)
+                else colors.surfaceSecondary
             )
             .border(
                 width = 1.dp,
-                color = if (selected) FinTrackColors.GreenPrimary else Color(0xFFC8D2E0),
+                color = if (selected) FinTrackColors.GreenPrimary else colors.border,
                 shape = RoundedCornerShape(18.dp)
             )
             .clickable(onClick = onClick)
@@ -481,7 +491,7 @@ internal fun SelectableChip(
     ) {
         Text(
             text = text,
-            color = if (selected) Color.White else Color(0xFF60748F),
+            color = if (selected) Color.White else colors.textSecondary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat
@@ -495,6 +505,7 @@ internal fun DateField(
     onClick: () -> Unit,
     placeholder: String = "dd/mm/aaaa"
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -507,7 +518,7 @@ internal fun DateField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -515,7 +526,7 @@ internal fun DateField(
                 Icon(
                     imageVector = Icons.Default.CalendarToday,
                     contentDescription = "Seleccionar fecha",
-                    tint = FinTrackColors.TextSecondary
+                    tint = colors.textSecondary
                 )
             },
             modifier = Modifier
@@ -523,7 +534,7 @@ internal fun DateField(
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = FinTrackColors.TextPrimary
+                color = colors.textPrimary
             ),
             singleLine = true,
             colors = formTextFieldColors()
@@ -578,14 +589,16 @@ private fun SaveTransactionButton(
 }
 
 @Composable
-internal fun formTextFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = FinTrackColors.SurfaceSecondary,
-    unfocusedContainerColor = FinTrackColors.SurfaceSecondary,
-    disabledContainerColor = FinTrackColors.SurfaceSecondary,
+internal fun formTextFieldColors() = run {
+    val colors = LocalAppColors.current
+    TextFieldDefaults.colors(
+    focusedContainerColor = colors.surfaceSecondary,
+    unfocusedContainerColor = colors.surfaceSecondary,
+    disabledContainerColor = colors.surfaceSecondary,
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
     disabledIndicatorColor = Color.Transparent,
     cursorColor = FinTrackColors.GreenPrimary,
-    focusedTextColor = FinTrackColors.TextPrimary,
-    unfocusedTextColor = FinTrackColors.TextPrimary
-)
+    focusedTextColor = colors.textPrimary,
+    unfocusedTextColor = colors.textPrimary
+)}

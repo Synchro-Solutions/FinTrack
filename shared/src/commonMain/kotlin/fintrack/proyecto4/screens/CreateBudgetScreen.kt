@@ -54,6 +54,7 @@ import fintrack.proyecto4.budget.CreateBudgetViewModel
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.budget.colorFromHex
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.roundToInt
 
@@ -63,6 +64,7 @@ fun CreateBudgetScreen(
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {}
 ) {
+    val colors = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = "create_$uid") {
         CreateBudgetViewModel(budgetRepository, uid)
@@ -72,7 +74,7 @@ fun CreateBudgetScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         // Top bar
         Row(
@@ -85,12 +87,12 @@ fun CreateBudgetScreen(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = FinTrackColors.TextPrimary
+                    tint = colors.textPrimary
                 )
             }
             Text(
                 text = "Nuevo presupuesto",
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -120,26 +122,26 @@ fun CreateBudgetScreen(
             OutlinedTextField(
                 value = state.limitAmount,
                 onValueChange = viewModel::setLimitAmount,
-                placeholder = { Text("150000", color = FinTrackColors.TextSecondary) },
+                placeholder = { Text("150000", color = colors.textSecondary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = FinTrackColors.GreenPrimary,
-                    unfocusedBorderColor = FinTrackColors.BorderDefault,
-                    focusedTextColor = FinTrackColors.TextPrimary,
-                    unfocusedTextColor = FinTrackColors.TextPrimary,
+                    unfocusedBorderColor = colors.border,
+                    focusedTextColor = colors.textPrimary,
+                    unfocusedTextColor = colors.textPrimary,
                     cursorColor = FinTrackColors.GreenPrimary,
-                    focusedContainerColor = FinTrackColors.SurfacePrimary,
-                    unfocusedContainerColor = FinTrackColors.SurfacePrimary
+                    focusedContainerColor = colors.surface,
+                    unfocusedContainerColor = colors.surface
                 )
             )
             if (state.limitAmount.isNotBlank()) {
                 val parsed = state.limitAmount.toDoubleOrNull() ?: 0.0
                 Text(
                     text = formatColones(parsed.toLong()),
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(top = 4.dp, start = 4.dp)
                 )
@@ -202,9 +204,10 @@ fun CreateBudgetScreen(
 
 @Composable
 private fun SectionLabel(text: String) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = FinTrackColors.TextSecondary,
+        color = colors.textSecondary,
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.8.sp
@@ -219,6 +222,7 @@ private fun CategoryGrid(
     selectedCategory: BudgetCategory?,
     onSelect: (BudgetCategory) -> Unit
 ) {
+    val colors = LocalAppColors.current
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -231,11 +235,11 @@ private fun CategoryGrid(
                     .clip(RoundedCornerShape(20.dp))
                     .background(
                         if (isSelected) catColor.copy(alpha = 0.18f)
-                        else FinTrackColors.SurfacePrimary
+                        else colors.surface
                     )
                     .border(
                         width = if (isSelected) 1.5.dp else 1.dp,
-                        color = if (isSelected) catColor else FinTrackColors.BorderDefault,
+                        color = if (isSelected) catColor else colors.border,
                         shape = RoundedCornerShape(20.dp)
                     )
                     .clickable { onSelect(cat) }
@@ -247,7 +251,7 @@ private fun CategoryGrid(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = cat.name,
-                        color = if (isSelected) catColor else FinTrackColors.TextPrimary,
+                        color = if (isSelected) catColor else colors.textPrimary,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     )
@@ -278,15 +282,16 @@ private fun AlertSlider(
         colors = SliderDefaults.colors(
             thumbColor = FinTrackColors.GreenPrimary,
             activeTrackColor = FinTrackColors.GreenPrimary,
-            inactiveTrackColor = FinTrackColors.SurfaceSecondary
+            inactiveTrackColor = LocalAppColors.current.surfaceSecondary
         )
     )
 
+    val sliderColors = LocalAppColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("50%", color = FinTrackColors.TextSecondary, fontSize = 11.sp)
-        Text("95%", color = FinTrackColors.TextSecondary, fontSize = 11.sp)
+        Text("50%", color = sliderColors.textSecondary, fontSize = 11.sp)
+        Text("95%", color = sliderColors.textSecondary, fontSize = 11.sp)
     }
 }

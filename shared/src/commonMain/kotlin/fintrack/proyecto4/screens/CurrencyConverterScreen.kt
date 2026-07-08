@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import kotlin.math.abs
 import kotlin.math.pow
@@ -191,6 +192,7 @@ fun CurrencyConverterScreen(
     onBack: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     var amountText by remember { mutableStateOf("") }
     var rateText by remember { mutableStateOf("") }
@@ -209,7 +211,7 @@ fun CurrencyConverterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         ScreenHeader(title = "Conversor de divisas", onBack = onBack)
 
@@ -258,7 +260,7 @@ fun CurrencyConverterScreen(
                 } else {
                     Text(
                         text = "Ingresa manualmente cuántos colones equivalen a 1 unidad de la moneda extranjera",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -279,9 +281,10 @@ fun CurrencyConverterScreen(
 
 @Composable
 private fun SectionLabel(text: String, montserrat: FontFamily) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = FinTrackColors.TextSecondary,
+        color = colors.textSecondary,
         fontFamily = montserrat,
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
@@ -314,10 +317,11 @@ fun CurrencyChip(
     modifier: Modifier = Modifier
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) FinTrackColors.BlueMeta else FinTrackColors.SurfaceSecondary)
+            .background(if (selected) FinTrackColors.BlueMeta else colors.surfaceSecondary)
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -330,7 +334,7 @@ fun CurrencyChip(
         )
         Text(
             text = label,
-            color = if (selected) FinTrackColors.White else FinTrackColors.TextSecondary,
+            color = if (selected) FinTrackColors.White else colors.textSecondary,
             fontFamily = montserrat,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             fontSize = 12.sp,
@@ -361,9 +365,10 @@ private fun CurrencySelector(
                 )
             }
         }
+        val colors = LocalAppColors.current
         Text(
             text = currencyNames[selected] ?: selected,
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontFamily = montserrat,
             fontWeight = FontWeight.Medium,
             fontSize = 12.sp
@@ -377,13 +382,14 @@ private fun AmountField(
     onValueChange: (String) -> Unit,
     montserrat: FontFamily
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(FinTrackColors.SurfaceSecondary)
-            .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(14.dp)),
+            .background(colors.surfaceSecondary)
+            .border(1.dp, colors.border, RoundedCornerShape(14.dp)),
         contentAlignment = Alignment.CenterStart
     ) {
         BasicTextField(
@@ -393,7 +399,7 @@ private fun AmountField(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             visualTransformation = AmountVisualTransformation,
             textStyle = TextStyle(
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontFamily = montserrat,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold

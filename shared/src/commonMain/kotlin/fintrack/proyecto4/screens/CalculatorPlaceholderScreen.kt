@@ -12,20 +12,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.navigation.LocalNavController
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun CalculatorPlaceholderScreen(title: String, description: String) {
     val navController = LocalNavController.current
+    val colors = LocalAppColors.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
+            .background(colors.bg)
             .padding(horizontal = 16.dp, vertical = 18.dp)
     ) {
         Row(
@@ -33,13 +34,13 @@ fun CalculatorPlaceholderScreen(title: String, description: String) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.goBack() }) {
-                Text(text = "<-", fontSize = 18.sp, color = Color(0xFF0F172A))
+                Text(text = "<-", fontSize = 18.sp, color = colors.textPrimary)
             }
             Text(
                 text = title,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = colors.textPrimary
             )
         }
 
@@ -52,15 +53,14 @@ fun CalculatorPlaceholderScreen(title: String, description: String) {
                 text = "Pantalla en construccion",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = colors.textPrimary
             )
             Text(
                 text = description,
                 fontSize = 14.sp,
-                color = Color(0xFF64748B),
+                color = colors.textSecondary,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
     }
 }
-

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 
 
@@ -30,18 +31,19 @@ fun ScreenHeader(
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.ArrowBack,
             contentDescription = "Volver",
-            tint = FinTrackColors.TextPrimary,
+            tint = colors.textPrimary,
             modifier = Modifier
                 .size(24.dp)
                 .clickable(onClick = onBack)
@@ -51,7 +53,7 @@ fun ScreenHeader(
 
         Text(
             text = title,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat,

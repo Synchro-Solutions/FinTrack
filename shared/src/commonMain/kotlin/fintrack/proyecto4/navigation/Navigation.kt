@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import fintrack.proyecto4.ocr.OcrResult
+import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionType
 
 /**
@@ -31,7 +32,14 @@ sealed interface Screen {
     data object Ajustes : Screen
 
     data class TransactionForm(
-        val initialType: TransactionType
+        val initialType: TransactionType,
+        /** Si no es null, el formulario edita esta transacción en vez de crear una nueva (US-14). */
+        val editingTransaction: Transaction? = null
+    ) : Screen
+
+    /** Ver/editar/eliminar el detalle de una transacción ya guardada (US-14). */
+    data class TransactionDetail(
+        val transaction: Transaction
     ) : Screen
 
     /** Pantalla del asistente OCR (idle / procesando / éxito, ver UI-05). */

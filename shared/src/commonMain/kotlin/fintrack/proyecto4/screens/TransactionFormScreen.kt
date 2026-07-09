@@ -263,7 +263,7 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     selectedYearContentColor = Color.White,
     currentYearContentColor = FinTrackColors.GreenPrimary,
     navigationContentColor = FinTrackColors.GreenPrimary
-)}
+)
 
 internal fun formatEpochMillisToDate(millis: Long): String {
     val date = LocalDate.fromEpochDays((millis / 86_400_000L).toInt())
@@ -305,7 +305,6 @@ private fun todayEndOfDayMillis(): Long {
 private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () -> Unit) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
-    val colors = LocalAppColors.current
 
     Row(
         modifier = Modifier

@@ -42,24 +42,26 @@ class TransactionsViewModel(
         _uiState.update { it.copy(filter = filter, visibleCount = TransactionsUiState.PageSize) }
     }
 
-    fun updateDateScope(scope: DateScope) {
-        _uiState.update { it.copy(dateScope = scope, visibleCount = TransactionsUiState.PageSize) }
-    }
-
-    fun updateCategoryFilter(category: String?) {
-        _uiState.update { it.copy(categoryFilter = category, visibleCount = TransactionsUiState.PageSize) }
-    }
-
-    fun updatePaymentMethodFilter(method: PaymentMethod?) {
-        _uiState.update { it.copy(paymentMethodFilter = method, visibleCount = TransactionsUiState.PageSize) }
-    }
-
-    fun clearAdvancedFilters() {
+    /**
+     * US-13: se llama una sola vez, al confirmar "Aplicar filtros" en el diálogo. Mientras el
+     * usuario elige opciones dentro del diálogo (FiltersSheet en TransactionsScreen), esos
+     * cambios quedan en estado local de la UI y no afectan el historial hasta este punto —
+     * así la "X" de cerrar puede descartarlos sin tocar el ViewModel.
+     */
+    fun applyAdvancedFilters(
+        dateScope: DateScope,
+        customDateFrom: String?,
+        customDateTo: String?,
+        category: String?,
+        paymentMethod: PaymentMethod?
+    ) {
         _uiState.update {
             it.copy(
-                dateScope = DateScope.ALL,
-                categoryFilter = null,
-                paymentMethodFilter = null,
+                dateScope = dateScope,
+                customDateFrom = customDateFrom,
+                customDateTo = customDateTo,
+                categoryFilter = category,
+                paymentMethodFilter = paymentMethod,
                 visibleCount = TransactionsUiState.PageSize
             )
         }

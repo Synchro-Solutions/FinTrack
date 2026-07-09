@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -118,10 +120,14 @@ fun DashboardScreen(
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    state.ultimosMovimientos.forEachIndexed { i, mov ->
-                        MovimientoRow(mov)
-                        if (i < state.ultimosMovimientos.lastIndex) {
-                            HorizontalDivider(color = colors.divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 4.dp))
+                    if (state.ultimosMovimientos.isEmpty()) {
+                        EmptyMovimientosState()
+                    } else {
+                        state.ultimosMovimientos.forEachIndexed { i, mov ->
+                            MovimientoRow(mov)
+                            if (i < state.ultimosMovimientos.lastIndex) {
+                                HorizontalDivider(color = colors.divider, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 4.dp))
+                            }
                         }
                     }
                 }
@@ -606,6 +612,41 @@ private fun ConsejoCard(consejo: String) {
 }
 
 /* Movimientos */
+
+@Composable
+private fun EmptyMovimientosState() {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Receipt,
+            contentDescription = null,
+            tint = colors.textSecondary,
+            modifier = Modifier.size(26.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Aún no tienes movimientos",
+            color = colors.textPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = montserrat
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = "Registra tu primer ingreso o gasto para verlo aquí.",
+            color = colors.textSecondary,
+            fontSize = 11.sp,
+            fontFamily = montserrat,
+            textAlign = TextAlign.Center
+        )
+    }
+}
 
 @Composable
 private fun MovimientoRow(item: MovimientoItem) {

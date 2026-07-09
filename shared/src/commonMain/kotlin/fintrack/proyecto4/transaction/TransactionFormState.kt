@@ -20,6 +20,33 @@ enum class PaymentMethod(val label: String) {
 
 const val MaxDescriptionLength = 200
 
+val ExpenseCategories = listOf(
+    "Alimentación",
+    "Transporte",
+    "Vivienda",
+    "Servicios",
+    "Salud",
+    "Entretenimiento",
+    "Ropa",
+    "Educación",
+    "Otro"
+)
+
+val IncomeCategories = listOf(
+    "Salario",
+    "Extra",
+    "Inversión",
+    "Regalo",
+    "Otro"
+)
+
+/**
+ * Catálogo completo de categorías de la app (gasto + ingreso). Se usa en filtros que deben
+ * ofrecer todas las categorías válidas, no solo las que el usuario ya usó — así un usuario
+ * nuevo sin movimientos todavía ve el filtro de categoría completo, no vacío.
+ */
+val AllTransactionCategories: List<String> = (ExpenseCategories + IncomeCategories).distinct()
+
 fun todayAsFormFieldDate(): String {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val day = today.day.toString().padStart(2, '0')
@@ -59,25 +86,8 @@ data class TransactionFormState(
 ) {
     val categories: List<String>
         get() = when (type) {
-            TransactionType.EXPENSE -> listOf(
-                "Alimentación",
-                "Transporte",
-                "Vivienda",
-                "Servicios",
-                "Salud",
-                "Entretenimiento",
-                "Ropa",
-                "Educación",
-                "Otro"
-            )
-
-            TransactionType.INCOME -> listOf(
-                "Salario",
-                "Extra",
-                "Inversión",
-                "Regalo",
-                "Otro"
-            )
+            TransactionType.EXPENSE -> ExpenseCategories
+            TransactionType.INCOME -> IncomeCategories
         }
 
     val isValid: Boolean

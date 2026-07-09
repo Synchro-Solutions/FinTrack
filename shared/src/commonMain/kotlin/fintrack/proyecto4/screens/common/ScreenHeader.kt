@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 
@@ -30,8 +29,8 @@ fun ScreenHeader(
     modifier: Modifier = Modifier,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
-    val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
 
     Row(
         modifier = modifier

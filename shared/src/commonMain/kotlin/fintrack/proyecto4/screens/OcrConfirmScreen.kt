@@ -21,31 +21,52 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.screens.common.ScreenHeader
+import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionFormViewModel
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+/** Cuánto se muestra el Snackbar de éxito antes de navegar fuera de la pantalla. */
+private const val SuccessSnackbarDelayMillis = 900L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OcrConfirmScreen(
     result: OcrResult,
     onCancel: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    transactionRepository: TransactionRepository = NoOpTransactionRepository()
 ) {
-    val viewModel = remember { TransactionFormViewModel(TransactionType.EXPENSE) }
-    val state by viewModel.uiState.collectAsState()
+    val uid = AuthClient.currentUserId() ?: ""
+    // remember (no viewModel(key=...)) a propósito: cada confirmación OCR debe partir de un
+    // formulario limpio, no reutilizar categoría/método de pago de una confirmación anterior.
+    val viewModel = remember(uid) {
+        TransactionFormViewModel(transactionRepository, uid, TransactionType.EXPENSE)
+    }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val saveError by viewModel.saveError.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    val colors = LocalAppColors.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(result) {
         viewModel.prefillFromOcr(result)
     }
 
-    val colors = LocalAppColors.current
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +100,8 @@ fun OcrConfirmScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-                    .padding(top = 6.dp),
+                    .padding(top = 6.dp)
+                    .then(missingFieldBorder(isMissing = state.amount.isBlank())),
                 shape = RoundedCornerShape(16.dp),
                 textStyle = MaterialTheme.typography.titleMedium.copy(
                     color = colors.textPrimary,
@@ -96,7 +118,8 @@ fun OcrConfirmScreen(
             DateField(
                 value = state.date,
                 onClick = { showDatePicker = true },
-                placeholder = "Dato no detectado"
+                placeholder = "Dato no detectado",
+                isMissing = state.date.isBlank()
             )
 
             Spacer(Modifier.height(18.dp))
@@ -116,7 +139,8 @@ fun OcrConfirmScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp)
-                    .padding(top = 6.dp),
+                    .padding(top = 6.dp)
+                    .then(missingFieldBorder(isMissing = state.description.isBlank())),
                 shape = RoundedCornerShape(16.dp),
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 13.sp,
@@ -152,7 +176,31 @@ fun OcrConfirmScreen(
                 }
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(18.dp))
+
+            Text(
+                text = "MÉTODO DE PAGO",
+                color = Color(0xFF58708F),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily()
+            )
+            PaymentMethodSection(
+                selectedPaymentMethod = state.paymentMethod,
+                onPaymentMethodSelected = viewModel::selectPaymentMethod
+            )
+
+            if (saveError != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = saveError ?: "",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontFamily = montserratFamily()
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -160,10 +208,20 @@ fun OcrConfirmScreen(
             ) {
                 Button(
                     onClick = {
-                        viewModel.saveTransaction()
-                        onSaved()
+                        viewModel.saveTransaction {
+                            scope.launch {
+                                launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Movimiento registrado exitosamente",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                                delay(SuccessSnackbarDelayMillis)
+                                onSaved()
+                            }
+                        }
                     },
-                    enabled = state.isValid,
+                    enabled = state.isValid && state.paymentMethod != null && !isSaving,
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -171,12 +229,20 @@ fun OcrConfirmScreen(
                         disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
                     )
                 ) {
-                    Text(
-                        text = "Confirmar y guardar",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = montserratFamily()
-                    )
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Confirmar y guardar",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = montserratFamily()
+                        )
+                    }
                 }
 
                 Box(
@@ -197,9 +263,18 @@ fun OcrConfirmScreen(
         }
     }
 
+    SuccessSnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+    )
+    }
+
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = parseDateToEpochMillis(state.date)
+            initialSelectedDateMillis = parseDateToEpochMillis(state.date),
+            selectableDates = NotFutureSelectableDates
         )
 
         DatePickerDialog(
@@ -234,12 +309,17 @@ fun OcrConfirmScreen(
 
 @Composable
 private fun WarningBanner() {
+    val colors = LocalAppColors.current
+    val bannerBg = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.12f) else colors.subtleSurface
+    val bannerBorder = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.35f) else colors.border
+    val bannerTextColor = if (colors.isDark) FinTrackColors.WarningLight else colors.textPrimary
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(FinTrackColors.WarningColor.copy(alpha = 0.12f))
-            .border(1.dp, FinTrackColors.WarningColor.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .background(bannerBg)
+            .border(1.dp, bannerBorder, RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
         Icon(
@@ -251,12 +331,25 @@ private fun WarningBanner() {
         Spacer(Modifier.width(10.dp))
         Text(
             text = "Revisa los datos detectados. No se guardan automáticamente sin tu confirmación.",
-            color = FinTrackColors.WarningLight,
+            color = bannerTextColor,
             fontSize = 12.sp,
             fontFamily = montserratFamily()
         )
     }
 }
+
+/**
+ * US-17/US-18: OcrResult no trae un score de confianza por campo (solo detecta o no),
+ * así que se usa "campo vacío tras el prefill" como equivalente práctico de "confianza
+ * baja" y se resalta con borde de advertencia para que el usuario lo revise antes de
+ * confirmar. El borde desaparece en cuanto el usuario completa el campo.
+ */
+private fun missingFieldBorder(isMissing: Boolean): Modifier =
+    if (isMissing) {
+        Modifier.border(1.5.dp, FinTrackColors.WarningColor, RoundedCornerShape(16.dp))
+    } else {
+        Modifier
+    }
 
 @Composable
 private fun OcrFieldLabel(text: String) {
@@ -270,11 +363,18 @@ private fun OcrFieldLabel(text: String) {
             fontFamily = montserratFamily()
         )
         Spacer(Modifier.width(4.dp))
-        Text(
-            text = "· detectado por OCR",
-            color = FinTrackColors.GreenPrimary,
-            fontSize = 10.sp,
-            fontFamily = montserratFamily()
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(colors.subtleSurface)
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "· detectado por OCR",
+                color = FinTrackColors.GreenPrimary,
+                fontSize = 10.sp,
+                fontFamily = montserratFamily()
+            )
+        }
     }
 }

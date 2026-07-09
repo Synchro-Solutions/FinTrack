@@ -1,5 +1,6 @@
 package fintrack.proyecto4.transaction
 
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
@@ -17,11 +18,35 @@ enum class PaymentMethod(val label: String) {
     TRANSFER("Transferencia")
 }
 
+const val MaxDescriptionLength = 200
+
 fun todayAsFormFieldDate(): String {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val day = today.day.toString().padStart(2, '0')
     val month = today.month.number.toString().padStart(2, '0')
     return "$day/$month/${today.year}"
+}
+
+/** Parsea una fecha en formato "dd/mm/aaaa" (el único que usa el formulario). */
+internal fun parseFormFieldDate(value: String): LocalDate? {
+    val parts = value.split("/")
+    if (parts.size != 3) return null
+    val day = parts[0].toIntOrNull() ?: return null
+    val month = parts[1].toIntOrNull() ?: return null
+    val year = parts[2].toIntOrNull() ?: return null
+    return try {
+        LocalDate(year, month, day)
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+}
+
+/** Una fecha en blanco (dato no detectado por OCR) no cuenta como futura. */
+fun isFutureFormFieldDate(value: String): Boolean {
+    if (value.isBlank()) return false
+    val date = parseFormFieldDate(value) ?: return false
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    return date > today
 }
 
 data class TransactionFormState(
@@ -59,5 +84,7 @@ data class TransactionFormState(
         get() = amount.isNotBlank() &&
                 amount != "0" &&
                 description.isNotBlank() &&
-                selectedCategory != null
+                description.length <= MaxDescriptionLength &&
+                selectedCategory != null &&
+                !isFutureFormFieldDate(date)
 }

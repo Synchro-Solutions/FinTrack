@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import kotlin.math.round
 
@@ -145,6 +146,7 @@ fun NetSalaryCalculatorScreen(
     onSaved: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
 
     var grossSalaryText by remember { mutableStateOf("") }
     var ccssRatePercent by remember { mutableStateOf(DEFAULT_CCSS_RATE_PERCENT) }
@@ -173,7 +175,7 @@ fun NetSalaryCalculatorScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         ScreenHeader(
             title = "Salario neto estimado",
@@ -183,20 +185,20 @@ fun NetSalaryCalculatorScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Reiniciar cálculo",
-                        tint = FinTrackColors.TextPrimary
+                        tint = colors.textPrimary
                     )
                 }
             }
         )
         Text(
             text = "Estimación mensual para Costa Rica",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(FinTrackColors.SurfacePrimary)
+                .background(colors.surface)
                 .padding(horizontal = 18.dp)
                 .padding(bottom = 12.dp)
         )
@@ -225,8 +227,8 @@ fun NetSalaryCalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = FinTrackColors.SurfacePrimary),
-                border = BorderStroke(1.dp, FinTrackColors.BorderDefault)
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
@@ -244,7 +246,7 @@ fun NetSalaryCalculatorScreen(
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "OTRAS REBAJAS",
-                            color = FinTrackColors.TextPrimary,
+                            color = colors.textPrimary,
                             fontFamily = montserrat,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -310,7 +312,7 @@ fun NetSalaryCalculatorScreen(
             ) {
                 Text(
                     text = "Parámetros configurables. Resultado estimado.",
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontFamily = montserrat,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
@@ -319,7 +321,7 @@ fun NetSalaryCalculatorScreen(
                 TextButton(onClick = { showEditParams = true }) {
                     Text(
                         text = "Editar parámetros",
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontFamily = montserrat,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp
@@ -362,9 +364,10 @@ fun NetSalaryCalculatorScreen(
 
 @Composable
 private fun SectionLabel(text: String, montserrat: FontFamily) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = FinTrackColors.TextPrimary,
+        color = colors.textPrimary,
         fontFamily = montserrat,
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
@@ -392,13 +395,14 @@ private fun GrossSalaryField(
     height: Dp,
     fontSize: androidx.compose.ui.unit.TextUnit
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
             .clip(RoundedCornerShape(16.dp))
-            .background(FinTrackColors.SurfaceSecondary)
-            .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(16.dp)),
+            .background(colors.surfaceSecondary)
+            .border(1.dp, colors.border, RoundedCornerShape(16.dp)),
         contentAlignment = Alignment.CenterStart
     ) {
         Row(
@@ -409,7 +413,7 @@ private fun GrossSalaryField(
         ) {
             Text(
                 text = "₡",
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontFamily = montserrat,
                 fontSize = fontSize,
                 fontWeight = FontWeight.Bold
@@ -422,7 +426,7 @@ private fun GrossSalaryField(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = NetSalaryThousandsVisualTransformation,
                 textStyle = TextStyle(
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontFamily = montserrat,
                     fontSize = fontSize,
                     fontWeight = FontWeight.SemiBold
@@ -448,6 +452,7 @@ private fun GrossSalaryField(
 
 @Composable
 private fun BreakdownRow(label: String, amount: Long, montserrat: FontFamily) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -457,14 +462,14 @@ private fun BreakdownRow(label: String, amount: Long, montserrat: FontFamily) {
     ) {
         Text(
             text = label,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium
         )
         Text(
             text = formatColonesDot(amount),
-            color = if (amount < 0) FinTrackColors.ErrorColor else FinTrackColors.TextPrimary,
+            color = if (amount < 0) FinTrackColors.ErrorColor else colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold
@@ -475,6 +480,7 @@ private fun BreakdownRow(label: String, amount: Long, montserrat: FontFamily) {
 /** Fila individual de una rebaja agregada manualmente, con acción de eliminar. */
 @Composable
 private fun DeductionRow(deduction: Deduction, montserrat: FontFamily, onRemove: () -> Unit) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -484,7 +490,7 @@ private fun DeductionRow(deduction: Deduction, montserrat: FontFamily, onRemove:
     ) {
         Text(
             text = deduction.name,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
@@ -501,7 +507,7 @@ private fun DeductionRow(deduction: Deduction, montserrat: FontFamily, onRemove:
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Eliminar rebaja",
-                tint = FinTrackColors.TextPrimary,
+                tint = colors.textPrimary,
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -566,12 +572,13 @@ private fun AddDeductionPanel(
     val amountExceedsGross = grossSalary > 0 && amount > grossSalary
     val canConfirm = nameText.isNotBlank() && amount > 0 && !amountExceedsGross
 
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(FinTrackColors.SurfaceSecondary)
-            .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(14.dp))
+            .background(colors.surfaceSecondary)
+            .border(1.dp, colors.border, RoundedCornerShape(14.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -604,7 +611,7 @@ private fun AddDeductionPanel(
                 onClick = onCancel,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = "Cancelar", fontFamily = montserrat, color = FinTrackColors.TextPrimary)
+                Text(text = "Cancelar", fontFamily = montserrat, color = colors.textPrimary)
             }
             Button(
                 onClick = { onConfirm(nameText.trim(), amount) },
@@ -628,13 +635,14 @@ private fun InlineTextField(
     keyboardType: KeyboardType,
     visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(FinTrackColors.SurfacePrimary)
-            .border(1.dp, FinTrackColors.BorderDefault, RoundedCornerShape(12.dp)),
+            .background(colors.surface)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.CenterStart
     ) {
         BasicTextField(
@@ -644,7 +652,7 @@ private fun InlineTextField(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             visualTransformation = visualTransformation,
             textStyle = TextStyle(
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontFamily = montserrat,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
@@ -677,14 +685,15 @@ private fun EditParamsDialog(
     onConfirm: (ccssRatePercent: Double, autoIncomeTaxEnabled: Boolean) -> Unit
 ) {
     val montserrat = montserratFamily()
+    val colors = LocalAppColors.current
     var rateText by remember { mutableStateOf(formatRateForInput(ccssRatePercent)) }
     var autoTax by remember { mutableStateOf(autoIncomeTaxEnabled) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FinTrackColors.SurfacePrimary,
-        titleContentColor = FinTrackColors.TextPrimary,
-        textContentColor = FinTrackColors.TextPrimary,
+        containerColor = colors.surface,
+        titleContentColor = colors.textPrimary,
+        textContentColor = colors.textPrimary,
         title = {
             Text(text = "Editar parámetros", fontFamily = montserrat, fontWeight = FontWeight.Bold)
         },
@@ -692,7 +701,7 @@ private fun EditParamsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "Porcentaje CCSS trabajador",
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontFamily = montserrat,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
@@ -712,7 +721,7 @@ private fun EditParamsDialog(
                 ) {
                     Text(
                         text = "Calcular renta automáticamente",
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontFamily = montserrat,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
@@ -724,8 +733,8 @@ private fun EditParamsDialog(
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = FinTrackColors.GreenPrimary,
                             checkedTrackColor = FinTrackColors.GreenPrimary.copy(alpha = 0.5f),
-                            uncheckedThumbColor = FinTrackColors.TextPrimary,
-                            uncheckedTrackColor = FinTrackColors.SurfaceSecondary
+                            uncheckedThumbColor = colors.textPrimary,
+                            uncheckedTrackColor = colors.surfaceSecondary
                         )
                     )
                 }
@@ -743,7 +752,7 @@ private fun EditParamsDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancelar", fontFamily = montserrat, color = FinTrackColors.TextPrimary)
+                Text(text = "Cancelar", fontFamily = montserrat, color = colors.textPrimary)
             }
         }
     )

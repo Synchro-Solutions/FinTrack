@@ -333,17 +333,18 @@ fun App(
  */
 @Composable
 private fun OcrCameraUnavailablePlaceholder(onCancel: () -> Unit) {
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "La cámara no está disponible en esta plataforma.",
-            color = FinTrackColors.TextPrimary
+            color = colors.textPrimary
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = onCancel) {

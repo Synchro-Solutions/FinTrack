@@ -63,6 +63,7 @@ import fintrack.proyecto4.onboarding.CurrencyOption
 import fintrack.proyecto4.onboarding.OnboardingState
 import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun OnboardingScreen(
@@ -71,6 +72,7 @@ fun OnboardingScreen(
     onPickPhoto: ((String?) -> Unit) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val colors = LocalAppColors.current
 
     LaunchedEffect(state.savedOk) {
         if (state.savedOk) onFinished()
@@ -79,7 +81,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         Column(
             modifier = Modifier
@@ -146,10 +148,10 @@ fun OnboardingScreen(
                             .height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = FinTrackColors.TextPrimary
+                            contentColor = colors.textPrimary
                         ),
                         border = androidx.compose.foundation.BorderStroke(
-                            1.dp, FinTrackColors.BorderDefault
+                            1.dp, colors.border
                         )
                     ) {
                         Text("Anterior", fontWeight = FontWeight.Medium)
@@ -196,6 +198,7 @@ fun OnboardingScreen(
 
 @Composable
 private fun StepIndicator(currentStep: Int) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -215,7 +218,7 @@ private fun StepIndicator(currentStep: Int) {
                         .height(2.dp)
                         .background(
                             if (stepNum < currentStep) FinTrackColors.GreenPrimary
-                            else FinTrackColors.DividerColor
+                            else colors.divider
                         )
                 )
             }
@@ -225,14 +228,15 @@ private fun StepIndicator(currentStep: Int) {
 
 @Composable
 private fun StepCircle(number: Int, isDone: Boolean, isActive: Boolean) {
+    val colors = LocalAppColors.current
     val bg = when {
         isDone -> FinTrackColors.GreenPrimary
         isActive -> FinTrackColors.GreenPrimary
-        else -> FinTrackColors.SurfaceSecondary
+        else -> colors.surfaceSecondary
     }
     val border = when {
         isDone || isActive -> FinTrackColors.GreenPrimary
-        else -> FinTrackColors.DividerColor
+        else -> colors.divider
     }
 
     Box(
@@ -253,7 +257,7 @@ private fun StepCircle(number: Int, isDone: Boolean, isActive: Boolean) {
         } else {
             Text(
                 text = "$number",
-                color = if (isActive) Color.White else FinTrackColors.TextSecondary,
+                color = if (isActive) Color.White else colors.textSecondary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
@@ -269,6 +273,7 @@ private fun Step1Content(
     onNameChange: (String) -> Unit,
     onPickPhoto: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -277,13 +282,13 @@ private fun Step1Content(
     ) {
         Text(
             text = "Cuéntanos de ti",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
         Text(
             text = "Así personalizamos tu experiencia",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 6.dp)
         )
@@ -295,8 +300,8 @@ private fun Step1Content(
             modifier = Modifier
                 .size(96.dp)
                 .clip(CircleShape)
-                .background(FinTrackColors.SurfaceSecondary)
-                .border(2.dp, FinTrackColors.BorderDefault, CircleShape)
+                .background(colors.surfaceSecondary)
+                .border(2.dp, colors.border, CircleShape)
                 .clickable(onClick = onPickPhoto),
             contentAlignment = Alignment.Center
         ) {
@@ -312,12 +317,12 @@ private fun Step1Content(
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
-                        tint = FinTrackColors.TextSecondary,
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(28.dp)
                     )
                     Text(
                         text = "Foto",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontSize = 11.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -347,6 +352,7 @@ private fun Step2Content(
     onIncomeChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var currencyExpanded by remember { mutableStateOf(false) }
     val selectedCurrency = CURRENCIES.firstOrNull { it.code == state.currency } ?: CURRENCIES.first()
     val selectedCurrencyLabel = "${selectedCurrency.symbol} ${selectedCurrency.code} — ${selectedCurrency.label}"
@@ -358,13 +364,13 @@ private fun Step2Content(
     ) {
         Text(
             text = "Tu situación financiera",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
         Text(
             text = "Úsalo como referencia para tus metas",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 6.dp)
         )
@@ -385,7 +391,7 @@ private fun Step2Content(
             prefix = {
                 Text(
                     text = "${selectedCurrency.symbol} ",
-                    color = FinTrackColors.TextSecondary
+                    color = colors.textSecondary
                 )
             }
         )
@@ -402,7 +408,7 @@ private fun Step2Content(
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
-                        tint = FinTrackColors.TextSecondary
+                        tint = colors.textSecondary
                     )
                 },
                 modifier = Modifier
@@ -415,14 +421,14 @@ private fun Step2Content(
             DropdownMenu(
                 expanded = currencyExpanded,
                 onDismissRequest = { currencyExpanded = false },
-                modifier = Modifier.background(FinTrackColors.SurfacePrimary)
+                modifier = Modifier.background(colors.surface)
             ) {
                 CURRENCIES.forEach { option ->
                     DropdownMenuItem(
                         text = {
                             Text(
                                 "${option.symbol} ${option.code} — ${option.label}",
-                                color = FinTrackColors.TextPrimary,
+                                color = colors.textPrimary,
                                 fontSize = 14.sp
                             )
                         },
@@ -431,7 +437,7 @@ private fun Step2Content(
                             currencyExpanded = false
                         },
                         colors = MenuDefaults.itemColors(
-                            textColor = FinTrackColors.TextPrimary
+                            textColor = colors.textPrimary
                         )
                     )
                 }
@@ -448,6 +454,7 @@ private fun Step3Content(
     onPrivacyChange: (Boolean) -> Unit,
     onTermsChange: (Boolean) -> Unit
 ) {
+    val colors = LocalAppColors.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -455,13 +462,13 @@ private fun Step3Content(
     ) {
         Text(
             text = "Antes de empezar",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
         Text(
             text = "Lee y acepta los siguientes documentos",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 6.dp)
         )
@@ -490,11 +497,12 @@ private fun ConsentRow(
     onCheckedChange: (Boolean) -> Unit,
     label: String
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(FinTrackColors.SurfacePrimary)
+            .background(colors.surface)
             .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -504,14 +512,14 @@ private fun ConsentRow(
             onCheckedChange = onCheckedChange,
             colors = CheckboxDefaults.colors(
                 checkedColor = FinTrackColors.GreenPrimary,
-                uncheckedColor = FinTrackColors.TextSecondary,
+                uncheckedColor = colors.textSecondary,
                 checkmarkColor = Color.White
             )
         )
         Spacer(Modifier.width(12.dp))
         Text(
             text = label,
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 14.sp,
             lineHeight = 20.sp
         )
@@ -519,12 +527,14 @@ private fun ConsentRow(
 }
 
 @Composable
-private fun onboardingFieldColors() = OutlinedTextFieldDefaults.colors(
+private fun onboardingFieldColors() = run {
+    val colors = LocalAppColors.current
+    OutlinedTextFieldDefaults.colors(
     focusedBorderColor = FinTrackColors.GreenPrimary,
-    unfocusedBorderColor = FinTrackColors.BorderDefault,
+    unfocusedBorderColor = colors.border,
     focusedLabelColor = FinTrackColors.GreenPrimary,
-    unfocusedLabelColor = FinTrackColors.TextSecondary,
+    unfocusedLabelColor = colors.textSecondary,
     cursorColor = FinTrackColors.GreenPrimary,
-    focusedTextColor = FinTrackColors.TextPrimary,
-    unfocusedTextColor = FinTrackColors.TextPrimary
-)
+    focusedTextColor = colors.textPrimary,
+    unfocusedTextColor = colors.textPrimary
+)}

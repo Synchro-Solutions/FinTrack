@@ -155,7 +155,7 @@ fun OcrConfirmScreen(
 
             Text(
                 text = "CATEGORÍA",
-                color = Color(0xFF58708F),
+                color = colors.textSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = montserratFamily()
@@ -331,7 +331,7 @@ private fun OcrFieldLabel(text: String) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = text,
-            color = Color(0xFF58708F),
+            color = colors.textSecondary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFamily()

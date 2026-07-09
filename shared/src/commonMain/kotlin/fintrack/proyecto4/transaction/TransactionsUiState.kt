@@ -1,6 +1,8 @@
 package fintrack.proyecto4.transaction
 
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -11,12 +13,16 @@ enum class TransactionsFilter {
 }
 
 /**
- * Por defecto se ve todo el historial ([ALL]); el usuario decide si quiere acotarlo a
- * [CURRENT_MONTH] desde el diálogo de filtros.
+ * Rango de fechas del historial. Por defecto se ve todo el historial ([ALL]); el usuario
+ * decide si lo acota desde el diálogo de filtros. [CUSTOM] usa [TransactionsUiState.customDateFrom]
+ * y [TransactionsUiState.customDateTo] (formato "dd/mm/aaaa", igual que el resto de la app).
  */
 enum class DateScope {
     ALL,
-    CURRENT_MONTH
+    CURRENT_MONTH,
+    LAST_3_MONTHS,
+    CURRENT_YEAR,
+    CUSTOM
 }
 
 data class TransactionsUiState(
@@ -25,14 +31,20 @@ data class TransactionsUiState(
     val searchQuery: String = "",
     val filter: TransactionsFilter = TransactionsFilter.ALL,
     val dateScope: DateScope = DateScope.ALL,
+    val customDateFrom: String? = null,
+    val customDateTo: String? = null,
     val categoryFilter: String? = null,
     val paymentMethodFilter: PaymentMethod? = null,
     val visibleCount: Int = PageSize,
     val errorMessage: String? = null
 ) {
-    /** Categorías realmente presentes en los movimientos del usuario (no una lista fija). */
+    /**
+     * Catálogo completo de categorías de la app (no solo las que el usuario ya usó), para que
+     * el filtro de categoría siga apareciendo aunque el usuario todavía no tenga movimientos
+     * registrados.
+     */
     val availableCategories: List<String>
-        get() = transactions.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
+        get() = AllTransactionCategories
 
     val filteredTransactions: List<Transaction>
         get() = transactions
@@ -44,7 +56,7 @@ data class TransactionsUiState(
                     TransactionsFilter.EXPENSE -> transaction.type == TransactionType.EXPENSE
                 }
             }
-            .filter { transaction -> dateScope == DateScope.ALL || isInCurrentMonth(transaction.date) }
+            .filter { transaction -> matchesDateScope(transaction.date, dateScope, customDateFrom, customDateTo) }
             .filter { transaction -> categoryFilter == null || transaction.category == categoryFilter }
             .filter { transaction -> paymentMethodFilter == null || transaction.paymentMethod == paymentMethodFilter }
             .filter { transaction -> matchesSearch(transaction, searchQuery) }
@@ -77,9 +89,28 @@ private fun matchesSearch(transaction: Transaction, query: String): Boolean {
         transaction.category.contains(trimmed, ignoreCase = true)
 }
 
-/** Si la fecha no se puede interpretar, no se oculta la transacción por este filtro. */
-private fun isInCurrentMonth(dateValue: String): Boolean {
+/** Si la fecha de la transacción no se puede interpretar, no se oculta por este filtro. */
+private fun matchesDateScope(
+    dateValue: String,
+    scope: DateScope,
+    customFrom: String?,
+    customTo: String?
+): Boolean {
+    if (scope == DateScope.ALL) return true
     val parsed = parseFormFieldDate(dateValue) ?: return true
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    return parsed.year == today.year && parsed.month == today.month
+    return when (scope) {
+        DateScope.ALL -> true
+        DateScope.CURRENT_MONTH -> parsed.year == today.year && parsed.month == today.month
+        DateScope.CURRENT_YEAR -> parsed.year == today.year
+        DateScope.LAST_3_MONTHS -> {
+            val threshold = today.minus(DatePeriod(months = 3))
+            parsed in threshold..today
+        }
+        DateScope.CUSTOM -> {
+            val from = customFrom?.let { parseFormFieldDate(it) }
+            val to = customTo?.let { parseFormFieldDate(it) }
+            (from == null || parsed >= from) && (to == null || parsed <= to)
+        }
+    }
 }

@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.FinTrackTypography
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
@@ -195,45 +196,11 @@ fun TransactionFormScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = parseDateToEpochMillis(state.date),
-            selectableDates = NotFutureSelectableDates
-        )
-
-        DatePickerDialog(
+        FintrackDatePickerDialog(
+            initialDateMillis = parseDateToEpochMillis(state.date),
             onDismissRequest = { showDatePicker = false },
-            colors = fintrackDatePickerColors(),
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            viewModel.updateDate(formatEpochMillisToDate(millis))
-                        }
-                        showDatePicker = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = FinTrackColors.GreenPrimary
-                    )
-                ) {
-                    Text("Aceptar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDatePicker = false },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = colors.textSecondary
-                    )
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = fintrackDatePickerColors()
-            )
-        }
+            onDateSelected = { millis -> viewModel.updateDate(formatEpochMillisToDate(millis)) }
+        )
     }
 }
 
@@ -264,6 +231,71 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
     currentYearContentColor = FinTrackColors.GreenPrimary,
     navigationContentColor = FinTrackColors.GreenPrimary
 )
+
+/**
+ * Esquema de color claro para el `MaterialTheme` que envuelve el DatePicker. [DatePickerColors]
+ * (usado en [fintrackDatePickerColors]) no expone un parámetro para el color del campo de
+ * ingreso manual de fecha (el ícono de lápiz/teclado dentro del picker) — ese campo hereda el
+ * `MaterialTheme.colorScheme` ambiental. Sin este override, en modo oscuro el texto tecleado
+ * salía gris casi ilegible sobre la tarjeta blanca forzada del picker.
+ */
+private val LightDatePickerColorScheme = lightColorScheme(
+    primary = FinTrackColors.GreenPrimary,
+    onPrimary = Color.White,
+    background = Color.White,
+    surface = Color.White,
+    onSurface = LightAppColors.textPrimary,
+    onSurfaceVariant = LightAppColors.textSecondary,
+    outline = LightAppColors.border,
+    outlineVariant = LightAppColors.divider
+)
+
+/**
+ * DatePicker único de la app (formulario de transacción, confirmación OCR, filtros del
+ * historial): siempre tarjeta blanca sin importar el tema activo, con `MaterialTheme` claro
+ * forzado (ver [LightDatePickerColorScheme]) para que también el modo de ingreso manual de
+ * fecha se lea bien.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FintrackDatePickerDialog(
+    initialDateMillis: Long?,
+    onDismissRequest: () -> Unit,
+    onDateSelected: (Long) -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDateMillis,
+        selectableDates = NotFutureSelectableDates
+    )
+
+    MaterialTheme(colorScheme = LightDatePickerColorScheme, typography = FinTrackTypography()) {
+        DatePickerDialog(
+            onDismissRequest = onDismissRequest,
+            colors = fintrackDatePickerColors(),
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let(onDateSelected)
+                        onDismissRequest()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = FinTrackColors.GreenPrimary)
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onDismissRequest,
+                    colors = ButtonDefaults.textButtonColors(contentColor = LightAppColors.textSecondary)
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState, colors = fintrackDatePickerColors())
+        }
+    }
+}
 
 internal fun formatEpochMillisToDate(millis: Long): String {
     val date = LocalDate.fromEpochDays((millis / 86_400_000L).toInt())

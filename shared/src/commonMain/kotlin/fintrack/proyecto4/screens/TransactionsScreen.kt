@@ -1,6 +1,8 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +11,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingDown
@@ -20,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -28,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fintrack.proyecto4.auth.AuthClient
@@ -43,8 +49,12 @@ import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import fintrack.proyecto4.transaction.TransactionsFilter
+import fintrack.proyecto4.transaction.TransactionsUiState
 import fintrack.proyecto4.transaction.TransactionsViewModel
 import fintrack.proyecto4.util.formatColones
+
+/** Máximo de chips de categoría visibles antes de mostrar "Ver todas". */
+private const val VisibleCategoriesCount = 5
 
 /**
  * Pantalla de historial de movimientos (Sprint 4), siguiendo el wireframe
@@ -53,6 +63,7 @@ import fintrack.proyecto4.util.formatColones
  * refleja automáticamente cualquier transacción guardada desde el formulario manual o el
  * flujo OCR (US-17/US-18) para el usuario actualmente autenticado.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
@@ -128,12 +139,12 @@ fun TransactionsScreen(
     }
 
     if (showFilters) {
-        FiltersDialog(
+        FiltersSheet(
             state = state,
-            onDateScopeSelected = viewModel::updateDateScope,
-            onCategorySelected = viewModel::updateCategoryFilter,
-            onPaymentMethodSelected = viewModel::updatePaymentMethodFilter,
-            onClear = viewModel::clearAdvancedFilters,
+            onApply = { dateScope, customFrom, customTo, category, paymentMethod ->
+                viewModel.applyAdvancedFilters(dateScope, customFrom, customTo, category, paymentMethod)
+                showFilters = false
+            },
             onDismiss = { showFilters = false }
         )
     }
@@ -259,103 +270,311 @@ private fun FilterRow(selected: TransactionsFilter, onFilterSelected: (Transacti
 }
 
 /**
- * US-13: filtros avanzados (rango de fechas, categoría, método de pago) separados de los
- * chips Todos/Ingresos/Gastos para no saturar la barra principal del historial.
+ * US-13: filtros avanzados (rango de fechas, categoría, método de pago) como bottom sheet,
+ * separados de los chips Todos/Ingresos/Gastos para no saturar la barra principal del historial.
+ *
+ * Los cambios dentro del sheet quedan en estado local ("staged") y solo se aplican al historial
+ * cuando el usuario presiona "Aplicar filtros" (ver [onApply]). Cerrar con la "X", tocar fuera
+ * del sheet o el botón atrás del sistema descarta esos cambios sin tocar el ViewModel — el
+ * usuario siempre puede salir sin alterar los filtros que ya tenía aplicados.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FiltersDialog(
-    state: fintrack.proyecto4.transaction.TransactionsUiState,
-    onDateScopeSelected: (DateScope) -> Unit,
-    onCategorySelected: (String?) -> Unit,
-    onPaymentMethodSelected: (PaymentMethod?) -> Unit,
-    onClear: () -> Unit,
+private fun FiltersSheet(
+    state: TransactionsUiState,
+    onApply: (
+        dateScope: DateScope,
+        customDateFrom: String?,
+        customDateTo: String?,
+        category: String?,
+        paymentMethod: PaymentMethod?
+    ) -> Unit,
     onDismiss: () -> Unit
 ) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Dialog(onDismissRequest = onDismiss) {
+    var dateScope by remember { mutableStateOf(state.dateScope) }
+    var customFrom by remember { mutableStateOf(state.customDateFrom) }
+    var customTo by remember { mutableStateOf(state.customDateTo) }
+    var category by remember { mutableStateOf(state.categoryFilter) }
+    var paymentMethod by remember { mutableStateOf(state.paymentMethodFilter) }
+    var showAllCategories by remember { mutableStateOf(false) }
+    var showFromPicker by remember { mutableStateOf(false) }
+    var showToPicker by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = colors.surface,
+        contentColor = colors.textPrimary
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
-                .padding(20.dp)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp)
         ) {
-            Text(
-                text = "Filtros",
-                color = colors.textPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = montserrat
-            )
-
-            Spacer(Modifier.height(18.dp))
-            FilterSectionLabel("RANGO DE FECHAS")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SelectableChip(
-                    text = "Este mes",
-                    selected = state.dateScope == DateScope.CURRENT_MONTH,
-                    onClick = { onDateScopeSelected(DateScope.CURRENT_MONTH) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Filtros",
+                    color = colors.textPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserrat
                 )
-                SelectableChip(
-                    text = "Todo el historial",
-                    selected = state.dateScope == DateScope.ALL,
-                    onClick = { onDateScopeSelected(DateScope.ALL) }
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar sin aplicar cambios",
+                    tint = colors.textSecondary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(onClick = onDismiss)
                 )
             }
 
-            if (state.availableCategories.isNotEmpty()) {
-                Spacer(Modifier.height(18.dp))
-                FilterSectionLabel("CATEGORÍA")
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SelectableChip(
-                        text = "Todas",
-                        selected = state.categoryFilter == null,
-                        onClick = { onCategorySelected(null) }
-                    )
-                    state.availableCategories.forEach { category ->
-                        SelectableChip(
-                            text = category,
-                            selected = state.categoryFilter == category,
-                            onClick = { onCategorySelected(category) }
+            Spacer(Modifier.height(20.dp))
+            FilterSectionLabel("RANGO DE FECHAS")
+            Spacer(Modifier.height(10.dp))
+            DateRangeGrid(
+                selected = dateScope,
+                onSelected = { dateScope = it }
+            )
+            if (dateScope == DateScope.CUSTOM) {
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        DateField(
+                            value = customFrom ?: "",
+                            onClick = { showFromPicker = true },
+                            placeholder = "Desde"
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        DateField(
+                            value = customTo ?: "",
+                            onClick = { showToPicker = true },
+                            placeholder = "Hasta"
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
-            FilterSectionLabel("MÉTODO DE PAGO")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SelectableChip(
-                    text = "Todos",
-                    selected = state.paymentMethodFilter == null,
-                    onClick = { onPaymentMethodSelected(null) }
-                )
-                PaymentMethod.values().forEach { method ->
+            if (state.availableCategories.isNotEmpty()) {
+                Spacer(Modifier.height(22.dp))
+                FilterSectionLabel("CATEGORÍA")
+                Spacer(Modifier.height(10.dp))
+                val categoriesToShow = if (showAllCategories) {
+                    state.availableCategories
+                } else {
+                    state.availableCategories.take(VisibleCategoriesCount)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SelectableChip(
-                        text = method.label,
-                        selected = state.paymentMethodFilter == method,
-                        onClick = { onPaymentMethodSelected(method) }
+                        text = "Todas",
+                        selected = category == null,
+                        onClick = { category = null }
                     )
+                    categoriesToShow.forEach { c ->
+                        SelectableChip(
+                            text = c,
+                            selected = category == c,
+                            onClick = { category = c }
+                        )
+                    }
+                }
+                if (state.availableCategories.size > VisibleCategoriesCount) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.clickable { showAllCategories = !showAllCategories },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (showAllCategories) "Ver menos" else "Ver todas",
+                            color = FinTrackColors.GreenPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = montserrat
+                        )
+                        Icon(
+                            imageVector = if (showAllCategories) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = FinTrackColors.GreenPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(22.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                TextButton(onClick = onClear) {
-                    Text("Limpiar filtros", color = colors.textSecondary, fontFamily = montserrat)
-                }
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
-                ) {
-                    Text("Cerrar", color = Color.White, fontFamily = montserrat)
+            FilterSectionLabel("MÉTODO DE PAGO")
+            Spacer(Modifier.height(10.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SelectableChip(
+                    text = "Todos",
+                    selected = paymentMethod == null,
+                    onClick = { paymentMethod = null }
+                )
+                PaymentMethod.values().forEach { method ->
+                    SelectableChip(
+                        text = method.label,
+                        selected = paymentMethod == method,
+                        onClick = { paymentMethod = method }
+                    )
                 }
             }
+
+            Spacer(Modifier.height(26.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        dateScope = DateScope.ALL
+                        customFrom = null
+                        customTo = null
+                        category = null
+                        paymentMethod = null
+                        showAllCategories = false
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, colors.border),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary)
+                ) {
+                    Text(
+                        text = "Limpiar filtros",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserrat
+                    )
+                }
+                Button(
+                    onClick = { onApply(dateScope, customFrom, customTo, category, paymentMethod) },
+                    modifier = Modifier
+                        .weight(1.3f)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                ) {
+                    Text(
+                        text = "Aplicar filtros",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserrat
+                    )
+                }
+            }
+        }
+    }
+
+    if (showFromPicker) {
+        FintrackDatePickerDialog(
+            initialDateMillis = parseDateToEpochMillis(customFrom ?: ""),
+            onDismissRequest = { showFromPicker = false },
+            onDateSelected = { millis -> customFrom = formatEpochMillisToDate(millis) }
+        )
+    }
+
+    if (showToPicker) {
+        FintrackDatePickerDialog(
+            initialDateMillis = parseDateToEpochMillis(customTo ?: ""),
+            onDismissRequest = { showToPicker = false },
+            onDateSelected = { millis -> customTo = formatEpochMillisToDate(millis) }
+        )
+    }
+}
+
+@Composable
+private fun DateRangeGrid(selected: DateScope, onSelected: (DateScope) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DateScopeButton(
+                text = "Este mes",
+                selected = selected == DateScope.CURRENT_MONTH,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(DateScope.CURRENT_MONTH) }
+            )
+            DateScopeButton(
+                text = "Últimos 3 meses",
+                selected = selected == DateScope.LAST_3_MONTHS,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(DateScope.LAST_3_MONTHS) }
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DateScopeButton(
+                text = "Este año",
+                selected = selected == DateScope.CURRENT_YEAR,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(DateScope.CURRENT_YEAR) }
+            )
+            DateScopeButton(
+                text = "Todo el historial",
+                selected = selected == DateScope.ALL,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(DateScope.ALL) }
+            )
+        }
+        DateScopeButton(
+            text = "Personalizado",
+            selected = selected == DateScope.CUSTOM,
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Default.CalendarToday,
+            onClick = { onSelected(DateScope.CUSTOM) }
+        )
+    }
+}
+
+@Composable
+private fun DateScopeButton(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    onClick: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+
+    Row(
+        modifier = modifier
+            .height(46.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) FinTrackColors.GreenPrimary else colors.subtleSurface)
+            .border(
+                width = 1.dp,
+                color = if (selected) FinTrackColors.GreenPrimary else colors.border,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp),
+        horizontalArrangement = if (icon != null) Arrangement.SpaceBetween else Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = if (selected) Color.White else colors.textPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = montserrat
+        )
+        icon?.let {
+            Icon(
+                imageVector = it,
+                contentDescription = null,
+                tint = if (selected) Color.White else colors.textSecondary,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

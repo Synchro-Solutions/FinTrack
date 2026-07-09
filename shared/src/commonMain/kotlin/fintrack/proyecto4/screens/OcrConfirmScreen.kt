@@ -272,38 +272,11 @@ fun OcrConfirmScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = parseDateToEpochMillis(state.date),
-            selectableDates = NotFutureSelectableDates
-        )
-
-        DatePickerDialog(
+        FintrackDatePickerDialog(
+            initialDateMillis = parseDateToEpochMillis(state.date),
             onDismissRequest = { showDatePicker = false },
-            colors = fintrackDatePickerColors(),
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            viewModel.updateDate(formatEpochMillisToDate(millis))
-                        }
-                        showDatePicker = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = FinTrackColors.GreenPrimary)
-                ) {
-                    Text("Aceptar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDatePicker = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = colors.textSecondary)
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState, colors = fintrackDatePickerColors())
-        }
+            onDateSelected = { millis -> viewModel.updateDate(formatEpochMillisToDate(millis)) }
+        )
     }
 }
 

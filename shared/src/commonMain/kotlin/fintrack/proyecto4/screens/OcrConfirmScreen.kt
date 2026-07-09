@@ -314,12 +314,13 @@ private fun WarningBanner() {
 /**
  * US-17/US-18: OcrResult no trae un score de confianza por campo (solo detecta o no),
  * así que se usa "campo vacío tras el prefill" como equivalente práctico de "confianza
- * baja" y se resalta con borde de advertencia para que el usuario lo revise antes de
- * confirmar. El borde desaparece en cuanto el usuario completa el campo.
+ * baja" y se resalta con borde de advertencia (rojo, igual en ambos temas) para que el
+ * usuario lo revise antes de confirmar. El borde desaparece en cuanto el usuario completa
+ * el campo.
  */
 private fun missingFieldBorder(isMissing: Boolean): Modifier =
     if (isMissing) {
-        Modifier.border(1.5.dp, FinTrackColors.WarningColor, RoundedCornerShape(16.dp))
+        Modifier.border(1.5.dp, FinTrackColors.ErrorColor, RoundedCornerShape(16.dp))
     } else {
         Modifier
     }

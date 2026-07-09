@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -48,6 +49,11 @@ import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
+/** Rojo para Gasto, verde para Ingreso — mismo acento que ya usan TransactionsScreen/
+ *  TransactionDetailScreen/DashboardScreen para distinguir movimientos por tipo. */
+private fun typeAccentColor(type: TransactionType): Color =
+    if (type == TransactionType.EXPENSE) FinTrackColors.ErrorColor else FinTrackColors.GreenPrimary
+
 /** Cuánto se muestra el Snackbar de éxito antes de navegar fuera de la pantalla. */
 private const val SuccessSnackbarDelayMillis = 900L
 
@@ -78,6 +84,8 @@ fun TransactionFormScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val accentColor = typeAccentColor(state.type)
+
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
@@ -86,6 +94,14 @@ fun TransactionFormScreen(
     ) {
         TransactionHeader(
             title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
+            subtitle = if (viewModel.isEditing) {
+                "Edita los datos de tu movimiento"
+            } else {
+                "Registra un ingreso o gasto"
+            },
+            // El asistente OCR solo tiene sentido al crear una transacción nueva a partir de
+            // un comprobante; al editar una ya existente no hay nada que escanear.
+            showOcrButton = !viewModel.isEditing,
             onBack = onBack,
             onOcrClick = onOcrClick
         )
@@ -96,7 +112,8 @@ fun TransactionFormScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp)
-                .padding(top = 18.dp, bottom = 24.dp)
+                .padding(top = 18.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             TransactionTypeTabs(
                 selectedType = state.type,
@@ -106,49 +123,53 @@ fun TransactionFormScreen(
                 onTypeSelected = viewModel::changeType
             )
 
-            Spacer(Modifier.height(18.dp))
+            FormCard {
+                FormSectionTitle("Monto")
+                Spacer(Modifier.height(10.dp))
+                AmountField(
+                    value = state.amount,
+                    accentColor = accentColor,
+                    onValueChange = viewModel::updateAmount
+                )
+            }
 
-            FormLabel("MONTO (₡) *")
-            AmountField(
-                value = state.amount,
-                onValueChange = viewModel::updateAmount
-            )
+            FormCard {
+                FormSectionTitle("Descripción")
+                Spacer(Modifier.height(10.dp))
+                DescriptionField(
+                    value = state.description,
+                    onValueChange = viewModel::updateDescription
+                )
 
-            Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(16.dp))
 
-            FormLabel("DESCRIPCIÓN *")
-            DescriptionField(
-                value = state.description,
-                onValueChange = viewModel::updateDescription
-            )
+                FieldLabel("Fecha")
+                DateField(
+                    value = state.date,
+                    onClick = { showDatePicker = true }
+                )
+            }
 
-            Spacer(Modifier.height(18.dp))
+            FormCard {
+                FormSectionTitle("Categoría")
+                Spacer(Modifier.height(10.dp))
+                CategorySection(
+                    categories = state.categories,
+                    selectedCategory = state.selectedCategory,
+                    onCategorySelected = viewModel::selectCategory
+                )
+            }
 
-            FormLabel("CATEGORÍA *")
-            CategorySection(
-                categories = state.categories,
-                selectedCategory = state.selectedCategory,
-                onCategorySelected = viewModel::selectCategory
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            FormLabel("MÉTODO DE PAGO")
-            PaymentMethodSection(
-                selectedPaymentMethod = state.paymentMethod,
-                onPaymentMethodSelected = viewModel::selectPaymentMethod
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            FormLabel("FECHA *")
-            DateField(
-                value = state.date,
-                onClick = { showDatePicker = true }
-            )
+            FormCard {
+                FormSectionTitle("Método de pago")
+                Spacer(Modifier.height(10.dp))
+                PaymentMethodSection(
+                    selectedPaymentMethod = state.paymentMethod,
+                    onPaymentMethodSelected = viewModel::selectPaymentMethod
+                )
+            }
 
             if (saveError != null) {
-                Spacer(Modifier.height(12.dp))
                 Text(
                     text = saveError ?: "",
                     color = FinTrackColors.ErrorColor,
@@ -156,8 +177,6 @@ fun TransactionFormScreen(
                     fontFamily = montserratFamily()
                 )
             }
-
-            Spacer(Modifier.height(22.dp))
 
             SaveTransactionButton(
                 type = state.type,
@@ -334,7 +353,13 @@ private fun todayEndOfDayMillis(): Long {
 }
 
 @Composable
-private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () -> Unit) {
+private fun TransactionHeader(
+    title: String,
+    subtitle: String,
+    showOcrButton: Boolean = true,
+    onBack: () -> Unit,
+    onOcrClick: () -> Unit
+) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
 
@@ -342,7 +367,7 @@ private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () 
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
-            .padding(horizontal = 18.dp, vertical = 18.dp),
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -356,23 +381,32 @@ private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () 
 
         Spacer(Modifier.width(18.dp))
 
-        Text(
-            text = title,
-            color = colors.textPrimary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = montserrat,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = colors.textPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+            Text(
+                text = subtitle,
+                color = colors.textSecondary,
+                fontSize = 11.sp,
+                fontFamily = montserrat
+            )
+        }
 
-        Icon(
-            imageVector = Icons.Default.CameraAlt,
-            contentDescription = "Escanear con OCR",
-            tint = colors.textPrimary,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable(onClick = onOcrClick)
-        )
+        if (showOcrButton) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Escanear con OCR",
+                tint = colors.textPrimary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(onClick = onOcrClick)
+            )
+        }
     }
 }
 
@@ -385,15 +419,14 @@ private fun TransactionTypeTabs(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFE1E7F0))
-            .alpha(if (locked) 0.6f else 1f)
+            .height(52.dp)
+            .alpha(if (locked) 0.6f else 1f),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         TransactionTypeTab(
             text = "Gasto",
             selected = selectedType == TransactionType.EXPENSE,
-            selectedColor = Color(0xFFE53935),
+            accentColor = FinTrackColors.ErrorColor,
             enabled = !locked,
             modifier = Modifier.weight(1f),
             onClick = { onTypeSelected(TransactionType.EXPENSE) }
@@ -402,7 +435,7 @@ private fun TransactionTypeTabs(
         TransactionTypeTab(
             text = "Ingreso",
             selected = selectedType == TransactionType.INCOME,
-            selectedColor = FinTrackColors.GreenPrimary,
+            accentColor = FinTrackColors.GreenPrimary,
             enabled = !locked,
             modifier = Modifier.weight(1f),
             onClick = { onTypeSelected(TransactionType.INCOME) }
@@ -414,63 +447,100 @@ private fun TransactionTypeTabs(
 private fun TransactionTypeTab(
     text: String,
     selected: Boolean,
-    selectedColor: Color,
+    accentColor: Color,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
 
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .padding(1.dp)
-            .clip(RoundedCornerShape(15.dp))
-            .background(if (selected) Color.White else Color.Transparent)
-            .then(
-                if (selected) {
-                    Modifier.border(
-                        width = 1.2.dp,
-                        color = Color(0xFF111827),
-                        shape = RoundedCornerShape(15.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) accentColor else colors.subtleSurface)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = if (selected) selectedColor else Color(0xFF64748B),
-            fontSize = 13.sp,
+            color = if (selected) Color.White else colors.textSecondary,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat
         )
     }
 }
 
+/** Título de sección dentro de una tarjeta del formulario (p. ej. "Monto", "Detalles"). */
 @Composable
-private fun FormLabel(text: String) {
+private fun FormSectionTitle(text: String) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = Color(0xFF58708F),
-        fontSize = 12.sp,
+        color = colors.textPrimary,
+        fontSize = 15.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = montserratFamily()
+    )
+}
+
+/** Etiqueta de un campo puntual dentro de una tarjeta (p. ej. "Fecha"). */
+@Composable
+private fun FieldLabel(text: String) {
+    val colors = LocalAppColors.current
+    Text(
+        text = text,
+        color = colors.textSecondary,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFamily = montserratFamily()
+    )
+}
+
+/** Tarjeta que agrupa una sección del formulario, mismo estilo que el resto de la app
+ *  (superficie + esquinas redondeadas), en vez de campos sueltos sobre el fondo. */
+@Composable
+private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
+    val colors = LocalAppColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(colors.surface)
+            .padding(16.dp),
+        content = content
     )
 }
 
 @Composable
 private fun AmountField(
     value: String,
+    accentColor: Color,
     onValueChange: (String) -> Unit
 ) {
     val colors = LocalAppColors.current
     TextField(
         value = value,
         onValueChange = onValueChange,
+        leadingIcon = {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(accentColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "₡",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily()
+                )
+            }
+        },
         placeholder = {
             Text(
                 text = "0",
@@ -480,8 +550,7 @@ private fun AmountField(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp)
-            .padding(top = 6.dp),
+            .height(64.dp),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
             color = colors.textPrimary,
@@ -502,18 +571,17 @@ private fun DescriptionField(
     TextField(
         value = value,
         onValueChange = { onValueChange(it.take(MaxDescriptionLength)) },
-        placeholder = {
+        label = {
             Text(
-                text = "Ej. Supermercado, Salario...",
+                text = "Descripción (máx. $MaxDescriptionLength caracteres)",
                 color = colors.textSecondary,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontFamily = montserratFamily()
             )
         },
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .padding(top = 6.dp),
+            .heightIn(min = 56.dp),
         shape = RoundedCornerShape(16.dp),
         textStyle = LocalTextStyle.current.copy(
             fontSize = 13.sp,
@@ -522,6 +590,16 @@ private fun DescriptionField(
         ),
         singleLine = true,
         colors = formTextFieldColors()
+    )
+    Text(
+        text = "${value.length}/$MaxDescriptionLength",
+        color = colors.textSecondary,
+        fontSize = 11.sp,
+        fontFamily = montserratFamily(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, end = 4.dp),
+        textAlign = androidx.compose.ui.text.style.TextAlign.End
     )
 }
 
@@ -532,9 +610,7 @@ private fun CategorySection(
     onCategorySelected: (String) -> Unit
 ) {
     FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -553,10 +629,7 @@ internal fun PaymentMethodSection(
     selectedPaymentMethod: PaymentMethod?,
     onPaymentMethodSelected: (PaymentMethod) -> Unit
 ) {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PaymentMethod.values().take(2).forEach { method ->
                 SelectableChip(
@@ -656,7 +729,7 @@ internal fun DateField(
                 .height(56.dp)
                 .then(
                     if (isMissing) {
-                        Modifier.border(1.5.dp, FinTrackColors.WarningColor, RoundedCornerShape(16.dp))
+                        Modifier.border(1.5.dp, FinTrackColors.ErrorColor, RoundedCornerShape(16.dp))
                     } else {
                         Modifier
                     }

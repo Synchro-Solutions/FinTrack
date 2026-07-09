@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -75,9 +76,20 @@ fun TransactionsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
     var showFilters by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
+    }
+
+    // El movimiento recién creado queda primero en la lista (ordenada por fecha de creación
+    // descendente), pero LazyColumn usa `key = { it.id }` para mantener el ítem visible
+    // anclado en su posición: si no se fuerza el scroll, al volver del formulario la pantalla
+    // se queda "pegada" en el mismo ítem que se veía antes en vez de mostrar el nuevo arriba.
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading) {
+            listState.scrollToItem(0)
+        }
     }
 
     Column(
@@ -116,6 +128,7 @@ fun TransactionsScreen(
             state.isLoading && state.transactions.isEmpty() -> LoadingState()
             state.filteredTransactions.isEmpty() -> EmptyTransactionsState(hasAny = state.transactions.isNotEmpty())
             else -> LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
             ) {

@@ -38,9 +38,13 @@ data class TransactionsUiState(
     val visibleCount: Int = PageSize,
     val errorMessage: String? = null
 ) {
-    /** Categorías realmente presentes en los movimientos del usuario (no una lista fija). */
+    /**
+     * Catálogo completo de categorías de la app (no solo las que el usuario ya usó), para que
+     * el filtro de categoría siga apareciendo aunque el usuario todavía no tenga movimientos
+     * registrados.
+     */
     val availableCategories: List<String>
-        get() = transactions.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
+        get() = AllTransactionCategories
 
     val filteredTransactions: List<Transaction>
         get() = transactions

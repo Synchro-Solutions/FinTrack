@@ -17,55 +17,74 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.MaxDescriptionLength
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
+import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionFormViewModel
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
+
+/** Cuánto se muestra el Snackbar de éxito antes de navegar fuera de la pantalla. */
+private const val SuccessSnackbarDelayMillis = 900L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
+    editingTransaction: Transaction? = null,
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
     onOcrClick: () -> Unit = {}
 ) {
-    val viewModel = remember(initialType) {
-        TransactionFormViewModel(initialType)
+    val uid = AuthClient.currentUserId() ?: ""
+    // remember (no viewModel(key=...)) a propósito: cada visita a esta pantalla debe partir
+    // de un formulario en blanco (o precargado solo con la transacción a editar). Con
+    // viewModel(key=...) el ViewModelStore de la Activity reutilizaba la misma instancia
+    // entre visitas consecutivas de "nueva transacción" (misma key), dejando los campos de
+    // la transacción anterior visibles al crear una nueva.
+    val viewModel = remember(uid, editingTransaction?.id, initialType) {
+        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction)
     }
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val saveError by viewModel.saveError.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
-    val amountFocusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(initialType) {
-        viewModel.reset(initialType)
-    }
-
-    LaunchedEffect(Unit) {
-        amountFocusRequester.requestFocus()
-    }
-
     val colors = LocalAppColors.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.bg)
     ) {
         TransactionHeader(
+            title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
             onBack = onBack,
             onOcrClick = onOcrClick
         )
@@ -80,6 +99,9 @@ fun TransactionFormScreen(
         ) {
             TransactionTypeTabs(
                 selectedType = state.type,
+                // US-14: el tipo (Ingreso/Gasto) no se puede cambiar tras guardar la
+                // transacción, así que en modo edición el selector queda bloqueado.
+                locked = viewModel.isEditing,
                 onTypeSelected = viewModel::changeType
             )
 
@@ -88,8 +110,7 @@ fun TransactionFormScreen(
             FormLabel("MONTO (₡) *")
             AmountField(
                 value = state.amount,
-                onValueChange = viewModel::updateAmount,
-                focusRequester = amountFocusRequester
+                onValueChange = viewModel::updateAmount
             )
 
             Spacer(Modifier.height(18.dp))
@@ -125,22 +146,58 @@ fun TransactionFormScreen(
                 onClick = { showDatePicker = true }
             )
 
+            if (saveError != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = saveError ?: "",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontFamily = montserratFamily()
+                )
+            }
+
             Spacer(Modifier.height(22.dp))
 
             SaveTransactionButton(
                 type = state.type,
-                enabled = state.isValid,
+                editing = viewModel.isEditing,
+                enabled = state.isValid && !isSaving,
+                isSaving = isSaving,
                 onClick = {
-                    viewModel.saveTransaction()
-                    onSaved()
+                    val editing = viewModel.isEditing
+                    viewModel.saveTransaction {
+                        scope.launch {
+                            launch {
+                                snackbarHostState.showSnackbar(
+                                    message = if (editing) {
+                                        "Movimiento actualizado exitosamente"
+                                    } else {
+                                        "Movimiento registrado exitosamente"
+                                    },
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                            delay(SuccessSnackbarDelayMillis)
+                            onSaved()
+                        }
+                    }
                 }
             )
         }
     }
 
+    SuccessSnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(16.dp)
+    )
+    }
+
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = parseDateToEpochMillis(state.date)
+            initialSelectedDateMillis = parseDateToEpochMillis(state.date),
+            selectableDates = NotFutureSelectableDates
         )
 
         DatePickerDialog(
@@ -180,11 +237,24 @@ fun TransactionFormScreen(
     }
 }
 
+/**
+ * El calendario se muestra siempre como una tarjeta blanca, sin importar el tema activo de
+ * la app (igual que en muchos selectores de fecha nativos). Por eso TODOS los colores de
+ * contenido se fijan explícitamente a los de [LightAppColors] en vez de dejarlos heredar del
+ * MaterialTheme: si no se fijan, en modo oscuro el color de texto por defecto es claro
+ * (pensado para fondos oscuros) y queda casi invisible sobre esta tarjeta blanca.
+ */
 @Composable
-internal fun fintrackDatePickerColors() = run {
-    val colors = LocalAppColors.current
-    DatePickerDefaults.colors(
-    containerColor = colors.surface,
+internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
+    containerColor = Color.White,
+    titleContentColor = LightAppColors.textSecondary,
+    headlineContentColor = LightAppColors.textPrimary,
+    weekdayContentColor = LightAppColors.textSecondary,
+    subheadContentColor = LightAppColors.textPrimary,
+    yearContentColor = LightAppColors.textPrimary,
+    dayContentColor = LightAppColors.textPrimary,
+    disabledDayContentColor = LightAppColors.textSecondary.copy(alpha = 0.4f),
+    dividerColor = LightAppColors.divider,
     todayContentColor = FinTrackColors.GreenPrimary,
     todayDateBorderColor = FinTrackColors.GreenPrimary,
     selectedDayContainerColor = FinTrackColors.GreenPrimary,
@@ -215,8 +285,25 @@ internal fun parseDateToEpochMillis(value: String): Long? {
     }
 }
 
+/**
+ * US-14/US-11/US-12/US-18: ninguna transacción (manual u OCR) puede tener fecha futura.
+ * Se aplica directamente en el DatePicker (en vez de solo validar después) para que ni
+ * siquiera sea posible seleccionar un día inválido.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+internal val NotFutureSelectableDates = object : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+        utcTimeMillis <= todayEndOfDayMillis()
+}
+
+private fun todayEndOfDayMillis(): Long {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    return (today.toEpochDays() + 1) * 86_400_000L - 1
+}
+
 @Composable
-private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
+private fun TransactionHeader(title: String, onBack: () -> Unit, onOcrClick: () -> Unit) {
+    val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
 
@@ -239,7 +326,7 @@ private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
         Spacer(Modifier.width(18.dp))
 
         Text(
-            text = "Nuevo movimiento",
+            text = title,
             color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
@@ -261,6 +348,7 @@ private fun TransactionHeader(onBack: () -> Unit, onOcrClick: () -> Unit) {
 @Composable
 private fun TransactionTypeTabs(
     selectedType: TransactionType,
+    locked: Boolean = false,
     onTypeSelected: (TransactionType) -> Unit
 ) {
     val colors = LocalAppColors.current
@@ -269,12 +357,14 @@ private fun TransactionTypeTabs(
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surfaceSecondary)
+            .background(Color(0xFFE1E7F0))
+            .alpha(if (locked) 0.6f else 1f)
     ) {
         TransactionTypeTab(
             text = "Gasto",
             selected = selectedType == TransactionType.EXPENSE,
             selectedColor = Color(0xFFE53935),
+            enabled = !locked,
             modifier = Modifier.weight(1f),
             onClick = { onTypeSelected(TransactionType.EXPENSE) }
         )
@@ -283,6 +373,7 @@ private fun TransactionTypeTabs(
             text = "Ingreso",
             selected = selectedType == TransactionType.INCOME,
             selectedColor = FinTrackColors.GreenPrimary,
+            enabled = !locked,
             modifier = Modifier.weight(1f),
             onClick = { onTypeSelected(TransactionType.INCOME) }
         )
@@ -294,6 +385,7 @@ private fun TransactionTypeTab(
     text: String,
     selected: Boolean,
     selectedColor: Color,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -316,7 +408,7 @@ private fun TransactionTypeTab(
                     Modifier
                 }
             )
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -344,8 +436,7 @@ private fun FormLabel(text: String) {
 @Composable
 private fun AmountField(
     value: String,
-    onValueChange: (String) -> Unit,
-    focusRequester: FocusRequester
+    onValueChange: (String) -> Unit
 ) {
     val colors = LocalAppColors.current
     TextField(
@@ -361,8 +452,7 @@ private fun AmountField(
         modifier = Modifier
             .fillMaxWidth()
             .height(58.dp)
-            .padding(top = 6.dp)
-            .focusRequester(focusRequester),
+            .padding(top = 6.dp),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
             color = colors.textPrimary,
@@ -382,7 +472,7 @@ private fun DescriptionField(
     val colors = LocalAppColors.current
     TextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { onValueChange(it.take(MaxDescriptionLength)) },
         placeholder = {
             Text(
                 text = "Ej. Supermercado, Salario...",
@@ -430,7 +520,7 @@ private fun CategorySection(
 }
 
 @Composable
-private fun PaymentMethodSection(
+internal fun PaymentMethodSection(
     selectedPaymentMethod: PaymentMethod?,
     onPaymentMethodSelected: (PaymentMethod) -> Unit
 ) {
@@ -503,7 +593,11 @@ internal fun SelectableChip(
 internal fun DateField(
     value: String,
     onClick: () -> Unit,
-    placeholder: String = "dd/mm/aaaa"
+    placeholder: String = "dd/mm/aaaa",
+    /** US-17/US-18: el OCR no da un score de confianza por campo (solo detecta o no), así
+     *  que se usa "sin detectar" (campo vacío) como equivalente práctico de "confianza baja"
+     *  y se resalta con borde de advertencia para que el usuario lo revise/complete. */
+    isMissing: Boolean = false
 ) {
     val colors = LocalAppColors.current
     Box(
@@ -531,7 +625,14 @@ internal fun DateField(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .then(
+                    if (isMissing) {
+                        Modifier.border(1.5.dp, FinTrackColors.WarningColor, RoundedCornerShape(16.dp))
+                    } else {
+                        Modifier
+                    }
+                ),
             shape = RoundedCornerShape(16.dp),
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 color = colors.textPrimary
@@ -558,12 +659,15 @@ internal fun DateField(
 @Composable
 private fun SaveTransactionButton(
     type: TransactionType,
+    editing: Boolean,
     enabled: Boolean,
+    isSaving: Boolean = false,
     onClick: () -> Unit
 ) {
-    val text = when (type) {
-        TransactionType.EXPENSE -> "Guardar gasto"
-        TransactionType.INCOME -> "Guardar ingreso"
+    val text = when {
+        editing -> "Guardar cambios"
+        type == TransactionType.EXPENSE -> "Guardar gasto"
+        else -> "Guardar ingreso"
     }
 
     Button(
@@ -578,6 +682,14 @@ private fun SaveTransactionButton(
             disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
         )
     ) {
+        if (isSaving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                color = Color.White,
+                strokeWidth = 2.dp
+            )
+            return@Button
+        }
         Text(
             text = text,
             color = Color.White,
@@ -589,16 +701,17 @@ private fun SaveTransactionButton(
 }
 
 @Composable
-internal fun formTextFieldColors() = run {
+internal fun formTextFieldColors(): TextFieldColors {
     val colors = LocalAppColors.current
-    TextFieldDefaults.colors(
-    focusedContainerColor = colors.surfaceSecondary,
-    unfocusedContainerColor = colors.surfaceSecondary,
-    disabledContainerColor = colors.surfaceSecondary,
-    focusedIndicatorColor = Color.Transparent,
-    unfocusedIndicatorColor = Color.Transparent,
-    disabledIndicatorColor = Color.Transparent,
-    cursorColor = FinTrackColors.GreenPrimary,
-    focusedTextColor = colors.textPrimary,
-    unfocusedTextColor = colors.textPrimary
-)}
+    return TextFieldDefaults.colors(
+        focusedContainerColor = colors.subtleSurface,
+        unfocusedContainerColor = colors.subtleSurface,
+        disabledContainerColor = colors.subtleSurface,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+        cursorColor = FinTrackColors.GreenPrimary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary
+    )
+}

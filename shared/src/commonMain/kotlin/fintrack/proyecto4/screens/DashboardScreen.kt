@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.dashboard.DashboardViewModel
 import fintrack.proyecto4.dashboard.MetaItem
 import fintrack.proyecto4.dashboard.MonthlyChartData
@@ -39,19 +40,24 @@ import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.util.formatColonesCompacto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onNavigateToIngreso: () -> Unit = {},
     onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
     onNavigateToReportes: () -> Unit = {},
-    onNavigateToAjustes: () -> Unit = {}
+    onNavigateToAjustes: () -> Unit = {},
+    onNavigateToMovimientos: () -> Unit = {}
 ) {
-    val viewModel = viewModel { DashboardViewModel() }
+    val uid = AuthClient.currentUserId() ?: ""
+    val viewModel = viewModel(key = uid) { DashboardViewModel(transactionRepository, uid) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val colors = LocalAppColors.current
@@ -108,7 +114,7 @@ fun DashboardScreen(
                 item { ConsejoCard(state.consejoFinanciero) }
                 item { Spacer(Modifier.height(24.dp)) }
             }
-            item { SectionHeader("Últimos movimientos", "Ver todos") { viewModel.verTodosMovimientos() } }
+            item { SectionHeader("Últimos movimientos", "Ver todos") { onNavigateToMovimientos() } }
             item { Spacer(Modifier.height(12.dp)) }
             item {
                 DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -601,16 +607,10 @@ private fun ConsejoCard(consejo: String) {
 
 /* Movimientos */
 
-private val movimientoEmojis = mapOf(
-    "Salario" to "💼", "Alimentación" to "🛒", "Transporte" to "🚗",
-    "Servicios" to "💡", "Entretenimiento" to "🎬", "Salud" to "💊"
-)
-
 @Composable
 private fun MovimientoRow(item: MovimientoItem) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
-    val emoji = movimientoEmojis[item.categoria] ?: "💳"
     val accentColor = if (item.esIngreso) FinTrackColors.GreenPrimary else FinTrackColors.ErrorColor
 
     Row(
@@ -620,9 +620,17 @@ private fun MovimientoRow(item: MovimientoItem) {
         Box(
             modifier = Modifier
                 .size(42.dp)
-                .background(accentColor.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                .clip(CircleShape)
+                .background(accentColor.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
-        ) { Text(emoji, fontSize = 20.sp) }
+        ) {
+            Icon(
+                imageVector = if (item.esIngreso) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

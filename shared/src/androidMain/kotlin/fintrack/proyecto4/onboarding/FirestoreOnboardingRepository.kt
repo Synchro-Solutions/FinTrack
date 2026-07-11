@@ -39,4 +39,21 @@ class FirestoreOnboardingRepository : OnboardingRepository {
             false
         }
     }
+
+    override suspend fun getProfile(uid: String): UserProfile? {
+        return try {
+            val doc = db.collection("users").document(uid).get()
+            if (!doc.exists) return null
+            UserProfile(
+                name = doc.get<String>("name"),
+                photoPath = doc.get<String>("photoPath").takeIf { it.isNotEmpty() },
+                income = doc.get<Double>("income"),
+                currency = doc.get<String>("currency"),
+                privacyAccepted = true,
+                termsAccepted = true
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

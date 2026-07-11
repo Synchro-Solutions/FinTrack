@@ -12,5 +12,6 @@ actual object AuthClient {
     actual suspend fun signOut() = Unit
 
     actual fun currentUserId(): String? = null
+    actual fun currentUserEmail(): String? = null
 }
 

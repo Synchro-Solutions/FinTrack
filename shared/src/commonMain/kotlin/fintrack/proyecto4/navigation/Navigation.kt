@@ -52,7 +52,8 @@ sealed interface Screen {
     data class OcrConfirm(
         val result: OcrResult
     ) : Screen
-    
+
+    data object AiChat : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object AguinaldoCalculator : Screen

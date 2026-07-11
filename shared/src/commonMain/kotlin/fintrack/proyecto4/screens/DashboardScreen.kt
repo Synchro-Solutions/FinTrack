@@ -56,21 +56,23 @@ fun DashboardScreen(
     onNavigateToOcr: () -> Unit = {},
     onNavigateToReportes: () -> Unit = {},
     onNavigateToAjustes: () -> Unit = {},
-    onNavigateToMovimientos: () -> Unit = {}
+    onNavigateToMovimientos: () -> Unit = {},
+    onNavigateToChat: () -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { DashboardViewModel(transactionRepository, uid) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val colors = LocalAppColors.current
+    Box(modifier = Modifier.fillMaxSize().background(colors.bg)) {
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = { viewModel.refresh() },
-        modifier = Modifier.fillMaxSize().background(colors.bg)
+        modifier = Modifier.fillMaxSize()
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             item {
                 DashboardHeader(
@@ -133,6 +135,15 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    // FAB flotante del asistente IA
+    AiFloatingButton(
+        onClick = onNavigateToChat,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 20.dp, bottom = 20.dp)
+    )
     }
 }
 
@@ -700,6 +711,43 @@ private fun MovimientoRow(item: MovimientoItem) {
 }
 
 /* Componentes base */
+
+@Composable
+private fun AiFloatingButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        // Halo exterior pulsante
+        Box(
+            modifier = Modifier
+                .size(68.dp)
+                .align(Alignment.Center)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            FinTrackColors.GreenPrimary.copy(alpha = 0.35f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+        )
+        // Botón principal
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .align(Alignment.Center)
+                .background(
+                    brush = Brush.linearGradient(
+                        listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
+                    ),
+                    shape = CircleShape
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("✦", color = Color.White, fontSize = 24.sp)
+        }
+    }
+}
 
 @Composable
 private fun SectionHeader(title: String, actionText: String, onAction: () -> Unit) {

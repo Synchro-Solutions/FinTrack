@@ -24,10 +24,10 @@ Trabajamos con un flujo basado en ramas por funcionalidad.
 *   `develop`: Rama de integración donde se unen las nuevas características antes de pasar a producción.
 
 ### Creación de Nuevas Ramas
-Toda nueva rama debe crearse a partir del estado más reciente de la rama objetivo (generalmente `develop`), seguir esta nomenclatura de prefijos e **incluir el nombre del desarrollador como prefijo**:
+Toda nueva rama debe crearse a partir del estado más reciente de la rama objetivo (generalmente `develop`) y seguir esta nomenclatura de prefijos:
 
-*   `feature/` - Para nuevas características o requerimientos. (Ej: `leo0994/feature/crear-login`)
-*   `bugfix/` - Para solucionar errores reportados durante el desarrollo. (Ej: `leo0994/bugfix/react-render-loop`)
+*   `feature/` - Para nuevas características o requerimientos. (Ej: `feature/multi-tenant-auth`)
+*   `bugfix/` - Para solucionar errores reportados durante el desarrollo. (Ej: `bugfix/react-render-loop`)
 *   `hotfix/` - Para errores críticos en producción (Nacen de `main` y se fusionan en `main` y `develop`).
 *   `chore/` - Para tareas de mantenimiento, actualización de dependencias o configuraciones.
 
@@ -61,13 +61,12 @@ Todo el código nuevo debe ser revisado por un compañero antes de fusionarse.
 
 ### Pasos para un PR exitoso:
 1.  **Actualización previa:** Antes de crear el PR, asegúrate de tener tu rama actualizada con los últimos cambios (`git pull origin develop`).
-2.  **Título y Descripción:** El título del PR debe seguir la misma regla de los commits. La descripción debe detallar el *qué* y el *por qué* del cambio.
-3.  **Evidencia de funcionamiento:** Incluir capturas de pantalla o grabaciones que demuestren que todo funciona correctamente en el entorno local antes de solicitar la revisión.
-4.  **Código Limpio:**
+2.  **Título y Descripción:** El título del PR debe seguir la misma regla de los commits. La descripción debe detallar el *qué* y el *por qué* del cambio. Si aplica, incluye capturas de pantalla de la interfaz visual.
+3.  **Código Limpio:** 
     *   Elimina cualquier `console.log()`, `System.out.println()` o código comentado que ya no se utilice.
     *   Asegúrate de que no haya advertencias (warnings) críticas en tu entorno de desarrollo.
-5.  **Asignación de Revisores:** Solicita explícitamente la revisión de al menos un miembro del equipo. **El profesor Kevin debe ser incluido como revisor en todos los Pull Requests.**
-6.  **Aprobación y Fusión:** Una vez que el PR tiene la aprobación del compañero asignado, el autor del PR (o el revisor, según se acuerde en el momento) puede realizar el *Merge*. **No fusiones tu propio código sin aprobación.**
+4.  **Asignación de Revisores:** Solicita explícitamente la revisión de al menos un miembro del equipo.
+5.  **Aprobación y Fusión:** Una vez que el PR tiene la aprobación (Approve) del compañero asignado, el autor del PR (o el revisor, según se acuerde en el momento) puede realizar el *Merge*. **No fusiones tu propio código sin aprobación.**
 
 ### Política de Resolución de Conflictos
 Si tu PR presenta conflictos de integración (`merge conflicts`), es **responsabilidad del autor del PR** resolverlos localmente y probar que todo siga funcionando antes de solicitar que se complete la revisión.

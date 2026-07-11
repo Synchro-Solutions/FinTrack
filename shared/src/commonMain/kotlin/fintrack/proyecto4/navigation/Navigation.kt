@@ -1,16 +1,77 @@
 package fintrack.proyecto4.navigation
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
+import fintrack.proyecto4.ocr.OcrResult
+import fintrack.proyecto4.transaction.Transaction
+import fintrack.proyecto4.transaction.TransactionType
+
+/**
+ * Especificación de animación única compartida entre la transición de pantallas (NavHost)
+ * y la aparición/desaparición de la barra inferior (FinTrackBottomBar), para que ambas
+ * inicien y terminen exactamente al mismo tiempo y la transición se sienta uniforme.
+ */
+internal const val NavTransitionDurationMillis = 320
+internal val NavTransitionEasing = FastOutSlowInEasing
 
 /**
  * Pantallas disponibles en la aplicación con sus respectivos argumentos tipados.
  */
 sealed interface Screen {
     data object Login : Screen
+    data object Onboarding : Screen
     data object Dashboard : Screen
+    data object Movimientos : Screen
+    data object Presupuestos : Screen
+    data object Metas : Screen
+    data object Mas : Screen
+    data object Ajustes : Screen
+
+    data class TransactionForm(
+        val initialType: TransactionType,
+        /** Si no es null, el formulario edita esta transacción en vez de crear una nueva (US-14). */
+        val editingTransaction: Transaction? = null
+    ) : Screen
+
+    /** Ver/editar/eliminar el detalle de una transacción ya guardada (US-14). */
+    data class TransactionDetail(
+        val transaction: Transaction
+    ) : Screen
+
+    /** Pantalla del asistente OCR (idle / procesando / éxito, ver UI-05). */
+    data object OcrAssistant : Screen
+
+    /** Captura en vivo con CameraX (contenido inyectado por la plataforma, ver INT-03). */
+    data object OcrCamera : Screen
+
+    /** Revisión/confirmación de los datos detectados antes de guardar la transacción. */
+    data class OcrConfirm(
+        val result: OcrResult
+    ) : Screen
+
+    data object NuevoPresupuesto : Screen
+    data object FinancialCenter : Screen
+    data object AguinaldoCalculator : Screen
+    data object CurrencyConverter : Screen
+    data object NetSalaryCalculator : Screen
+    data object LiquidacionCalculator : Screen
+    data object CesantiaCalculator : Screen
+    data object VacacionesCalculator : Screen
+    data object PreavisoCalculator : Screen
+    data object CalculationHistory : Screen
 }
+
+val mainScreens = setOf(
+    Screen.Dashboard,
+    Screen.Movimientos,
+    Screen.Presupuestos,
+    Screen.Metas,
+    Screen.FinancialCenter
+)
 
 /**
  * Dirección de la navegación para aplicar la animación adecuada.
@@ -88,15 +149,18 @@ fun NavHost(
     AnimatedContent(
         targetState = navController.currentScreen,
         transitionSpec = {
+            val offsetSpec = tween<IntOffset>(NavTransitionDurationMillis, easing = NavTransitionEasing)
+            val fadeSpec = tween<Float>(NavTransitionDurationMillis, easing = NavTransitionEasing)
+
             if (navController.lastDirection == NavDirection.PUSH) {
                 // Entra desde la derecha, sale por la izquierda
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width } + fadeOut()
+                (slideInHorizontally(offsetSpec) { width -> width } + fadeIn(fadeSpec)).togetherWith(
+                    slideOutHorizontally(offsetSpec) { width -> -width } + fadeOut(fadeSpec)
                 )
             } else {
                 // Entra desde la izquierda, sale por la derecha (retroceder)
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
+                (slideInHorizontally(offsetSpec) { width -> -width } + fadeIn(fadeSpec)).togetherWith(
+                    slideOutHorizontally(offsetSpec) { width -> width } + fadeOut(fadeSpec)
                 )
             }
         },

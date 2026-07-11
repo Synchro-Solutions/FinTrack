@@ -3,6 +3,7 @@ package fintrack.proyecto4.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,6 +65,7 @@ fun PresupuestosScreen(
 
     Scaffold(
         containerColor = colors.bg,
+        contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNuevoPresupuesto,
@@ -85,13 +87,12 @@ fun PresupuestosScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(24.dp))
-
             Text(
                 text = "Presupuestos",
                 color = colors.textPrimary,
                 fontSize = 26.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 22.dp)
             )
 
             Spacer(Modifier.height(20.dp))

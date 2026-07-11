@@ -12,10 +12,12 @@ data class UserProfile(
 interface OnboardingRepository {
     suspend fun saveProfile(uid: String, profile: UserProfile)
     suspend fun isOnboardingComplete(uid: String): Boolean
+    suspend fun getProfile(uid: String): UserProfile?
 }
 
 /** Implementación por defecto para plataformas sin Firestore (Web, tests). */
 class NoOpOnboardingRepository : OnboardingRepository {
     override suspend fun saveProfile(uid: String, profile: UserProfile) = Unit
     override suspend fun isOnboardingComplete(uid: String): Boolean = true
+    override suspend fun getProfile(uid: String): UserProfile? = null
 }

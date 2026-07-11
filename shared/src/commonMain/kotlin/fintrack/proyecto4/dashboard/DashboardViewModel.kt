@@ -1,8 +1,11 @@
 package fintrack.proyecto4.dashboard
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
+import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -19,13 +22,11 @@ import kotlin.time.Clock
 
 private const val UltimosMovimientosCount = 4
 
-/**
- * @param uid Usuario actualmente autenticado (ver AuthClient.currentUserId()). Se usa para
- *   obtener los últimos movimientos reales del usuario en sesión desde [transactionRepository].
- */
 class DashboardViewModel(
     private val transactionRepository: TransactionRepository = NoOpTransactionRepository(),
-    private val uid: String = ""
+    private val uid: String = "",
+    private val onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
+    private val budgetRepository: BudgetRepository = NoOpBudgetRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -38,9 +39,21 @@ class DashboardViewModel(
     fun loadDashboard() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            // TODO: cargar gráfica/presupuestos/meta reales desde repositorio
+
             val transactions = try {
                 transactionRepository.getTransactions(uid)
+            } catch (e: Exception) {
+                emptyList()
+            }
+
+            val profile = try {
+                onboardingRepository.getProfile(uid)
+            } catch (e: Exception) {
+                null
+            }
+
+            val budgets = try {
+                budgetRepository.getBudgets(uid)
             } catch (e: Exception) {
                 emptyList()
             }
@@ -55,10 +68,24 @@ class DashboardViewModel(
                 .take(UltimosMovimientosCount)
                 .map { it.toMovimientoItem() }
 
+            val chartData = buildChartData(transactions)
+
+            val presupuestos = budgets.map { b ->
+                PresupuestoItem(
+                    id = b.id,
+                    nombre = b.categoryName,
+                    gastado = b.spent.toLong(),
+                    total = b.limit.toLong(),
+                    color = b.categoryColor
+                )
+            }
+
+            val notificationCount = budgets.count { it.usagePct >= it.alertThreshold }
+
             _uiState.update { state ->
                 state.copy(
                     isLoading = false,
-                    userName = "Ana Vargas",
+                    userName = profile?.name ?: "Usuario",
                     mesActual = currentMonthLabel(),
                     kpis = KpiData(
                         ingresos = ingresos,
@@ -66,12 +93,12 @@ class DashboardViewModel(
                         balance = balance,
                         ahorroPercent = ahorroPercent
                     ),
-                    chartData = sampleChartData(),
-                    presupuestos = samplePresupuestos(),
-                    metaPrincipal = sampleMeta(),
-                    consejoFinanciero = "Sigue registrando tus movimientos para llevar un control preciso de tu ahorro mensual.",
+                    chartData = chartData,
+                    presupuestos = presupuestos,
+                    metaPrincipal = null,
+                    consejoFinanciero = buildConsejo(balance, ahorroPercent, budgets.size),
                     ultimosMovimientos = ultimosMovimientos,
-                    notificationCount = 2,
+                    notificationCount = notificationCount,
                     ocrPendingCount = 0
                 )
             }
@@ -81,7 +108,6 @@ class DashboardViewModel(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            // TODO: refrescar datos desde repositorio
             loadDashboard()
             _uiState.update { it.copy(isRefreshing = false) }
         }
@@ -92,35 +118,16 @@ class DashboardViewModel(
     }
 
     fun marcarNotificacionesLeidas() {
-        // TODO: marcar notificaciones como leídas en el repositorio
         _uiState.update { it.copy(notificationCount = 0) }
     }
 
-    fun navegarAIngreso() {
-        // TODO: emitir evento de navegación a formulario de ingreso
-    }
+    fun navegarAIngreso() {}
+    fun navegarAGasto() {}
+    fun navegarAOcr() {}
+    fun navegarAReportes() {}
+    fun verTodosPresupuestos() {}
+    fun verTodasMetas() {}
 
-    fun navegarAGasto() {
-        // TODO: emitir evento de navegación a formulario de gasto
-    }
-
-    fun navegarAOcr() {
-        // TODO: emitir evento de navegación a captura OCR
-    }
-
-    fun navegarAReportes() {
-        // TODO: emitir evento de navegación a pantalla de reportes
-    }
-
-    fun verTodosPresupuestos() {
-        // TODO: navegar a lista completa de presupuestos
-    }
-
-    fun verTodasMetas() {
-        // TODO: navegar a lista completa de metas
-    }
-
-    /** "Saldo disponible — {mes actual}" en el Dashboard: siempre el mes/año de hoy. */
     private fun currentMonthLabel(): String {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         return "${today.month.toSpanishLabel()} ${today.year}"
@@ -141,32 +148,37 @@ class DashboardViewModel(
         Month.DECEMBER -> "Diciembre"
     }
 
-    // ── Datos de muestra para desarrollo ────────────────────────────────────
+    private fun buildChartData(transactions: List<Transaction>): List<MonthlyChartData> {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val result = mutableListOf<MonthlyChartData>()
+        for (offset in 5 downTo 0) {
+            var monthNum = today.monthNumber - offset
+            var year = today.year
+            if (monthNum <= 0) { monthNum += 12; year-- }
+            val label = Month(monthNum).toSpanishLabel().take(3)
+            val monthTx = transactions.filter { tx ->
+                // date format: "dd/MM/yyyy"
+                val parts = tx.date.split("/")
+                parts.size == 3 &&
+                    parts[1].toIntOrNull() == monthNum &&
+                    parts[2].toIntOrNull() == year
+            }
+            result.add(MonthlyChartData(
+                mes = label,
+                ingresos = monthTx.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                gastos = monthTx.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            ))
+        }
+        return result
+    }
 
-    private fun sampleChartData() = listOf(
-        MonthlyChartData("Ene", 900_000, 310_000),
-        MonthlyChartData("Feb", 950_000, 280_000),
-        MonthlyChartData("Mar", 1_000_000, 350_000),
-        MonthlyChartData("Abr", 980_000, 260_000),
-        MonthlyChartData("May", 1_050_000, 290_000),
-        MonthlyChartData("Jun", 1_000_000, 239_000)
-    )
-
-    private fun samplePresupuestos() = listOf(
-        PresupuestoItem("1", "Alimentación", 99_000, 150_000, Color(0xFFF59E0B)),
-        PresupuestoItem("2", "Transporte", 24_000, 60_000, Color(0xFF3B82F6)),
-        PresupuestoItem("3", "Entretenimiento", 12_000, 40_000, Color(0xFF8B5CF6))
-    )
-
-    private fun sampleMeta() = MetaItem(
-        id = "1",
-        nombre = "Fondo emergencia",
-        descripcion = "Fondo de emergencia",
-        fechaVencimiento = "2024-12-31",
-        ahorrado = 285_000,
-        meta = 500_000,
-        prioridad = "Alta prioridad"
-    )
+    private fun buildConsejo(balance: Long, ahorroPercent: Int, budgetCount: Int): String = when {
+        balance < 0 -> "Tus gastos superan tus ingresos este mes. Revisa tus categorías de gasto y ajusta tu presupuesto."
+        ahorroPercent >= 20 -> "Excelente manejo financiero. Estás ahorrando el ${ahorroPercent}% de tus ingresos."
+        ahorroPercent >= 10 -> "Vas bien. Intenta aumentar tu ahorro reduciendo gastos no esenciales."
+        budgetCount == 0 -> "Crea presupuestos por categoría para llevar un mejor control de tus gastos."
+        else -> "Sigue registrando tus movimientos para llevar un control preciso de tu ahorro mensual."
+    }
 
     private fun Transaction.toMovimientoItem() = MovimientoItem(
         id = id,

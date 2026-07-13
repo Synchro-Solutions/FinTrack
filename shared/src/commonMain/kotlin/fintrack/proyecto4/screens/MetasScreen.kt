@@ -20,6 +20,8 @@ import fintrack.proyecto4.savings.ui.GoalCard
 import fintrack.proyecto4.savings.ui.GoalCompletedDialog
 import fintrack.proyecto4.savings.ui.GoalDetailDialog
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import kotlinx.coroutines.launch
 
 @Composable
@@ -37,6 +39,7 @@ fun MetasScreen() {
         viewModel.loadGoals()
     }
 
+    val colors = LocalAppColors.current
     val activeCount = viewModel.activeGoals.size
     val maxGoals = 10
     val canCreateGoal = activeCount < maxGoals
@@ -44,17 +47,17 @@ fun MetasScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
+            .background(colors.bg)
             .padding(20.dp)
     ) {
         Column {
-            Text("Mis metas", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("Mis metas", color = colors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "$activeCount / $maxGoals metas activas",
-                color = if (canCreateGoal) Color(0xFF22C55E) else Color(0xFFEF4444),
+                color = if (canCreateGoal) FinTrackColors.GreenPrimary else FinTrackColors.ErrorColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -63,7 +66,7 @@ fun MetasScreen() {
 
             Text(
                 text = "Crea objetivos de ahorro y registra tus avances.",
-                color = Color(0xFF94A3B8),
+                color = colors.textSecondary,
                 fontSize = 14.sp
             )
 
@@ -73,10 +76,10 @@ fun MetasScreen() {
                 onClick = { if (canCreateGoal) showCreateDialog = true },
                 enabled = canCreateGoal,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF22C55E),
+                    containerColor = FinTrackColors.GreenPrimary,
                     contentColor = Color.White,
-                    disabledContainerColor = Color(0xFF334155),
-                    disabledContentColor = Color(0xFF94A3B8)
+                    disabledContainerColor = colors.surfaceSecondary,
+                    disabledContentColor = colors.textSecondary
                 )
             ) {
                 Text(if (canCreateGoal) "+ Nueva meta" else "Límite alcanzado")
@@ -85,11 +88,11 @@ fun MetasScreen() {
             Spacer(modifier = Modifier.height(18.dp))
 
             if (viewModel.isLoading) {
-                CircularProgressIndicator(color = Color(0xFF22C55E))
+                CircularProgressIndicator(color = FinTrackColors.GreenPrimary)
             } else if (viewModel.activeGoals.isEmpty() && viewModel.completedGoals.isEmpty()) {
                 Text(
                     text = "Crea tu primera meta de ahorro.",
-                    color = Color(0xFF94A3B8),
+                    color = colors.textSecondary,
                     fontSize = 15.sp
                 )
             } else {
@@ -109,7 +112,7 @@ fun MetasScreen() {
                         item {
                             Text(
                                 text = "Completadas",
-                                color = Color.White,
+                                color = colors.textPrimary,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(top = 10.dp)
@@ -154,10 +157,8 @@ fun MetasScreen() {
             onSave = { amount ->
                 scope.launch {
                     val saved = viewModel.addContribution(goal.id, amount)
-
                     if (saved) {
                         selectedGoal = null
-
                         val updatedGoal = viewModel.goals.firstOrNull { it.id == goal.id }
                         if (updatedGoal?.status == GoalStatus.COMPLETED) {
                             completedGoal = updatedGoal
@@ -186,9 +187,7 @@ fun MetasScreen() {
                     if (cancelled) detailGoal = null
                 }
             },
-            onEditGoal = {
-                editGoal = it
-            }
+            onEditGoal = { editGoal = it }
         )
     }
 
@@ -204,7 +203,6 @@ fun MetasScreen() {
                         deadline = deadline,
                         iconName = icon
                     )
-
                     if (updated) {
                         editGoal = null
                         detailGoal = null
@@ -217,9 +215,9 @@ fun MetasScreen() {
     viewModel.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
-            containerColor = Color(0xFF111C2E),
-            title = { Text("Validación", color = Color.White) },
-            text = { Text(message, color = Color(0xFFCBD5E1)) },
+            containerColor = colors.surface,
+            title = { Text("Validación", color = colors.textPrimary) },
+            text = { Text(message, color = colors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearError() }) {
                     Text("Aceptar")

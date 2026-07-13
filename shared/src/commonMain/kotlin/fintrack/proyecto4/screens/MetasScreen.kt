@@ -157,10 +157,8 @@ fun MetasScreen() {
             onSave = { amount ->
                 scope.launch {
                     val saved = viewModel.addContribution(goal.id, amount)
-
                     if (saved) {
                         selectedGoal = null
-
                         val updatedGoal = viewModel.goals.firstOrNull { it.id == goal.id }
                         if (updatedGoal?.status == GoalStatus.COMPLETED) {
                             completedGoal = updatedGoal
@@ -189,9 +187,7 @@ fun MetasScreen() {
                     if (cancelled) detailGoal = null
                 }
             },
-            onEditGoal = {
-                editGoal = it
-            }
+            onEditGoal = { editGoal = it }
         )
     }
 
@@ -207,7 +203,6 @@ fun MetasScreen() {
                         deadline = deadline,
                         iconName = icon
                     )
-
                     if (updated) {
                         editGoal = null
                         detailGoal = null

@@ -785,5 +785,3 @@ private fun DarkCard(modifier: Modifier = Modifier, content: @Composable ColumnS
         Column(content = content)
     }
 }
-
-

@@ -555,7 +555,7 @@ private fun MetaCard(item: MetaItem) {
                                     RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
-                        ) { Text("🛡", fontSize = 22.sp) }
+                        ) { Text(item.descripcion.ifEmpty { "⭐" }, fontSize = 22.sp) }
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(item.nombre, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)

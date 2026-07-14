@@ -53,6 +53,7 @@ sealed interface Screen {
         val result: OcrResult
     ) : Screen
 
+    data object AiChat : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object AguinaldoCalculator : Screen

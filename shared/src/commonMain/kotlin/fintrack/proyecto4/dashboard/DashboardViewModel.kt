@@ -6,6 +6,8 @@ import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
+import fintrack.proyecto4.savings.model.GoalStatus
+import fintrack.proyecto4.savings.repository.SavingsRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -26,7 +28,8 @@ class DashboardViewModel(
     private val transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     private val uid: String = "",
     private val onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
-    private val budgetRepository: BudgetRepository = NoOpBudgetRepository()
+    private val budgetRepository: BudgetRepository = NoOpBudgetRepository(),
+    private val savingsRepository: SavingsRepository = SavingsRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -57,6 +60,9 @@ class DashboardViewModel(
             } catch (e: Exception) {
                 emptyList()
             }
+
+            savingsRepository.loadFromFirestore()
+            val goals = savingsRepository.getGoals()
 
             val ingresos = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
             val gastos = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
@@ -95,7 +101,17 @@ class DashboardViewModel(
                     ),
                     chartData = chartData,
                     presupuestos = presupuestos,
-                    metaPrincipal = null,
+                    metaPrincipal = goals.firstOrNull { it.status == GoalStatus.ACTIVE }?.let { g ->
+                        MetaItem(
+                            id = g.id,
+                            nombre = g.name,
+                            descripcion = g.iconName,
+                            fechaVencimiento = g.deadline ?: "—",
+                            ahorrado = g.currentAmount.toLong(),
+                            meta = g.targetAmount.toLong(),
+                            prioridad = if ((g.progress * 100).toInt() < 30) "Alta prioridad" else "En progreso"
+                        )
+                    },
                     consejoFinanciero = buildConsejo(balance, ahorroPercent, budgets.size),
                     ultimosMovimientos = ultimosMovimientos,
                     notificationCount = notificationCount,

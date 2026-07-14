@@ -34,6 +34,7 @@ import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingViewModel
+import fintrack.proyecto4.screens.AiChatScreen
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.AjustesScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
@@ -196,7 +197,8 @@ fun App(
                                 onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
-                                onNavigateToMetas = { navController.replace(Screen.Metas) }
+                                onNavigateToMetas = { navController.replace(Screen.Metas) },
+                                onNavigateToChat = { navController.navigate(Screen.AiChat) }
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(
@@ -283,7 +285,14 @@ fun App(
                         )
                         is Screen.Metas -> MetasScreen()
 
-                        is Screen.Mas -> MasScreen()
+                        is Screen.AiChat -> AiChatScreen(
+                            transactionRepository = transactionRepository,
+                            onBack = { navController.goBack() }
+                        )
+
+                        is Screen.Mas -> MasScreen(
+                            onNavigateToChat = { navController.navigate(Screen.AiChat) }
+                        )
                         is Screen.Ajustes -> AjustesScreen(
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { isDarkTheme = !isDarkTheme },

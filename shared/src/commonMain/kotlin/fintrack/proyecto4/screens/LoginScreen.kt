@@ -425,4 +425,3 @@ private fun greenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = WhiteAlpha10,
     cursorColor = BorderFocused
 )
-

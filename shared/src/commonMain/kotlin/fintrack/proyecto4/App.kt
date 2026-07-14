@@ -186,6 +186,8 @@ fun App(
 
                             is Screen.Dashboard -> DashboardScreen(
                                 transactionRepository = transactionRepository,
+                                onboardingRepository = onboardingRepository,
+                                budgetRepository = budgetRepository,
                                 onNavigateToIngreso = {
                                     navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
                                 },
@@ -194,6 +196,8 @@ fun App(
                                 },
                                 onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
+                                onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
+                                onNavigateToMetas = { navController.replace(Screen.Metas) },
                                 onNavigateToChat = { navController.navigate(Screen.AiChat) }
                             )
 
@@ -292,6 +296,7 @@ fun App(
                         is Screen.Ajustes -> AjustesScreen(
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onboardingRepository = onboardingRepository,
                             onBack = { navController.goBack() },
                             onCerrarSesion = { navController.replace(Screen.Login) }
                         )

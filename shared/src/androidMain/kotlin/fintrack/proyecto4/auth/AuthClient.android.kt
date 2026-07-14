@@ -19,5 +19,6 @@ actual object AuthClient {
     }
 
     actual fun currentUserId(): String? = Firebase.auth.currentUser?.uid
+    actual fun currentUserEmail(): String? = Firebase.auth.currentUser?.email
 }
 

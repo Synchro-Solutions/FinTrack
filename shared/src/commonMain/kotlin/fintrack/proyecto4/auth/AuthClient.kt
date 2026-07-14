@@ -5,5 +5,6 @@ expect object AuthClient {
     suspend fun signInWithEmail(email: String, password: String): Result<String>
     suspend fun signOut()
     fun currentUserId(): String?
+    fun currentUserEmail(): String?
 }
 

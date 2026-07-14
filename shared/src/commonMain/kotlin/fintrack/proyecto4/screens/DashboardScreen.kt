@@ -34,7 +34,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.dashboard.DashboardViewModel
+import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
+import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.dashboard.MetaItem
 import fintrack.proyecto4.dashboard.MonthlyChartData
 import fintrack.proyecto4.dashboard.MovimientoItem
@@ -51,16 +55,22 @@ import fintrack.proyecto4.util.formatColonesCompacto
 @Composable
 fun DashboardScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
+    budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     onNavigateToIngreso: () -> Unit = {},
     onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
     onNavigateToReportes: () -> Unit = {},
     onNavigateToAjustes: () -> Unit = {},
     onNavigateToMovimientos: () -> Unit = {},
+    onNavigateToPresupuestos: () -> Unit = {},
+    onNavigateToMetas: () -> Unit = {},
     onNavigateToChat: () -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
-    val viewModel = viewModel(key = uid) { DashboardViewModel(transactionRepository, uid) }
+    val viewModel = viewModel(key = uid) {
+        DashboardViewModel(transactionRepository, uid, onboardingRepository, budgetRepository)
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val colors = LocalAppColors.current
@@ -106,13 +116,22 @@ fun DashboardScreen(
             item { Spacer(Modifier.height(24.dp)) }
             item { ChartSection(data = state.chartData) }
             item { Spacer(Modifier.height(24.dp)) }
-            item { SectionHeader("Presupuestos", "Ver todos") { viewModel.verTodosPresupuestos() } }
+            item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
             item { Spacer(Modifier.height(12.dp)) }
-            items(state.presupuestos) { PresupuestoCard(it) }
+            if (state.presupuestos.isEmpty()) {
+                item { EmptyPresupuestosState(onNavigateToPresupuestos) }
+            } else {
+                items(state.presupuestos) { PresupuestoCard(it) }
+            }
             item { Spacer(Modifier.height(24.dp)) }
-            item { SectionHeader("Meta principal", "Ver metas") { viewModel.verTodasMetas() } }
+            item { SectionHeader("Meta principal", "Ver metas") { onNavigateToMetas() } }
             item { Spacer(Modifier.height(12.dp)) }
-            state.metaPrincipal?.let { item { MetaCard(it) } }
+            val meta = state.metaPrincipal
+            if (meta == null) {
+                item { EmptyMetaState(onNavigateToMetas) }
+            } else {
+                item { MetaCard(meta) }
+            }
             item { Spacer(Modifier.height(16.dp)) }
             if (state.consejoFinanciero.isNotBlank()) {
                 item { ConsejoCard(state.consejoFinanciero) }
@@ -547,7 +566,7 @@ private fun MetaCard(item: MetaItem) {
                                     RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
-                        ) { Text("🛡", fontSize = 22.sp) }
+                        ) { Text(item.descripcion.ifEmpty { "⭐" }, fontSize = 22.sp) }
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(item.nombre, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
@@ -617,6 +636,96 @@ private fun ConsejoCard(consejo: String) {
                 Text("Consejo financiero", color = FinTrackColors.WarningLight, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
                 Spacer(Modifier.height(4.dp))
                 Text(consejo, color = FinTrackColors.WarningText, fontSize = 12.sp, fontFamily = montserrat, lineHeight = 18.sp)
+            }
+        }
+    }
+}
+
+/* Estados vacíos */
+
+@Composable
+private fun EmptyPresupuestosState(onNavigate: () -> Unit) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(colors.surface)
+            .padding(20.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Text("💰", fontSize = 32.sp)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Sin presupuestos activos",
+                color = colors.textPrimary, fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, fontFamily = montserrat
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Crea tu primer presupuesto y controla\ncuánto gastas en cada categoría.",
+                color = colors.textSecondary, fontSize = 12.sp,
+                fontFamily = montserrat, textAlign = TextAlign.Center, lineHeight = 18.sp
+            )
+            Spacer(Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FinTrackColors.GradientGreen)
+                    .clickable(onClick = onNavigate)
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    "Crear presupuesto",
+                    color = Color.White, fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, fontFamily = montserrat
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyMetaState(onNavigate: () -> Unit) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(colors.surface)
+            .padding(20.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Text("🎯", fontSize = 32.sp)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Sin metas definidas",
+                color = colors.textPrimary, fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, fontFamily = montserrat
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Agrega una meta de ahorro y mantén\nel enfoque en lo que más importa.",
+                color = colors.textSecondary, fontSize = 12.sp,
+                fontFamily = montserrat, textAlign = TextAlign.Center, lineHeight = 18.sp
+            )
+            Spacer(Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FinTrackColors.GradientMeta)
+                    .clickable(onClick = onNavigate)
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    "Agregar meta",
+                    color = Color.White, fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, fontFamily = montserrat
+                )
             }
         }
     }

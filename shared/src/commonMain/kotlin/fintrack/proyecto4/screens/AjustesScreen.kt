@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,22 +40,43 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.ajustes.AjustesViewModel
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
+import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun AjustesScreen(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
+    onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     onBack: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
 ) {
     val c = LocalAppColors.current
+    val uid = AuthClient.currentUserId() ?: ""
+    val viewModel = viewModel(key = uid) { AjustesViewModel(onboardingRepository, uid) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var notificaciones by remember { mutableStateOf(true) }
     var biometrico by remember { mutableStateOf(false) }
+
+    val initials = state.nombre
+        .split(" ")
+        .filter { it.isNotEmpty() }
+        .take(2)
+        .joinToString("") { it.first().uppercaseChar().toString() }
+        .ifEmpty { "?" }
+
+    val ingresoFormateado = if (state.ingresoMensual > 0)
+        formatColones(state.ingresoMensual.toLong())
+    else "—"
 
     Column(
         modifier = Modifier
@@ -112,12 +134,15 @@ fun AjustesScreen(
                     .background(FinTrackColors.GreenPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                Text("AV", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(initials, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Ana Vargas", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
-                Text("ana.vargas@gmail.com", fontSize = 13.sp, color = c.textSecondary)
+                Text(
+                    state.nombre.ifEmpty { "Usuario" },
+                    fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary
+                )
+                Text(state.email.ifEmpty { "—" }, fontSize = 13.sp, color = c.textSecondary)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Editar perfil →", fontSize = 13.sp,
@@ -132,11 +157,11 @@ fun AjustesScreen(
         // ── PERFIL ───────────────────────────────────────────────────────────
         SectionHeader("PERFIL", c)
         SectionCard(c) {
-            ItemRow("Nombre visible", "Ana Vargas", c)
+            ItemRow("Nombre visible", state.nombre.ifEmpty { "—" }, c)
             RowDivider(c)
-            ItemRow("Correo", "ana.vargas@gmail.com", c)
+            ItemRow("Correo", state.email.ifEmpty { "—" }, c)
             RowDivider(c)
-            ItemRow("Moneda principal", "CRC (₡)", c)
+            ItemRow("Moneda principal", state.moneda, c)
         }
 
         Spacer(Modifier.height(20.dp))
@@ -144,7 +169,7 @@ fun AjustesScreen(
         // ── CONFIGURACIÓN FINANCIERA ─────────────────────────────────────────
         SectionHeader("CONFIGURACIÓN FINANCIERA", c)
         SectionCard(c) {
-            ItemRow("Ingreso mensual estimado", "₡970.000", c)
+            ItemRow("Ingreso mensual estimado", ingresoFormateado, c)
             RowDivider(c)
             ItemRow("Inicio del período", "1ro de cada mes", c)
             RowDivider(c)

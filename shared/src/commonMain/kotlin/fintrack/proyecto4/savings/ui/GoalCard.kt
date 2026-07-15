@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalCard(
@@ -23,6 +25,7 @@ fun GoalCard(
     onViewDetail: (SavingsGoal) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     val isCompleted = goal.status == GoalStatus.COMPLETED
     val animatedProgress by animateFloatAsState(
         targetValue = goal.progress,
@@ -31,7 +34,7 @@ fun GoalCard(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color(0xFF111C2E),
+        color = colors.surface,
         shape = RoundedCornerShape(22.dp)
     ) {
         Column(
@@ -42,7 +45,7 @@ fun GoalCard(
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .background(Color(0xFF123D32), RoundedCornerShape(14.dp)),
+                        .background(FinTrackColors.GreenPrimary.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = goal.iconName, fontSize = 24.sp)
@@ -53,28 +56,28 @@ fun GoalCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = goal.name,
-                        color = Color.White,
+                        color = colors.textPrimary,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
                         text = if (isCompleted) "Meta alcanzada" else "Faltan ${formatMoney(goal.remainingAmount)}",
-                        color = if (isCompleted) Color(0xFF22C55E) else Color(0xFF94A3B8),
+                        color = if (isCompleted) FinTrackColors.GreenPrimary else colors.textSecondary,
                         fontSize = 12.sp,
                         fontWeight = if (isCompleted) FontWeight.Bold else FontWeight.Normal
                     )
 
                     Text(
                         text = goal.deadlineLabel,
-                        color = Color(0xFF64748B),
+                        color = colors.textSecondary,
                         fontSize = 11.sp
                     )
                 }
 
                 Text(
                     text = "${goal.progressPercentage}%",
-                    color = Color(0xFF22C55E),
+                    color = FinTrackColors.GreenPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -82,7 +85,7 @@ fun GoalCard(
 
             Text(
                 text = "${formatMoney(goal.currentAmount)} / ${formatMoney(goal.targetAmount)}",
-                color = Color.White,
+                color = colors.textPrimary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -92,8 +95,8 @@ fun GoalCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
-                color = Color(0xFF22C55E),
-                trackColor = Color(0xFF263447)
+                color = FinTrackColors.GreenPrimary,
+                trackColor = colors.surfaceSecondary
             )
 
             Row(
@@ -101,14 +104,14 @@ fun GoalCard(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = { onViewDetail(goal) }) {
-                    Text("Detalle", color = Color(0xFF94A3B8))
+                    Text("Detalle", color = colors.textSecondary)
                 }
 
                 if (!isCompleted) {
                     Button(
                         onClick = { onAddContribution(goal) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF22C55E),
+                            containerColor = FinTrackColors.GreenPrimary,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(14.dp)

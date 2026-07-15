@@ -10,9 +10,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun AddContributionDialog(
@@ -20,37 +21,35 @@ fun AddContributionDialog(
     onDismiss: () -> Unit,
     onSave: (amount: String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var amount by remember { mutableStateOf("") }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedLabelColor = Color(0xFF8B5CF6),
-        unfocusedLabelColor = Color(0xFF94A3B8),
-        focusedPlaceholderColor = Color(0xFF64748B),
-        unfocusedPlaceholderColor = Color(0xFF64748B),
-        cursorColor = Color.White,
-        focusedBorderColor = Color(0xFF8B5CF6),
-        unfocusedBorderColor = Color(0xFF64748B)
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
+        focusedLabelColor = FinTrackColors.GreenPrimary,
+        unfocusedLabelColor = colors.textSecondary,
+        focusedPlaceholderColor = colors.textSecondary,
+        unfocusedPlaceholderColor = colors.textSecondary,
+        cursorColor = colors.textPrimary,
+        focusedBorderColor = FinTrackColors.GreenPrimary,
+        unfocusedBorderColor = colors.border
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF111C2E),
+        containerColor = colors.surface,
         title = {
             Text(
                 text = "Abonar a ${goal.name}",
-                color = Color.White
+                color = colors.textPrimary
             )
         },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "Progreso actual: ${goal.progressPercentage}%",
-                    color = Color(0xFF94A3B8)
+                    color = colors.textSecondary
                 )
 
                 OutlinedTextField(
@@ -74,13 +73,8 @@ fun AddContributionDialog(
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text(
-                    text = "Cancelar",
-                    color = Color(0xFF94A3B8)
-                )
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = colors.textSecondary)
             }
         }
     )

@@ -35,4 +35,18 @@ class BudgetListViewModel(
             loadBudgets()
         }
     }
+
+    fun updateBudget(budgetId: String, newLimit: Double, newThreshold: Float) {
+        viewModelScope.launch {
+            repository.updateBudget(uid, budgetId, newLimit, newThreshold)
+            loadBudgets()
+        }
+    }
+
+    fun deactivateBudget(budgetId: String) {
+        viewModelScope.launch {
+            repository.deactivateBudget(uid, budgetId)
+            loadBudgets()
+        }
+    }
 }

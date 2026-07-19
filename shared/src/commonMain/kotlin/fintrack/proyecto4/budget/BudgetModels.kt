@@ -39,7 +39,9 @@ data class BudgetItem(
     val limit: Double,
     val period: String = "mensual",
     val alertThreshold: Float = 0.8f,
-    val periodKey: String = ""
+    val periodKey: String = "",
+    val isActive: Boolean = true,
+    val updatedAt: Long = 0L
 ) {
     val rawUsagePct: Float get() = if (limit > 0) (spent / limit).toFloat() else 0f
     val usagePct: Float get() = rawUsagePct.coerceAtMost(1f)

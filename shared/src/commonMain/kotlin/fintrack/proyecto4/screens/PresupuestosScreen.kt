@@ -1,6 +1,7 @@
 package fintrack.proyecto4.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -27,6 +28,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +62,9 @@ fun PresupuestosScreen(
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var selectedBudget by remember { mutableStateOf<BudgetItem?>(null) }
+    var showEdit by remember { mutableStateOf(false) }
+    var showDeactivate by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadBudgets()
@@ -103,10 +110,49 @@ fun PresupuestosScreen(
                 } else {
                     SummaryRow(state)
                     Spacer(Modifier.height(20.dp))
-                    BudgetList(state.budgets, modifier = Modifier.weight(1f))
+                    BudgetList(
+                        budgets = state.budgets,
+                        onBudgetClick = { selectedBudget = it },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
+    }
+
+    // ── Diálogos US-23 ──────────────────────────────────────────────────────
+    val current = selectedBudget
+    if (current != null && !showEdit && !showDeactivate) {
+        BudgetActionsDialog(
+            budget = current,
+            onDismiss = { selectedBudget = null },
+            onEdit = { showEdit = true },
+            onDeactivate = { showDeactivate = true }
+        )
+    }
+
+    if (current != null && showEdit) {
+        EditBudgetDialog(
+            budget = current,
+            onDismiss = { showEdit = false; selectedBudget = null },
+            onSave = { newLimit, newThreshold ->
+                viewModel.updateBudget(current.id, newLimit, newThreshold)
+                showEdit = false
+                selectedBudget = null
+            }
+        )
+    }
+
+    if (current != null && showDeactivate) {
+        DeactivateBudgetDialog(
+            budget = current,
+            onDismiss = { showDeactivate = false; selectedBudget = null },
+            onConfirm = {
+                viewModel.deactivateBudget(current.id)
+                showDeactivate = false
+                selectedBudget = null
+            }
+        )
     }
 }
 
@@ -174,20 +220,24 @@ private fun SummaryCard(
 // ── Lista de tarjetas ──────────────────────────────────────────────────────
 
 @Composable
-private fun BudgetList(budgets: List<BudgetItem>, modifier: Modifier = Modifier) {
+private fun BudgetList(
+    budgets: List<BudgetItem>,
+    onBudgetClick: (BudgetItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(budgets, key = { it.id }) { budget ->
-            BudgetCard(budget)
+            BudgetCard(budget, onClick = { onBudgetClick(budget) })
         }
         item { Spacer(Modifier.height(80.dp)) }
     }
 }
 
 @Composable
-private fun BudgetCard(budget: BudgetItem) {
+private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
     val colors = LocalAppColors.current
     val progressColor = when (budget.status) {
         BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
@@ -215,6 +265,7 @@ private fun BudgetCard(budget: BudgetItem) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(colors.surface)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(

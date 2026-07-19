@@ -26,10 +26,13 @@ class FirestoreBudgetRepository : BudgetRepository {
                         limit = doc.get<Double>("limit"),
                         period = doc.get("period"),
                         alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f },
-                        periodKey = try { doc.get<String>("periodKey") } catch (_: Exception) { "" }
+                        periodKey = try { doc.get<String>("periodKey") } catch (_: Exception) { "" },
+                        isActive = try { doc.get<Boolean>("isActive") } catch (_: Exception) { true },
+                        updatedAt = try { doc.get<Long>("updatedAt") } catch (_: Exception) { 0L }
                     )
                 }.getOrNull()
             }
+            .filter { it.isActive }
         } catch (e: Exception) {
             emptyList()
         }
@@ -57,5 +60,20 @@ class FirestoreBudgetRepository : BudgetRepository {
 
     override suspend fun deleteBudget(uid: String, budgetId: String) {
         col(uid).document(budgetId).delete()
+    }
+
+    override suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float) {
+        col(uid).document(budgetId).update(
+            "limit" to newLimit,
+            "alertThreshold" to newThreshold.toDouble(),
+            "updatedAt" to System.currentTimeMillis()
+        )
+    }
+
+    override suspend fun deactivateBudget(uid: String, budgetId: String) {
+        col(uid).document(budgetId).update(
+            "isActive" to false,
+            "updatedAt" to System.currentTimeMillis()
+        )
     }
 }

@@ -1,16 +1,22 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
@@ -22,26 +28,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.budget.BudgetItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.roundToInt
 
 @Composable
 fun BudgetActionsDialog(
     budget: BudgetItem,
+    transactions: List<Transaction>,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
-    onDeactivate: () -> Unit
+    onDeactivate: () -> Unit,
+    onTransactionClick: (Transaction) -> Unit
 ) {
     val colors = LocalAppColors.current
+    val subtotal = transactions.sumOf { it.amount }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = colors.surface,
@@ -62,6 +76,81 @@ fun BudgetActionsDialog(
                     text = "Alerta al ${(budget.alertThreshold * 100).roundToInt()}% usado",
                     color = colors.textSecondary
                 )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = colors.border
+                )
+
+                Text(
+                    text = "Transacciones en este presupuesto",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                if (transactions.isEmpty()) {
+                    Text(
+                        text = "No hay gastos en esta categoría este período.",
+                        color = colors.textSecondary,
+                        fontSize = 13.sp
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 220.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        items(transactions, key = { it.id }) { tx ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onTransactionClick(tx) }
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = tx.description.ifBlank { tx.category },
+                                        color = colors.textPrimary,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = tx.date,
+                                        color = colors.textSecondary,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Text(
+                                    text = formatColones(tx.amount),
+                                    color = colors.textPrimary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = colors.border)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Subtotal",
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = formatColones(subtotal),
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         },
         confirmButton = {

@@ -20,6 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -49,18 +52,25 @@ import fintrack.proyecto4.budget.BudgetListViewModel
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.BudgetStatus
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.budget.budgetTransactions
+import fintrack.proyecto4.budget.periodLabelFromKey
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.Transaction
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun PresupuestosScreen(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
-    onNuevoPresupuesto: () -> Unit = {}
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    onNuevoPresupuesto: () -> Unit = {},
+    onTransactionClick: (Transaction) -> Unit = {}
 ) {
     val colors = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
-    val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
+    val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid, transactionRepository) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedBudget by remember { mutableStateOf<BudgetItem?>(null) }
     var showEdit by remember { mutableStateOf(false) }
@@ -102,7 +112,16 @@ fun PresupuestosScreen(
                 modifier = Modifier.padding(top = 22.dp)
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
+
+            if (state.availablePeriods.size > 1) {
+                PeriodSelector(
+                    periods = state.availablePeriods,
+                    selected = state.selectedPeriod,
+                    onSelect = { viewModel.selectPeriod(it) }
+                )
+                Spacer(Modifier.height(16.dp))
+            }
 
             if (!state.isLoading) {
                 if (state.budgets.isEmpty()) {
@@ -124,9 +143,14 @@ fun PresupuestosScreen(
     if (current != null && !showEdit && !showDeactivate) {
         BudgetActionsDialog(
             budget = current,
+            transactions = budgetTransactions(state.transactions, current, state.selectedPeriod),
             onDismiss = { selectedBudget = null },
             onEdit = { showEdit = true },
-            onDeactivate = { showDeactivate = true }
+            onDeactivate = { showDeactivate = true },
+            onTransactionClick = { tx ->
+                selectedBudget = null
+                onTransactionClick(tx)
+            }
         )
     }
 
@@ -152,6 +176,55 @@ fun PresupuestosScreen(
                 selectedBudget = null
             }
         )
+    }
+}
+
+@Composable
+private fun PeriodSelector(
+    periods: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val colors = LocalAppColors.current
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(colors.surface)
+                .clickable { expanded = true }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = periodLabelFromKey(selected),
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Cambiar período",
+                tint = colors.textSecondary
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            periods.forEach { period ->
+                DropdownMenuItem(
+                    text = { Text(periodLabelFromKey(period), color = colors.textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onSelect(period)
+                    }
+                )
+            }
+        }
     }
 }
 

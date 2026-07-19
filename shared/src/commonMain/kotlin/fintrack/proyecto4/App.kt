@@ -289,7 +289,11 @@ fun App(
                         )
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
-                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
+                            transactionRepository = transactionRepository,
+                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) },
+                            onTransactionClick = { transaction ->
+                                navController.navigate(Screen.TransactionDetail(transaction))
+                            }
                         )
                         is Screen.NuevoPresupuesto -> CreateBudgetScreen(
                             budgetRepository = budgetRepository,

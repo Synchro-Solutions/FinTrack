@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.budget.currentPeriodKey
 import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
@@ -58,8 +59,10 @@ class DashboardViewModel(
                 null
             }
 
+            val periodoActual = currentPeriodKey()
             val budgets = try {
                 budgetRepository.getBudgets(uid)
+                    .filter { it.periodKey.isBlank() || it.periodKey == periodoActual }
             } catch (e: Exception) {
                 emptyList()
             }

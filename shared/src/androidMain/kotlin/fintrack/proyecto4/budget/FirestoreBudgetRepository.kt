@@ -28,7 +28,9 @@ class FirestoreBudgetRepository : BudgetRepository {
                         alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f },
                         periodKey = try { doc.get<String>("periodKey") } catch (_: Exception) { "" },
                         isActive = try { doc.get<Boolean>("isActive") } catch (_: Exception) { true },
-                        updatedAt = try { doc.get<Long>("updatedAt") } catch (_: Exception) { 0L }
+                        updatedAt = try { doc.get<Long>("updatedAt") } catch (_: Exception) { 0L },
+                        alertSent = try { doc.get<Boolean>("alertSent") } catch (_: Exception) { false },
+                        exceededSent = try { doc.get<Boolean>("exceededSent") } catch (_: Exception) { false }
                     )
                 }.getOrNull()
             }
@@ -74,6 +76,13 @@ class FirestoreBudgetRepository : BudgetRepository {
         col(uid).document(budgetId).update(
             "isActive" to false,
             "updatedAt" to System.currentTimeMillis()
+        )
+    }
+
+    override suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean) {
+        col(uid).document(budgetId).update(
+            "alertSent" to alertSent,
+            "exceededSent" to exceededSent
         )
     }
 }

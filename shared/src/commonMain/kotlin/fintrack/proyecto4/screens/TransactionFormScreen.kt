@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
@@ -63,6 +64,7 @@ fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
     editingTransaction: Transaction? = null,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetAlertService: BudgetAlertService? = null,
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
     onOcrClick: () -> Unit = {}
@@ -74,7 +76,7 @@ fun TransactionFormScreen(
     // entre visitas consecutivas de "nueva transacción" (misma key), dejando los campos de
     // la transacción anterior visibles al crear una nueva.
     val viewModel = remember(uid, editingTransaction?.id, initialType) {
-        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction)
+        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction, budgetAlertService)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()

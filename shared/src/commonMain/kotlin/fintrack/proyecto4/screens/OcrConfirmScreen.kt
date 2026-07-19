@@ -31,6 +31,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.transaction.TransactionFormViewModel
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
@@ -46,13 +47,14 @@ fun OcrConfirmScreen(
     result: OcrResult,
     onCancel: () -> Unit,
     onSaved: () -> Unit,
-    transactionRepository: TransactionRepository = NoOpTransactionRepository()
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetAlertService: BudgetAlertService? = null
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     // remember (no viewModel(key=...)) a propósito: cada confirmación OCR debe partir de un
     // formulario limpio, no reutilizar categoría/método de pago de una confirmación anterior.
     val viewModel = remember(uid) {
-        TransactionFormViewModel(transactionRepository, uid, TransactionType.EXPENSE)
+        TransactionFormViewModel(transactionRepository, uid, TransactionType.EXPENSE, null, budgetAlertService)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()

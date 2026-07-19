@@ -20,7 +20,8 @@ class FirestoreOnboardingRepository : OnboardingRepository {
                 "photoPath" to (profile.photoPath ?: ""),
                 "income" to profile.income,
                 "currency" to profile.currency,
-                "onboardingComplete" to true
+                "onboardingComplete" to true,
+                "budgetAlertEnabled" to profile.budgetAlertEnabled
             )
         )
         userRef.collection("consents").document("onboarding").set(
@@ -50,7 +51,8 @@ class FirestoreOnboardingRepository : OnboardingRepository {
                 income = doc.get<Double>("income"),
                 currency = doc.get<String>("currency"),
                 privacyAccepted = true,
-                termsAccepted = true
+                termsAccepted = true,
+                budgetAlertEnabled = try { doc.get<Boolean>("budgetAlertEnabled") } catch (_: Exception) { true }
             )
         } catch (e: Exception) {
             null

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.savings.model.GoalStatus
@@ -29,7 +31,8 @@ class DashboardViewModel(
     private val uid: String = "",
     private val onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     private val budgetRepository: BudgetRepository = NoOpBudgetRepository(),
-    private val savingsRepository: SavingsRepository = SavingsRepository()
+    private val savingsRepository: SavingsRepository = SavingsRepository(),
+    private val notificationRepository: NotificationRepository = NoOpNotificationRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -86,7 +89,11 @@ class DashboardViewModel(
                 )
             }
 
-            val notificationCount = budgets.count { it.usagePct >= it.alertThreshold }
+            val notificationCount = try {
+                notificationRepository.unreadCount(uid)
+            } catch (e: Exception) {
+                0
+            }
 
             _uiState.update { state ->
                 state.copy(

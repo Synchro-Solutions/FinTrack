@@ -120,7 +120,6 @@ fun PresupuestosScreen(
         }
     }
 
-    // ── Diálogos US-23 ──────────────────────────────────────────────────────
     val current = selectedBudget
     if (current != null && !showEdit && !showDeactivate) {
         BudgetActionsDialog(

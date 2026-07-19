@@ -37,6 +37,8 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.dashboard.DashboardViewModel
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.dashboard.MetaItem
@@ -57,6 +59,7 @@ fun DashboardScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
+    notificationRepository: NotificationRepository = NoOpNotificationRepository(),
     onNavigateToIngreso: () -> Unit = {},
     onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
@@ -65,11 +68,12 @@ fun DashboardScreen(
     onNavigateToMovimientos: () -> Unit = {},
     onNavigateToPresupuestos: () -> Unit = {},
     onNavigateToMetas: () -> Unit = {},
-    onNavigateToChat: () -> Unit = {}
+    onNavigateToChat: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) {
-        DashboardViewModel(transactionRepository, uid, onboardingRepository, budgetRepository)
+        DashboardViewModel(transactionRepository, uid, onboardingRepository, budgetRepository, notificationRepository = notificationRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -88,7 +92,7 @@ fun DashboardScreen(
                 DashboardHeader(
                     userName = state.userName,
                     notificationCount = state.notificationCount,
-                    onBellClick = { viewModel.marcarNotificacionesLeidas() },
+                    onBellClick = onNavigateToNotifications,
                     onAvatarClick = onNavigateToAjustes
                 )
             }

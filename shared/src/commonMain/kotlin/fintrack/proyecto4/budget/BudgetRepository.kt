@@ -9,6 +9,7 @@ interface BudgetRepository {
     suspend fun deleteBudget(uid: String, budgetId: String)
     suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float)
     suspend fun deactivateBudget(uid: String, budgetId: String)
+    suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean)
 }
 
 class NoOpBudgetRepository : BudgetRepository {
@@ -18,6 +19,7 @@ class NoOpBudgetRepository : BudgetRepository {
     override suspend fun deleteBudget(uid: String, budgetId: String) = Unit
     override suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float) = Unit
     override suspend fun deactivateBudget(uid: String, budgetId: String) = Unit
+    override suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean) = Unit
 }
 
 fun colorFromHex(hex: String): Color {

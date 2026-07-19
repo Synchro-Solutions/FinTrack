@@ -21,8 +21,10 @@ class BudgetListViewModel(
     fun loadBudgets() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
+            val periodKey = currentPeriodKey()
             val budgets = repository.getBudgets(uid)
-                .sortedByDescending { it.usagePct }
+                .filter { it.periodKey.isBlank() || it.periodKey == periodKey }
+                .sortedByDescending { it.rawUsagePct }
             _state.value = BudgetListState(budgets = budgets, isLoading = false)
         }
     }

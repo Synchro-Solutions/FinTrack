@@ -190,20 +190,25 @@ private fun BudgetList(budgets: List<BudgetItem>, modifier: Modifier = Modifier)
 private fun BudgetCard(budget: BudgetItem) {
     val colors = LocalAppColors.current
     val progressColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING  -> FinTrackColors.WarningColor
         BudgetStatus.OK       -> FinTrackColors.GreenPrimary
     }
     val statusLabel = when (budget.status) {
-        BudgetStatus.CRITICAL -> "⚠ Crítico"
+        BudgetStatus.EXCEEDED -> "Excedido"
+        BudgetStatus.CRITICAL -> "Cerca del límite"
         BudgetStatus.WARNING  -> "⚠ Alerta"
         BudgetStatus.OK       -> "OK"
     }
     val statusColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING  -> FinTrackColors.WarningColor
         BudgetStatus.OK       -> FinTrackColors.GreenPrimary
     }
+    val usageText = if (budget.status == BudgetStatus.EXCEEDED) "Excedido"
+                    else "${budget.usagePercentInt}%"
 
     Column(
         modifier = Modifier
@@ -259,6 +264,26 @@ private fun BudgetCard(budget: BudgetItem) {
 
         Spacer(Modifier.height(12.dp))
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${formatColones(budget.spent.toLong())} de ${formatColones(budget.limit.toLong())}",
+                color = colors.textSecondary,
+                fontSize = 12.sp
+            )
+            Text(
+                text = usageText,
+                color = progressColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
+
         LinearProgressIndicator(
             progress = { budget.usagePct },
             modifier = Modifier
@@ -274,20 +299,24 @@ private fun BudgetCard(budget: BudgetItem) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = "${formatColones(budget.spent.toLong())} gastados",
-                color = colors.textSecondary,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "${formatColones(budget.remaining.toLong())} restante",
-                color = if (budget.status == BudgetStatus.OK) FinTrackColors.GreenPrimary
-                        else colors.textSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
+            if (budget.status == BudgetStatus.EXCEEDED) {
+                Text(
+                    text = "${formatColones((-budget.remaining).toLong())} excedido",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "${formatColones(budget.remaining.toLong())} restante",
+                    color = if (budget.status == BudgetStatus.OK) FinTrackColors.GreenPrimary
+                            else colors.textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
@@ -305,14 +334,14 @@ private fun EmptyBudgetState(modifier: Modifier = Modifier) {
         Text(text = "💰", fontSize = 64.sp)
         Spacer(Modifier.height(20.dp))
         Text(
-            text = "Sin presupuestos aún",
+            text = "No tienes presupuestos activos",
             color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "No tienes presupuestos.\nToca + para crear uno.",
+            text = "Crea uno para empezar.",
             color = colors.textSecondary,
             fontSize = 14.sp,
             lineHeight = 20.sp,

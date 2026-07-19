@@ -25,7 +25,8 @@ class FirestoreBudgetRepository : BudgetRepository {
                         spent = doc.get<Double>("spent"),
                         limit = doc.get<Double>("limit"),
                         period = doc.get("period"),
-                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f }
+                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f },
+                        periodKey = try { doc.get<String>("periodKey") } catch (_: Exception) { "" }
                     )
                 }.getOrNull()
             }
@@ -44,7 +45,8 @@ class FirestoreBudgetRepository : BudgetRepository {
                 "spent" to item.spent,
                 "limit" to item.limit,
                 "period" to item.period,
-                "alertThreshold" to item.alertThreshold.toDouble()
+                "alertThreshold" to item.alertThreshold.toDouble(),
+                "periodKey" to item.periodKey
             )
         )
     }

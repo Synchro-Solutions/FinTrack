@@ -12,23 +12,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.savings.model.SavingsGoal
-import fintrack.proyecto4.theme.FinTrackColors
-import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalCompletedDialog(
     goal: SavingsGoal,
     onDismiss: () -> Unit
 ) {
-    val colors = LocalAppColors.current
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = colors.surface,
+        containerColor = Color(0xFF111C2E),
         title = {
             Text(
                 text = "🎉 ¡Meta alcanzada!",
-                color = colors.textPrimary,
+                color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -37,24 +33,24 @@ fun GoalCompletedDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "Completaste la meta: ${goal.name}",
-                    color = colors.textPrimary
+                    color = Color.White
                 )
 
                 Text(
                     text = "Monto final: ${formatMoney(goal.targetAmount)}",
-                    color = FinTrackColors.GreenPrimary,
+                    color = Color(0xFF22C55E),
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Excelente trabajo. Sigue creando hábitos financieros positivos.",
-                    color = colors.textSecondary
+                    color = Color(0xFF94A3B8)
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Aceptar", color = FinTrackColors.GreenPrimary)
+                Text("Aceptar", color = Color(0xFF22C55E))
             }
         },
         shape = RoundedCornerShape(22.dp)

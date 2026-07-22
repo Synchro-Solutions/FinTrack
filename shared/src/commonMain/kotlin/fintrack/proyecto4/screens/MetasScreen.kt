@@ -30,10 +30,12 @@ import fintrack.proyecto4.savings.viewmodel.GoalFilter
 import fintrack.proyecto4.savings.viewmodel.GoalSort
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import kotlinx.coroutines.launch
 
 @Composable
 fun MetasScreen() {
+    val colors = LocalAppColors.current
     val viewModel = remember { SavingsViewModel() }
     val scope = rememberCoroutineScope()
 
@@ -54,7 +56,7 @@ fun MetasScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(FinTrackColors.BgApp)
+            .background(colors.bg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -304,17 +306,17 @@ fun MetasScreen() {
             onDismissRequest = {
                 viewModel.clearError()
             },
-            containerColor = Color(0xFF111C2E),
+            containerColor = colors.surface,
             title = {
                 Text(
                     text = "Validación",
-                    color = Color.White
+                    color = colors.textPrimary
                 )
             },
             text = {
                 Text(
                     text = message,
-                    color = Color(0xFFCBD5E1)
+                    color = colors.textPrimary
                 )
             },
             confirmButton = {
@@ -340,10 +342,11 @@ private fun GoalsHeader(
     canCreateGoal: Boolean,
     onCreateGoal: () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Column {
         Text(
             text = "Mis metas",
-            color = Color.White,
+            color = colors.textPrimary,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
@@ -365,7 +368,7 @@ private fun GoalsHeader(
 
         Text(
             text = "Crea objetivos de ahorro y registra tus avances.",
-            color = Color(0xFF94A3B8),
+            color = colors.textSecondary,
             fontSize = 14.sp
         )
 
@@ -377,8 +380,8 @@ private fun GoalsHeader(
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF22C55E),
                 contentColor = Color.White,
-                disabledContainerColor = Color(0xFF334155),
-                disabledContentColor = Color(0xFF94A3B8)
+                disabledContainerColor = colors.border,
+                disabledContentColor = colors.textSecondary
             ),
             shape = RoundedCornerShape(14.dp)
         ) {
@@ -451,9 +454,10 @@ private fun SummaryCard(
     icon: String,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     Surface(
         modifier = modifier,
-        color = Color(0xFF111C2E),
+        color = colors.surface,
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(
@@ -468,7 +472,7 @@ private fun SummaryCard(
 
             Text(
                 text = title,
-                color = Color(0xFF94A3B8),
+                color = colors.textSecondary,
                 fontSize = 11.sp
             )
 
@@ -476,7 +480,7 @@ private fun SummaryCard(
 
             Text(
                 text = value,
-                color = Color.White,
+                color = colors.textPrimary,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -489,10 +493,11 @@ private fun GoalFilters(
     selectedFilter: GoalFilter,
     onFilterSelected: (GoalFilter) -> Unit
 ) {
+    val colors = LocalAppColors.current
     Column {
         Text(
             text = "Filtrar metas",
-            color = Color.White,
+            color = colors.textPrimary,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )
@@ -515,15 +520,15 @@ private fun GoalFilters(
                         Text(filterLabel(filter))
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Color(0xFF111C2E),
-                        labelColor = Color(0xFF94A3B8),
+                        containerColor = colors.surface,
+                        labelColor = colors.textSecondary,
                         selectedContainerColor = Color(0xFF22C55E),
                         selectedLabelColor = Color.White
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = selectedFilter == filter,
-                        borderColor = Color(0xFF334155),
+                        borderColor = colors.border,
                         selectedBorderColor = Color(0xFF22C55E)
                     )
                 )
@@ -537,6 +542,7 @@ private fun GoalSortSelector(
     selectedSort: GoalSort,
     onSortSelected: (GoalSort) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var expanded by remember {
         mutableStateOf(false)
     }
@@ -544,7 +550,7 @@ private fun GoalSortSelector(
     Column {
         Text(
             text = "Ordenar por",
-            color = Color.White,
+            color = colors.textPrimary,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )
@@ -558,7 +564,7 @@ private fun GoalSortSelector(
                     .clickable {
                         expanded = true
                     },
-                color = Color(0xFF111C2E),
+                color = colors.surface,
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Row(
@@ -573,14 +579,14 @@ private fun GoalSortSelector(
                 ) {
                     Text(
                         text = sortLabel(selectedSort),
-                        color = Color.White,
+                        color = colors.textPrimary,
                         fontSize = 14.sp
                     )
 
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
                         contentDescription = "Seleccionar orden",
-                        tint = Color(0xFF94A3B8)
+                        tint = colors.textSecondary
                     )
                 }
             }
@@ -591,7 +597,7 @@ private fun GoalSortSelector(
                     expanded = false
                 },
                 modifier = Modifier
-                    .background(Color(0xFF111C2E))
+                    .background(colors.surface)
             ) {
                 GoalSort.entries.forEach { sort ->
                     DropdownMenuItem(
@@ -601,7 +607,7 @@ private fun GoalSortSelector(
                                 color = if (selectedSort == sort) {
                                     Color(0xFF22C55E)
                                 } else {
-                                    Color.White
+                                    colors.textPrimary
                                 }
                             )
                         },
@@ -621,9 +627,10 @@ private fun EmptyGoalsMessage(
     title: String,
     description: String
 ) {
+    val colors = LocalAppColors.current
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color(0xFF111C2E),
+        color = colors.surface,
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(
@@ -639,7 +646,7 @@ private fun EmptyGoalsMessage(
 
             Text(
                 text = title,
-                color = Color.White,
+                color = colors.textPrimary,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -648,7 +655,7 @@ private fun EmptyGoalsMessage(
 
             Text(
                 text = description,
-                color = Color(0xFF94A3B8),
+                color = colors.textSecondary,
                 fontSize = 13.sp
             )
         }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -22,6 +23,7 @@ fun SavingsDatePickerDialog(
     onDismiss: () -> Unit,
     onDateSelected: (String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var errorMessage by remember {
         mutableStateOf<String?>(null)
     }
@@ -63,7 +65,7 @@ fun SavingsDatePickerDialog(
         onDismissRequest = onDismiss,
         colors = DatePickerDefaults.colors(
             containerColor =
-                FinTrackColors.SurfacePrimary
+                colors.surface
         ),
         confirmButton = {
             TextButton(
@@ -116,25 +118,25 @@ fun SavingsDatePickerDialog(
                 state = datePickerState,
                 colors = DatePickerDefaults.colors(
                     containerColor =
-                        FinTrackColors.SurfacePrimary,
+                        colors.surface,
 
                     titleContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     headlineContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     weekdayContentColor =
-                        FinTrackColors.TextSecondary,
+                        colors.textSecondary,
 
                     subheadContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     navigationContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     yearContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     currentYearContentColor =
                         FinTrackColors.GreenPrimary,
@@ -146,10 +148,10 @@ fun SavingsDatePickerDialog(
                         FinTrackColors.GreenPrimary,
 
                     dayContentColor =
-                        FinTrackColors.TextPrimary,
+                        colors.textPrimary,
 
                     disabledDayContentColor =
-                        FinTrackColors.TextSecondary
+                        colors.textSecondary
                             .copy(alpha = 0.35f),
 
                     selectedDayContentColor =
@@ -165,7 +167,7 @@ fun SavingsDatePickerDialog(
                         FinTrackColors.GreenPrimary,
 
                     dividerColor =
-                        FinTrackColors.DividerColor
+                        colors.divider
                 )
             )
 

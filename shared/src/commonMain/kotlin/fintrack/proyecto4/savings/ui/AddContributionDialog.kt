@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun AddContributionDialog(
@@ -20,27 +21,28 @@ fun AddContributionDialog(
     onDismiss: () -> Unit,
     onSave: (amount: String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var amount by remember { mutableStateOf("") }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
         focusedLabelColor = Color(0xFF8B5CF6),
-        unfocusedLabelColor = Color(0xFF94A3B8),
-        focusedPlaceholderColor = Color(0xFF64748B),
-        unfocusedPlaceholderColor = Color(0xFF64748B),
-        cursorColor = Color.White,
+        unfocusedLabelColor = colors.textSecondary,
+        focusedPlaceholderColor = colors.textSecondary,
+        unfocusedPlaceholderColor = colors.textSecondary,
+        cursorColor = colors.textPrimary,
         focusedBorderColor = Color(0xFF8B5CF6),
-        unfocusedBorderColor = Color(0xFF64748B)
+        unfocusedBorderColor = colors.textSecondary
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF111C2E),
+        containerColor = colors.surface,
         title = {
             Text(
                 text = "Abonar a ${goal.name}",
-                color = Color.White
+                color = colors.textPrimary
             )
         },
         text = {
@@ -50,7 +52,7 @@ fun AddContributionDialog(
 
                 Text(
                     text = "Progreso actual: ${goal.progressPercentage}%",
-                    color = Color(0xFF94A3B8)
+                    color = colors.textSecondary
                 )
 
                 OutlinedTextField(
@@ -79,7 +81,7 @@ fun AddContributionDialog(
             ) {
                 Text(
                     text = "Cancelar",
-                    color = Color(0xFF94A3B8)
+                    color = colors.textSecondary
                 )
             }
         }

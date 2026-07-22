@@ -22,6 +22,7 @@ import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalDetailDialog(
@@ -31,6 +32,7 @@ fun GoalDetailDialog(
     onCancelGoal: (SavingsGoal) -> Unit,
     onEditGoal: (SavingsGoal) -> Unit
 ) {
+    val colors = LocalAppColors.current
     val animatedProgress by animateFloatAsState(
         targetValue = goal.progress,
         label = "GoalDetailProgress"
@@ -38,7 +40,7 @@ fun GoalDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FinTrackColors.SurfacePrimary,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(22.dp),
         title = {
             Column(
@@ -46,7 +48,7 @@ fun GoalDetailDialog(
             ) {
                 Text(
                     text = "${goal.iconName} ${goal.name}",
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -90,7 +92,7 @@ fun GoalDetailDialog(
                     ) {
                         Text(
                             text = "Progreso",
-                            color = FinTrackColors.TextSecondary,
+                            color = colors.textSecondary,
                             fontSize = 12.sp
                         )
 
@@ -114,12 +116,12 @@ fun GoalDetailDialog(
                             goal.status ==
                             GoalStatus.CANCELLED
                         ) {
-                            FinTrackColors.TextTertiary
+                            colors.textSecondary
                         } else {
                             FinTrackColors.GreenPrimary
                         },
                         trackColor =
-                            FinTrackColors.SurfaceSecondary
+                            colors.surfaceSecondary
                     )
                 }
 
@@ -128,7 +130,7 @@ fun GoalDetailDialog(
                 )
 
                 HorizontalDivider(
-                    color = FinTrackColors.DividerColor
+                    color = colors.divider
                 )
 
                 Column(
@@ -136,7 +138,7 @@ fun GoalDetailDialog(
                 ) {
                     Text(
                         text = "Fecha y planificación",
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -153,7 +155,7 @@ fun GoalDetailDialog(
                         valueColor = if (goal.isOverdue) {
                             FinTrackColors.ErrorColor
                         } else {
-                            FinTrackColors.TextPrimary
+                            colors.textPrimary
                         }
                     )
                 }
@@ -172,7 +174,7 @@ fun GoalDetailDialog(
 
                 if (goal.notes.isNotBlank()) {
                     HorizontalDivider(
-                        color = FinTrackColors.DividerColor
+                        color = colors.divider
                     )
 
                     Column(
@@ -181,7 +183,7 @@ fun GoalDetailDialog(
                     ) {
                         Text(
                             text = "Notas",
-                            color = FinTrackColors.TextPrimary,
+                            color = colors.textPrimary,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -189,7 +191,7 @@ fun GoalDetailDialog(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             color =
-                                FinTrackColors.SurfaceSecondary,
+                                colors.surfaceSecondary,
                             shape =
                                 RoundedCornerShape(14.dp)
                         ) {
@@ -198,7 +200,7 @@ fun GoalDetailDialog(
                                 modifier =
                                     Modifier.padding(14.dp),
                                 color =
-                                    FinTrackColors.TextSecondary,
+                                    colors.textSecondary,
                                 fontSize = 13.sp,
                                 lineHeight = 19.sp
                             )
@@ -207,7 +209,7 @@ fun GoalDetailDialog(
                 }
 
                 HorizontalDivider(
-                    color = FinTrackColors.DividerColor
+                    color = colors.divider
                 )
 
                 ContributionHistorySection(
@@ -274,6 +276,7 @@ fun GoalDetailDialog(
 private fun GoalAmountsSummary(
     goal: SavingsGoal
 ) {
+    val colors = LocalAppColors.current
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -294,7 +297,7 @@ private fun GoalAmountsSummary(
                 label = "Objetivo",
                 amount = goal.targetAmount,
                 amountColor =
-                    FinTrackColors.TextPrimary,
+                    colors.textPrimary,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -307,7 +310,7 @@ private fun GoalAmountsSummary(
             ) {
                 FinTrackColors.GreenPrimary
             } else {
-                FinTrackColors.TextPrimary
+                colors.textPrimary
             },
             modifier = Modifier.fillMaxWidth()
         )
@@ -321,9 +324,10 @@ private fun DetailAmountCard(
     amountColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     Surface(
         modifier = modifier,
-        color = FinTrackColors.SurfaceSecondary,
+        color = colors.surfaceSecondary,
         shape = RoundedCornerShape(14.dp)
     ) {
         Column(
@@ -331,7 +335,7 @@ private fun DetailAmountCard(
         ) {
             Text(
                 text = label,
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 11.sp
             )
 
@@ -354,6 +358,7 @@ private fun SavingsRecommendationSection(
     monthlySaving: Double?,
     weeklySaving: Double?
 ) {
+    val colors = LocalAppColors.current
     if (
         monthlySaving == null &&
         weeklySaving == null
@@ -362,7 +367,7 @@ private fun SavingsRecommendationSection(
     }
 
     HorizontalDivider(
-        color = FinTrackColors.DividerColor
+        color = colors.divider
     )
 
     Column(
@@ -370,14 +375,14 @@ private fun SavingsRecommendationSection(
     ) {
         Text(
             text = "Plan recomendado",
-            color = FinTrackColors.TextPrimary,
+            color = colors.textPrimary,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
             text = "Para completar la meta dentro del plazo:",
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 12.sp
         )
 
@@ -411,6 +416,7 @@ private fun RecommendationCard(
     amount: Double,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     Surface(
         modifier = modifier,
         color = FinTrackColors.GreenPrimary
@@ -422,7 +428,7 @@ private fun RecommendationCard(
         ) {
             Text(
                 text = title,
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 11.sp
             )
 
@@ -444,6 +450,7 @@ private fun RecommendationCard(
 private fun ContributionHistorySection(
     contributions: List<SavingsContribution>
 ) {
+    val colors = LocalAppColors.current
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -456,14 +463,14 @@ private fun ContributionHistorySection(
         ) {
             Text(
                 text = "Historial de abonos",
-                color = FinTrackColors.TextPrimary,
+                color = colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = "${contributions.size} movimientos",
-                color = FinTrackColors.TextSecondary,
+                color = colors.textSecondary,
                 fontSize = 11.sp
             )
         }
@@ -471,13 +478,13 @@ private fun ContributionHistorySection(
         if (contributions.isEmpty()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = FinTrackColors.SurfaceSecondary,
+                color = colors.surfaceSecondary,
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = "Aún no hay abonos registrados.",
                     modifier = Modifier.padding(14.dp),
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 13.sp
                 )
             }
@@ -495,7 +502,7 @@ private fun ContributionHistorySection(
                     ) {
                         HorizontalDivider(
                             color =
-                                FinTrackColors.DividerColor,
+                                colors.divider,
                             thickness = 0.5.dp
                         )
                     }
@@ -504,7 +511,7 @@ private fun ContributionHistorySection(
             if (contributions.size > 10) {
                 Text(
                     text = "Mostrando los 10 movimientos más recientes.",
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 11.sp
                 )
             }
@@ -516,6 +523,7 @@ private fun ContributionHistorySection(
 private fun ContributionRow(
     contribution: SavingsContribution
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -554,14 +562,14 @@ private fun ContributionRow(
             Column {
                 Text(
                     text = "Abono",
-                    color = FinTrackColors.TextPrimary,
+                    color = colors.textPrimary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
                     text = contribution.createdAt,
-                    color = FinTrackColors.TextSecondary,
+                    color = colors.textSecondary,
                     fontSize = 11.sp
                 )
             }
@@ -580,8 +588,9 @@ private fun ContributionRow(
 private fun DetailInformationCard(
     label: String,
     value: String,
-    valueColor: Color = FinTrackColors.TextPrimary
+    valueColor: Color = colors.textPrimary
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement =
@@ -591,7 +600,7 @@ private fun DetailInformationCard(
     ) {
         Text(
             text = label,
-            color = FinTrackColors.TextSecondary,
+            color = colors.textSecondary,
             fontSize = 12.sp
         )
 
@@ -649,6 +658,7 @@ private fun DetailStatusBadge(
 private fun DetailPriorityBadge(
     priority: GoalPriority
 ) {
+    val colors = LocalAppColors.current
     val text = when (priority) {
         GoalPriority.LOW -> "Prioridad baja"
         GoalPriority.MEDIUM -> "Prioridad media"
@@ -657,7 +667,7 @@ private fun DetailPriorityBadge(
 
     val color = when (priority) {
         GoalPriority.LOW ->
-            FinTrackColors.TextSecondary
+            colors.textSecondary
 
         GoalPriority.MEDIUM ->
             FinTrackColors.WarningColor

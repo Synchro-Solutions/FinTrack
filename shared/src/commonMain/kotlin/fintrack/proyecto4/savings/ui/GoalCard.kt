@@ -21,6 +21,7 @@ import fintrack.proyecto4.savings.model.GoalPriority
 import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalCard(
@@ -29,6 +30,7 @@ fun GoalCard(
     onViewDetail: (SavingsGoal) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current
     val isCompleted =
         goal.status == GoalStatus.COMPLETED
 
@@ -44,7 +46,7 @@ fun GoalCard(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = FinTrackColors.SurfacePrimary,
+        color = colors.surface,
         shape = RoundedCornerShape(22.dp),
         tonalElevation = 0.dp
     ) {
@@ -77,7 +79,7 @@ fun GoalCard(
                 ) {
                     Text(
                         text = goal.name,
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -88,7 +90,7 @@ fun GoalCard(
 
                     Text(
                         text = goal.categoryLabel,
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontSize = 12.sp
                     )
                 }
@@ -121,7 +123,7 @@ fun GoalCard(
                             FinTrackColors.ErrorColor
 
                         else ->
-                            FinTrackColors.TextSecondary
+                            colors.textSecondary
                     },
                     fontSize = 13.sp,
                     fontWeight = if (
@@ -136,7 +138,7 @@ fun GoalCard(
                 Text(
                     text = "${goal.progressPercentage}%",
                     color = if (isCancelled) {
-                        FinTrackColors.TextSecondary
+                        colors.textSecondary
                     } else {
                         FinTrackColors.GreenPrimary
                     },
@@ -153,7 +155,7 @@ fun GoalCard(
                 Column {
                     Text(
                         text = "Ahorrado",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontSize = 11.sp
                     )
 
@@ -163,7 +165,7 @@ fun GoalCard(
                         text = formatGoalMoney(
                             goal.currentAmount
                         ),
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -175,7 +177,7 @@ fun GoalCard(
                 ) {
                     Text(
                         text = "Objetivo",
-                        color = FinTrackColors.TextSecondary,
+                        color = colors.textSecondary,
                         fontSize = 11.sp
                     )
 
@@ -185,7 +187,7 @@ fun GoalCard(
                         text = formatGoalMoney(
                             goal.targetAmount
                         ),
-                        color = FinTrackColors.TextPrimary,
+                        color = colors.textPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -202,13 +204,13 @@ fun GoalCard(
                     .clip(CircleShape),
                 color = when {
                     isCancelled ->
-                        FinTrackColors.TextTertiary
+                        colors.textSecondary
 
                     else ->
                         FinTrackColors.GreenPrimary
                 },
                 trackColor =
-                    FinTrackColors.SurfaceSecondary
+                    colors.surfaceSecondary
             )
 
             Row(
@@ -227,7 +229,7 @@ fun GoalCard(
                         color = if (goal.isOverdue) {
                             FinTrackColors.ErrorColor
                         } else {
-                            FinTrackColors.TextSecondary
+                            colors.textSecondary
                         },
                         fontSize = 11.sp,
                         fontWeight = if (goal.isOverdue) {
@@ -334,6 +336,7 @@ private fun GoalStatusBadge(
 private fun PriorityBadge(
     priority: GoalPriority
 ) {
+    val colors = LocalAppColors.current
     val label = when (priority) {
         GoalPriority.LOW -> "Prioridad baja"
         GoalPriority.MEDIUM -> "Prioridad media"
@@ -342,7 +345,7 @@ private fun PriorityBadge(
 
     val color = when (priority) {
         GoalPriority.LOW ->
-            FinTrackColors.TextSecondary
+            colors.textSecondary
 
         GoalPriority.MEDIUM ->
             FinTrackColors.WarningColor

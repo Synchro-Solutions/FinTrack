@@ -23,6 +23,7 @@ import fintrack.proyecto4.savings.model.GoalColor
 import fintrack.proyecto4.savings.model.GoalPriority
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun EditGoalDialog(
@@ -38,6 +39,7 @@ fun EditGoalDialog(
         notes: String
     ) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var name by remember(goal.id) {
         mutableStateOf(goal.name)
     }
@@ -71,25 +73,25 @@ fun EditGoalDialog(
     }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = FinTrackColors.TextPrimary,
-        unfocusedTextColor = FinTrackColors.TextPrimary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
         focusedLabelColor = FinTrackColors.GreenPrimary,
-        unfocusedLabelColor = FinTrackColors.TextSecondary,
-        focusedPlaceholderColor = FinTrackColors.TextSecondary,
-        unfocusedPlaceholderColor = FinTrackColors.TextSecondary,
+        unfocusedLabelColor = colors.textSecondary,
+        focusedPlaceholderColor = colors.textSecondary,
+        unfocusedPlaceholderColor = colors.textSecondary,
         cursorColor = FinTrackColors.GreenPrimary,
         focusedBorderColor = FinTrackColors.GreenPrimary,
-        unfocusedBorderColor = FinTrackColors.BorderDefault
+        unfocusedBorderColor = colors.border
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FinTrackColors.SurfacePrimary,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(22.dp),
         title = {
             Text(
                 text = "Editar meta",
-                color = FinTrackColors.TextPrimary
+                color = colors.textPrimary
             )
         },
         text = {
@@ -241,7 +243,7 @@ fun EditGoalDialog(
                     supportingText = {
                         Text(
                             text = "${notes.length}/250",
-                            color = FinTrackColors.TextSecondary
+                            color = colors.textSecondary
                         )
                     },
                     colors = fieldColors
@@ -266,9 +268,9 @@ fun EditGoalDialog(
                     containerColor = FinTrackColors.GreenPrimary,
                     contentColor = FinTrackColors.White,
                     disabledContainerColor =
-                        FinTrackColors.SurfaceSecondary,
+                        colors.surfaceSecondary,
                     disabledContentColor =
-                        FinTrackColors.TextSecondary
+                        colors.textSecondary
                 ),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -281,7 +283,7 @@ fun EditGoalDialog(
             ) {
                 Text(
                     text = "Cancelar",
-                    color = FinTrackColors.TextSecondary
+                    color = colors.textSecondary
                 )
             }
         }
@@ -304,9 +306,10 @@ fun EditGoalDialog(
 private fun EditDialogSectionTitle(
     text: String
 ) {
+    val colors = LocalAppColors.current
     Text(
         text = text,
-        color = FinTrackColors.TextPrimary,
+        color = colors.textPrimary,
         style = MaterialTheme.typography.titleSmall
     )
 }
@@ -316,6 +319,7 @@ private fun EditCategorySelector(
     selectedCategory: GoalCategory,
     onCategorySelected: (GoalCategory) -> Unit
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,9 +340,9 @@ private fun EditCategorySelector(
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor =
-                        FinTrackColors.SurfaceSecondary,
+                        colors.surfaceSecondary,
                     labelColor =
-                        FinTrackColors.TextSecondary,
+                        colors.textSecondary,
                     selectedContainerColor =
                         FinTrackColors.GreenPrimary,
                     selectedLabelColor =
@@ -348,7 +352,7 @@ private fun EditCategorySelector(
                     enabled = true,
                     selected = selectedCategory == category,
                     borderColor =
-                        FinTrackColors.BorderDefault,
+                        colors.border,
                     selectedBorderColor =
                         FinTrackColors.GreenPrimary
                 )
@@ -362,6 +366,7 @@ private fun EditPrioritySelector(
     selectedPriority: GoalPriority,
     onPrioritySelected: (GoalPriority) -> Unit
 ) {
+    val colors = LocalAppColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -380,9 +385,9 @@ private fun EditPrioritySelector(
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor =
-                        FinTrackColors.SurfaceSecondary,
+                        colors.surfaceSecondary,
                     labelColor =
-                        FinTrackColors.TextSecondary,
+                        colors.textSecondary,
                     selectedContainerColor =
                         FinTrackColors.GreenPrimary,
                     selectedLabelColor =
@@ -392,7 +397,7 @@ private fun EditPrioritySelector(
                     enabled = true,
                     selected = selectedPriority == priority,
                     borderColor =
-                        FinTrackColors.BorderDefault,
+                        colors.border,
                     selectedBorderColor =
                         FinTrackColors.GreenPrimary
                 )

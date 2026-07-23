@@ -185,16 +185,15 @@ private fun DashboardHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text("Hola,", color = colors.textSecondary, fontSize = 13.sp, fontFamily = montserrat)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    userName, color = colors.textPrimary, fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold, fontFamily = montserrat
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("👋", fontSize = 20.sp)
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Hola,", color = colors.textSecondary, fontSize = 15.sp, fontFamily = montserrat)
+            Spacer(Modifier.width(5.dp))
+            Text(
+                userName, color = colors.textPrimary, fontSize = 20.sp,
+                fontWeight = FontWeight.Bold, fontFamily = montserrat
+            )
+            Spacer(Modifier.width(6.dp))
+            Text("👋", fontSize = 18.sp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             BadgedBox(badge = {

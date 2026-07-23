@@ -10,9 +10,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.savings.model.SavingsGoal
-import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
@@ -27,13 +27,13 @@ fun AddContributionDialog(
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = colors.textPrimary,
         unfocusedTextColor = colors.textPrimary,
-        focusedLabelColor = FinTrackColors.VioletDark,
+        focusedLabelColor = Color(0xFF8B5CF6),
         unfocusedLabelColor = colors.textSecondary,
         focusedPlaceholderColor = colors.textSecondary,
         unfocusedPlaceholderColor = colors.textSecondary,
         cursorColor = colors.textPrimary,
-        focusedBorderColor = FinTrackColors.VioletDark,
-        unfocusedBorderColor = colors.border
+        focusedBorderColor = Color(0xFF8B5CF6),
+        unfocusedBorderColor = colors.textSecondary
     )
 
     AlertDialog(

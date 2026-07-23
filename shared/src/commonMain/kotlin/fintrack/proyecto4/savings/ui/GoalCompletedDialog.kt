@@ -7,11 +7,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.savings.model.SavingsGoal
-import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
@@ -20,7 +20,6 @@ fun GoalCompletedDialog(
     onDismiss: () -> Unit
 ) {
     val colors = LocalAppColors.current
-
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = colors.surface,
@@ -41,7 +40,7 @@ fun GoalCompletedDialog(
 
                 Text(
                     text = "Monto final: ${formatMoney(goal.targetAmount)}",
-                    color = FinTrackColors.GreenPrimary,
+                    color = Color(0xFF22C55E),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -53,7 +52,7 @@ fun GoalCompletedDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Aceptar", color = FinTrackColors.GreenPrimary)
+                Text("Aceptar", color = Color(0xFF22C55E))
             }
         },
         shape = RoundedCornerShape(22.dp)

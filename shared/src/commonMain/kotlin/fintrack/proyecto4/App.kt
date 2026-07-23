@@ -53,6 +53,7 @@ import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
+import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
@@ -320,9 +321,8 @@ fun App(
                             title = "Cesantia",
                             description = "Aqui va la calculadora de cesantia."
                         )
-                        is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
-                            title = "Vacaciones",
-                            description = "Aqui va la calculadora de vacaciones."
+                        is Screen.VacacionesCalculator -> VacacionesCalculatorScreen(
+                            onBack = { navController.goBack() }
                         )
                         is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
                             title = "Preaviso",

@@ -10,9 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun EditGoalDialog(
@@ -20,27 +21,28 @@ fun EditGoalDialog(
     onDismiss: () -> Unit,
     onSave: (name: String, deadline: String?, iconName: String) -> Unit
 ) {
+    val colors = LocalAppColors.current
     var name by remember { mutableStateOf(goal.name) }
     var deadline by remember { mutableStateOf(goal.deadline ?: "") }
     var iconName by remember { mutableStateOf(goal.iconName) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedLabelColor = Color(0xFF8B5CF6),
-        unfocusedLabelColor = Color(0xFF94A3B8),
-        focusedPlaceholderColor = Color(0xFF64748B),
-        unfocusedPlaceholderColor = Color(0xFF64748B),
-        cursorColor = Color.White,
-        focusedBorderColor = Color(0xFF8B5CF6),
-        unfocusedBorderColor = Color(0xFF64748B)
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
+        focusedLabelColor = FinTrackColors.VioletDark,
+        unfocusedLabelColor = colors.textSecondary,
+        focusedPlaceholderColor = colors.textSecondary,
+        unfocusedPlaceholderColor = colors.textSecondary,
+        cursorColor = colors.textPrimary,
+        focusedBorderColor = FinTrackColors.VioletDark,
+        unfocusedBorderColor = colors.border
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF111C2E),
-        title = { Text("Editar meta", color = Color.White) },
+        containerColor = colors.surface,
+        title = { Text("Editar meta", color = colors.textPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -63,7 +65,7 @@ fun EditGoalDialog(
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
                                 contentDescription = "Seleccionar fecha",
-                                tint = Color(0xFF94A3B8)
+                                tint = colors.textSecondary
                             )
                         },
                         colors = fieldColors
@@ -102,7 +104,7 @@ fun EditGoalDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color(0xFF94A3B8))
+                Text("Cancelar", color = colors.textSecondary)
             }
         }
     )

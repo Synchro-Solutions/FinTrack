@@ -7,24 +7,27 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalCompletedDialog(
     goal: SavingsGoal,
     onDismiss: () -> Unit
 ) {
+    val colors = LocalAppColors.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF111C2E),
+        containerColor = colors.surface,
         title = {
             Text(
                 text = "🎉 ¡Meta alcanzada!",
-                color = Color.White,
+                color = colors.textPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -33,24 +36,24 @@ fun GoalCompletedDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "Completaste la meta: ${goal.name}",
-                    color = Color.White
+                    color = colors.textPrimary
                 )
 
                 Text(
                     text = "Monto final: ${formatMoney(goal.targetAmount)}",
-                    color = Color(0xFF22C55E),
+                    color = FinTrackColors.GreenPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Excelente trabajo. Sigue creando hábitos financieros positivos.",
-                    color = Color(0xFF94A3B8)
+                    color = colors.textSecondary
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Aceptar", color = Color(0xFF22C55E))
+                Text("Aceptar", color = FinTrackColors.GreenPrimary)
             }
         },
         shape = RoundedCornerShape(22.dp)

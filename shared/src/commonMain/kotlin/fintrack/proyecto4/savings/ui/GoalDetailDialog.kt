@@ -8,12 +8,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
+import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalAppColors
 
 @Composable
 fun GoalDetailDialog(
@@ -23,6 +24,7 @@ fun GoalDetailDialog(
     onCancelGoal: (SavingsGoal) -> Unit,
     onEditGoal: (SavingsGoal) -> Unit
 ) {
+    val colors = LocalAppColors.current
     val animatedProgress by animateFloatAsState(
         targetValue = goal.progress,
         label = "GoalDetailProgress"
@@ -30,9 +32,9 @@ fun GoalDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF111C2E),
+        containerColor = colors.surface,
         title = {
-            Text("${goal.iconName} ${goal.name}", color = Color.White)
+            Text("${goal.iconName} ${goal.name}", color = colors.textPrimary)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -40,35 +42,35 @@ fun GoalDetailDialog(
 
                 Text(
                     text = "${goal.progressPercentage}% completado",
-                    color = Color(0xFF22C55E),
+                    color = FinTrackColors.GreenPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 LinearProgressIndicator(
                     progress = { animatedProgress },
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF22C55E),
-                    trackColor = Color(0xFF263447)
+                    color = FinTrackColors.GreenPrimary,
+                    trackColor = colors.surfaceSecondary
                 )
 
-                Text("Ahorrado: ${formatMoney(goal.currentAmount)}", color = Color.White)
-                Text("Objetivo: ${formatMoney(goal.targetAmount)}", color = Color.White)
-                Text("Faltan: ${formatMoney(goal.remainingAmount)}", color = Color(0xFF94A3B8))
-                Text("Tiempo: ${goal.deadlineLabel}", color = Color(0xFF94A3B8))
-                Text("Fecha límite: ${goal.deadline ?: "Sin fecha definida"}", color = Color(0xFF94A3B8))
+                Text("Ahorrado: ${formatMoney(goal.currentAmount)}", color = colors.textPrimary)
+                Text("Objetivo: ${formatMoney(goal.targetAmount)}", color = colors.textPrimary)
+                Text("Faltan: ${formatMoney(goal.remainingAmount)}", color = colors.textSecondary)
+                Text("Tiempo: ${goal.deadlineLabel}", color = colors.textSecondary)
+                Text("Fecha límite: ${goal.deadline ?: "Sin fecha definida"}", color = colors.textSecondary)
 
-                HorizontalDivider(color = Color(0xFF263447))
+                HorizontalDivider(color = colors.divider)
 
                 Text(
                     text = "Historial de abonos",
-                    color = Color.White,
+                    color = colors.textPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 if (contributions.isEmpty()) {
                     Text(
                         text = "Aún no hay abonos registrados.",
-                        color = Color(0xFF94A3B8)
+                        color = colors.textSecondary
                     )
                 } else {
                     contributions.take(5).forEach { contribution ->
@@ -76,10 +78,10 @@ fun GoalDetailDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(contribution.createdAt, color = Color(0xFF94A3B8))
+                            Text(contribution.createdAt, color = colors.textSecondary)
                             Text(
                                 text = "+${formatMoney(contribution.amount)}",
-                                color = Color(0xFF22C55E),
+                                color = FinTrackColors.GreenPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -91,12 +93,12 @@ fun GoalDetailDialog(
             Row {
                 if (goal.status == GoalStatus.ACTIVE) {
                     TextButton(onClick = { onEditGoal(goal) }) {
-                        Text("Editar", color = Color(0xFF8B5CF6))
+                        Text("Editar", color = FinTrackColors.VioletDark)
                     }
                 }
 
                 TextButton(onClick = onDismiss) {
-                    Text("Cerrar", color = Color(0xFF22C55E))
+                    Text("Cerrar", color = FinTrackColors.GreenPrimary)
                 }
             }
         },
@@ -105,8 +107,8 @@ fun GoalDetailDialog(
                 Button(
                     onClick = { onCancelGoal(goal) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFEF4444),
-                        contentColor = Color.White
+                        containerColor = FinTrackColors.ErrorColor,
+                        contentColor = FinTrackColors.White
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -127,9 +129,9 @@ private fun StatusBadge(status: GoalStatus) {
     }
 
     val color = when (status) {
-        GoalStatus.ACTIVE -> Color(0xFF22C55E)
-        GoalStatus.COMPLETED -> Color(0xFF3B82F6)
-        GoalStatus.CANCELLED -> Color(0xFFEF4444)
+        GoalStatus.ACTIVE -> FinTrackColors.GreenPrimary
+        GoalStatus.COMPLETED -> FinTrackColors.BlueMeta
+        GoalStatus.CANCELLED -> FinTrackColors.ErrorColor
     }
 
     Box(

@@ -98,7 +98,8 @@ fun App(
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     onPickProfilePhoto: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
-    onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" }
+    onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" },
+    onShareText: (String) -> Unit = {}
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
@@ -198,7 +199,8 @@ fun App(
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
                                 onNavigateToMetas = { navController.replace(Screen.Metas) },
-                                onNavigateToChat = { navController.navigate(Screen.AiChat) }
+                                onNavigateToChat = { navController.navigate(Screen.AiChat) },
+                                onShareText = onShareText
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(
@@ -276,6 +278,7 @@ fun App(
                         )
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
+                            transactionRepository = transactionRepository,
                             onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
                         )
                         is Screen.NuevoPresupuesto -> CreateBudgetScreen(
@@ -301,7 +304,11 @@ fun App(
                             onCerrarSesion = { navController.replace(Screen.Login) }
                         )
 
-                        is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
+                        is Screen.FinancialCenter -> FinancialCenterScreen(
+                            historyCount = 0,
+                            transactionRepository = transactionRepository,
+                            budgetRepository = budgetRepository
+                        )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }
                         )

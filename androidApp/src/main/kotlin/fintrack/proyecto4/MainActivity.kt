@@ -1,6 +1,7 @@
 package fintrack.proyecto4
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
@@ -96,9 +97,19 @@ class MainActivity : ComponentActivity() {
                 },
                 onRecognizeReceiptText = { imagePath ->
                     recognizeReceiptText(applicationContext, imagePath)
-                }
+                },
+                onShareText = { text -> shareText(text) }
             )
         }
+    }
+
+    private fun shareText(text: String) {
+        if (text.isBlank()) return
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(sendIntent, "Compartir resumen"))
     }
 
     /**

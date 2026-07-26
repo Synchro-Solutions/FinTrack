@@ -2,6 +2,8 @@ package fintrack.proyecto4.transaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fintrack.proyecto4.ai.AnomalyAlertBus
+import fintrack.proyecto4.ai.AnomalyDetector
 import fintrack.proyecto4.ocr.OcrResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ class TransactionFormViewModel(
     private val repository: TransactionRepository,
     private val uid: String,
     initialType: TransactionType = TransactionType.EXPENSE,
-    private val editingTransaction: Transaction? = null
+    private val editingTransaction: Transaction? = null,
+    private val anomalyDetector: AnomalyDetector = AnomalyDetector()
 ) : ViewModel() {
 
     val isEditing: Boolean get() = editingTransaction != null
@@ -122,7 +125,21 @@ class TransactionFormViewModel(
                 if (isEditing) {
                     repository.updateTransaction(uid, transaction)
                 } else {
+                    val priorHistory = if (transaction.type == TransactionType.EXPENSE) {
+                        try { repository.getTransactions(uid) } catch (_: Exception) { emptyList() }
+                    } else {
+                        emptyList()
+                    }
+
                     repository.addTransaction(uid, transaction)
+
+                    if (transaction.type == TransactionType.EXPENSE) {
+                        try {
+                            val alert = anomalyDetector.analyze(transaction, priorHistory)
+                            if (alert != null) AnomalyAlertBus.post(alert)
+                        } catch (_: Exception) {
+                        }
+                    }
                 }
 
                 _saveError.value = null

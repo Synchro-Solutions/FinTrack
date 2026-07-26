@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,11 +36,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.ai.SpendingForecastViewModel
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
 
 internal data class FinancialMenuItem(
     val title: String,
@@ -61,12 +71,22 @@ internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
 )
 
 @Composable
-fun FinancialCenterScreen(historyCount: Int = 0) {
+fun FinancialCenterScreen(
+    historyCount: Int = 0,
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetRepository: BudgetRepository = NoOpBudgetRepository()
+) {
     val navController = LocalNavController.current
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
 
     val menuItems = financialMenuItems()
+
+    val uid = AuthClient.currentUserId() ?: ""
+    val forecastViewModel = viewModel(key = "forecast_fc_$uid") {
+        SpendingForecastViewModel(transactionRepository, budgetRepository, uid)
+    }
+    val forecastState by forecastViewModel.state.collectAsStateWithLifecycle()
 
     BoxWithConstraints(
         modifier = Modifier
@@ -150,6 +170,13 @@ fun FinancialCenterScreen(historyCount: Int = 0) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    SpendingForecastSection(
+                        state = forecastState,
+                        onGenerate = { forecastViewModel.generateForecast() },
+                        onRegenerate = { forecastViewModel.generateForecast(force = true) }
+                    )
+                }
                 items(menuItems) { item ->
                     FinancialCard(
                         item = item,

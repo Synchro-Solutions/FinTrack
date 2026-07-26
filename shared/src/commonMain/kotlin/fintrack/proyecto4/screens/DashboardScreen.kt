@@ -9,9 +9,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
@@ -33,6 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.ai.AnomalyAlert
+import fintrack.proyecto4.ai.AnomalyAlertBus
+import fintrack.proyecto4.ai.MonthlySummaryState
+import fintrack.proyecto4.ai.MonthlySummaryViewModel
+import fintrack.proyecto4.ai.WeeklyAnomalyViewModel
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
@@ -65,13 +74,25 @@ fun DashboardScreen(
     onNavigateToMovimientos: () -> Unit = {},
     onNavigateToPresupuestos: () -> Unit = {},
     onNavigateToMetas: () -> Unit = {},
-    onNavigateToChat: () -> Unit = {}
+    onNavigateToChat: () -> Unit = {},
+    onShareText: (String) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) {
         DashboardViewModel(transactionRepository, uid, onboardingRepository, budgetRepository)
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val summaryViewModel = viewModel(key = "summary_$uid") {
+        MonthlySummaryViewModel(transactionRepository, uid)
+    }
+    val summaryState by summaryViewModel.state.collectAsStateWithLifecycle()
+
+    val anomalyAlert by AnomalyAlertBus.current.collectAsStateWithLifecycle()
+    val weeklyViewModel = viewModel(key = "weekly_$uid") {
+        WeeklyAnomalyViewModel(transactionRepository, uid)
+    }
+    val weeklyState by weeklyViewModel.state.collectAsStateWithLifecycle()
 
     val colors = LocalAppColors.current
     Box(modifier = Modifier.fillMaxSize().background(colors.bg)) {
@@ -93,6 +114,22 @@ fun DashboardScreen(
                 )
             }
             item { Spacer(Modifier.height(4.dp)) }
+
+            anomalyAlert?.let { alert ->
+                item {
+                    AnomalyBanner(
+                        alert = alert,
+                        onDismiss = { AnomalyAlertBus.dismiss() },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
+
+            if (weeklyState.anomalies.isNotEmpty()) {
+                item { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
             item {
                 BalanceCard(
                     mesActual    = state.mesActual,
@@ -111,6 +148,15 @@ fun DashboardScreen(
                     onGasto = onNavigateToGasto,
                     onOcr = onNavigateToOcr,
                     onReportes = onNavigateToReportes
+                )
+            }
+            item { Spacer(Modifier.height(24.dp)) }
+            item {
+                MonthlySummarySection(
+                    state = summaryState,
+                    onGenerate = { summaryViewModel.generateSummary() },
+                    onRegenerate = { summaryViewModel.generateSummary(force = true) },
+                    onShare = onShareText
                 )
             }
             item { Spacer(Modifier.height(24.dp)) }
@@ -163,6 +209,174 @@ fun DashboardScreen(
             .align(Alignment.BottomEnd)
             .padding(end = 20.dp, bottom = 20.dp)
     )
+    }
+}
+
+@Composable
+private fun WeeklyAnomalyCard(anomalies: List<AnomalyAlert>) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(colors.surface)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("🔎", fontSize = 16.sp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Resumen semanal de gastos inusuales",
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Detectamos ${anomalies.size} gasto${if (anomalies.size == 1) "" else "s"} " +
+                "por encima de tu patrón esta semana:",
+            color = colors.textSecondary,
+            fontSize = 12.sp,
+            fontFamily = montserrat
+        )
+        Spacer(Modifier.height(8.dp))
+        anomalies.take(5).forEach { a ->
+            Text(
+                text = "• ${a.category} — ${a.message}",
+                color = colors.textPrimary,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                fontFamily = montserrat,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthlySummarySection(
+    state: MonthlySummaryState,
+    onGenerate: () -> Unit,
+    onRegenerate: () -> Unit,
+    onShare: (String) -> Unit
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    var collapsed by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        if (!state.hasRequested) {
+            Button(
+                onClick = onGenerate,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+            ) {
+                Text(
+                    "✨  Resumen IA del mes",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = montserrat
+                )
+            }
+            return
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surface)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { collapsed = !collapsed },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("✨", fontSize = 16.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Resumen IA del mes",
+                    color = colors.textPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserrat,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (collapsed) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                    contentDescription = if (collapsed) "Expandir" else "Colapsar",
+                    tint = colors.textSecondary
+                )
+            }
+
+            if (collapsed) return@Column
+
+            Spacer(Modifier.height(12.dp))
+
+            when {
+                state.isLoading -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = FinTrackColors.GreenPrimary
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Generando tu resumen…",
+                            color = colors.textSecondary,
+                            fontSize = 13.sp,
+                            fontFamily = montserrat
+                        )
+                    }
+                }
+
+                state.error != null -> {
+                    Text(
+                        state.error,
+                        color = FinTrackColors.ErrorColor,
+                        fontSize = 13.sp,
+                        fontFamily = montserrat
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    TextButton(onClick = onRegenerate) {
+                        Text("Reintentar", color = FinTrackColors.GreenPrimary, fontFamily = montserrat)
+                    }
+                }
+
+                else -> {
+                    Text(
+                        state.summary,
+                        color = colors.textPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                        fontFamily = montserrat
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { onShare(state.summary) }) {
+                            Icon(Icons.Default.Share, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Compartir", color = FinTrackColors.GreenPrimary, fontFamily = montserrat)
+                        }
+                        TextButton(onClick = onRegenerate) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Regenerar", color = colors.textSecondary, fontFamily = montserrat)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

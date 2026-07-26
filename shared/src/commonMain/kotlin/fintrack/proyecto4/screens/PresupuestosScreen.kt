@@ -45,19 +45,28 @@ import fintrack.proyecto4.budget.BudgetListViewModel
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.BudgetStatus
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.ai.SpendingForecastViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun PresupuestosScreen(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
+    transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onNuevoPresupuesto: () -> Unit = {}
 ) {
     val colors = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val forecastViewModel = viewModel(key = "forecast_$uid") {
+        SpendingForecastViewModel(transactionRepository, budgetRepository, uid)
+    }
+    val forecastState by forecastViewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadBudgets()
@@ -98,12 +107,29 @@ fun PresupuestosScreen(
             Spacer(Modifier.height(20.dp))
 
             if (!state.isLoading) {
-                if (state.budgets.isEmpty()) {
-                    EmptyBudgetState(modifier = Modifier.weight(1f))
-                } else {
-                    SummaryRow(state)
-                    Spacer(Modifier.height(20.dp))
-                    BudgetList(state.budgets, modifier = Modifier.weight(1f))
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item {
+                        SpendingForecastSection(
+                            state = forecastState,
+                            onGenerate = { forecastViewModel.generateForecast() },
+                            onRegenerate = { forecastViewModel.generateForecast(force = true) }
+                        )
+                    }
+
+                    if (state.budgets.isEmpty()) {
+                        item {
+                            EmptyBudgetState(modifier = Modifier.fillParentMaxWidth().padding(top = 40.dp))
+                        }
+                    } else {
+                        item { SummaryRow(state) }
+                        items(state.budgets, key = { it.id }) { budget ->
+                            BudgetCard(budget)
+                        }
+                    }
+                    item { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
@@ -168,21 +194,6 @@ private fun SummaryCard(
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-// ── Lista de tarjetas ──────────────────────────────────────────────────────
-
-@Composable
-private fun BudgetList(budgets: List<BudgetItem>, modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(budgets, key = { it.id }) { budget ->
-            BudgetCard(budget)
-        }
-        item { Spacer(Modifier.height(80.dp)) }
     }
 }
 

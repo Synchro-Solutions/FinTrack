@@ -10,12 +10,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
@@ -50,14 +48,12 @@ internal data class FinancialMenuItem(
 )
 
 internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
-    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientViolet, Screen.AguinaldoCalculator),
-    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientIndigo, Screen.CurrencyConverter),
-    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.AutoMirrored.Filled.TrendingUp, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),
-    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.AutoMirrored.Filled.TrendingDown, FinTrackColors.GradientRed, Screen.LiquidacionCalculator),
-    FinancialMenuItem("Cesantia", "Auxilio de cesantia CR", Icons.Default.Home, FinTrackColors.GradientGreen, Screen.CesantiaCalculator),
-    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, FinTrackColors.GradientViolet, Screen.VacacionesCalculator),
-    FinancialMenuItem("Preaviso", "Calculo de preaviso laboral", Icons.Default.Notifications, FinTrackColors.GradientRed, Screen.PreavisoCalculator),
-    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, FinTrackColors.GradientIndigo, Screen.CalculationHistory)
+    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.AguinaldoCalculator),
+    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientGreen, Screen.CurrencyConverter),
+    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),
+    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.Default.Description, FinTrackColors.GradientGreen, Screen.LiquidacionCalculator),
+    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, FinTrackColors.GradientGreen, Screen.VacacionesCalculator),
+    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, FinTrackColors.GradientGreen, Screen.CalculationHistory)
 )
 
 @Composable
@@ -82,59 +78,25 @@ fun FinancialCenterScreen(historyCount: Int = 0) {
                 .fillMaxSize()
                 .padding(top = if (compact) 16.dp else 20.dp)
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .padding(horizontal = horizontalPadding)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(FinTrackColors.GradientBalance)
-                    .padding(horizontal = 18.dp, vertical = 16.dp)
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Centro financiero",
-                            fontSize = if (compact) 23.sp else 25.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontFamily = montserrat
-                        )
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(Color.White.copy(alpha = 0.14f))
-                                .clickable { navController.replace(Screen.Dashboard) }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Home,
-                                contentDescription = "Ir al inicio",
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = "Inicio",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                fontFamily = montserrat
-                            )
-                        }
-                    }
-                    Text(
-                        text = "Calculadoras y herramientas para tus decisiones",
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontFamily = montserrat,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+                Text(
+                    text = "Centro financiero",
+                    fontSize = if (compact) 22.sp else 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary,
+                    fontFamily = montserrat
+                )
+                Text(
+                    text = "Calculadoras y herramientas para tus decisiones",
+                    fontSize = 13.sp,
+                    color = colors.textSecondary,
+                    fontFamily = montserrat,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
 
             LazyVerticalGrid(
@@ -178,7 +140,7 @@ private fun FinancialCard(
             .heightIn(min = minHeight)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, colors.border),
+        border = BorderStroke(1.5.dp, FinTrackColors.GreenPrimary.copy(alpha = 0.6f)),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

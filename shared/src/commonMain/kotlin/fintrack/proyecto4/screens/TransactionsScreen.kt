@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
@@ -78,6 +79,8 @@ fun TransactionsScreen(
     var showFilters by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
+    val anomalyAlert by AnomalyAlertBus.current.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
         viewModel.refresh()
     }
@@ -98,6 +101,14 @@ fun TransactionsScreen(
             .background(colors.bg)
     ) {
         TransactionsHeader(onAddClick = onAddClick)
+
+        anomalyAlert?.let { alert ->
+            AnomalyBanner(
+                alert = alert,
+                onDismiss = { AnomalyAlertBus.dismiss() },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+        }
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

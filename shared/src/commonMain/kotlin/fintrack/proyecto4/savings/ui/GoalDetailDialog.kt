@@ -592,6 +592,7 @@ private fun DetailInformationCard(
     valueColor: Color = LocalAppColors.current.textPrimary
 ) {
     val colors = LocalAppColors.current
+    val resolvedValueColor = valueColor ?: colors.textPrimary
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement =
@@ -607,7 +608,7 @@ private fun DetailInformationCard(
 
         Text(
             text = value,
-            color = valueColor,
+            color = resolvedValueColor,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )

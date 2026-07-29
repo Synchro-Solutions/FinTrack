@@ -465,3 +465,31 @@ private fun OcrTextField(
         colors = formTextFieldColors()
     )
 }
+
+/** Copia local de TransactionFormScreen.kt — se mantienen `private` en ambos archivos a
+ *  propósito: promoverlas a `internal` colisiona con las homónimas `private` que
+ *  OnboardingScreen.kt define para su propio rediseño de tarjetas (mismo paquete). */
+@Composable
+private fun FormSectionTitle(text: String) {
+    val colors = LocalAppColors.current
+    Text(
+        text = text,
+        color = colors.textPrimary,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Bold,
+        fontFamily = montserratFamily()
+    )
+}
+
+@Composable
+private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
+    val colors = LocalAppColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(colors.surface)
+            .padding(16.dp),
+        content = content
+    )
+}

@@ -565,7 +565,7 @@ private fun TransactionTypeTab(
 
 /** Título de sección dentro de una tarjeta del formulario (p. ej. "Monto", "Detalles"). */
 @Composable
-internal fun FormSectionTitle(text: String) {
+private fun FormSectionTitle(text: String) {
     val colors = LocalAppColors.current
     Text(
         text = text,
@@ -592,7 +592,7 @@ private fun FieldLabel(text: String) {
 /** Tarjeta que agrupa una sección del formulario, mismo estilo que el resto de la app
  *  (superficie + esquinas redondeadas), en vez de campos sueltos sobre el fondo. */
 @Composable
-internal fun FormCard(content: @Composable ColumnScope.() -> Unit) {
+private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalAppColors.current
     Column(
         modifier = Modifier

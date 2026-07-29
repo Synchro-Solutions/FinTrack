@@ -18,6 +18,7 @@ import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
+import fintrack.proyecto4.transaction.FirestoreCustomCategoryRepository
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -76,6 +77,7 @@ class MainActivity : ComponentActivity() {
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
+        val categoryRepository = FirestoreCustomCategoryRepository()
 
         setContent {
             App(
@@ -83,6 +85,7 @@ class MainActivity : ComponentActivity() {
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
+                categoryRepository = categoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },

@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +25,7 @@ import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -191,45 +193,132 @@ fun TransactionDetailScreen(
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Eliminar movimiento") },
-            text = { Text("Esta acción no se puede deshacer. ¿Deseas continuar?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirm = false
-                        isDeleting = true
-                        coroutineScope.launch {
-                            try {
-                                transactionRepository.deleteTransaction(uid, transaction.id)
-                                isDeleting = false
-                                launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = "Movimiento eliminado exitosamente",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                                delay(SuccessSnackbarDelayMillis)
-                                onDeleted()
-                            } catch (e: Exception) {
-                                isDeleting = false
-                                deleteError = "No se pudo eliminar. Intenta de nuevo."
-                            }
+        DeleteTransactionConfirmDialog(
+            transaction = transaction,
+            accentColor = accentColor,
+            onDismiss = { showDeleteConfirm = false },
+            onConfirm = {
+                showDeleteConfirm = false
+                isDeleting = true
+                coroutineScope.launch {
+                    try {
+                        transactionRepository.deleteTransaction(uid, transaction.id)
+                        isDeleting = false
+                        launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Movimiento eliminado exitosamente",
+                                duration = SnackbarDuration.Short
+                            )
                         }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = FinTrackColors.ErrorColor)
-                ) {
-                    Text("Eliminar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                        delay(SuccessSnackbarDelayMillis)
+                        onDeleted()
+                    } catch (e: Exception) {
+                        isDeleting = false
+                        deleteError = "No se pudo eliminar. Intenta de nuevo."
+                    }
                 }
             }
         )
     }
+}
+
+/** Confirmación de borrado de una transacción — mismo estilo que
+ *  DeleteCategoryConfirmDialog (TransactionFormScreen.kt): ícono de advertencia, vista
+ *  previa de lo que se va a borrar y botón "Eliminar" relleno en rojo. */
+@Composable
+private fun DeleteTransactionConfirmDialog(
+    transaction: Transaction,
+    accentColor: Color,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(24.dp),
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(FinTrackColors.ErrorColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = null,
+                    tint = FinTrackColors.ErrorColor,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        },
+        title = {
+            Text(
+                text = "Eliminar movimiento",
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(colors.subtleSurface)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${formatColones(transaction.amount)}",
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserratFamily(),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = transaction.description,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = montserratFamily(),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = "Esta acción no se puede deshacer.",
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    fontFamily = montserratFamily(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FinTrackColors.ErrorColor,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(text = "Eliminar", fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = colors.textSecondary)
+            }
+        }
+    )
 }
 
 @Composable

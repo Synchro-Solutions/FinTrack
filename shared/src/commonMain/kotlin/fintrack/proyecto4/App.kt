@@ -58,6 +58,8 @@ import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.CustomCategoryRepository
+import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
@@ -95,6 +97,7 @@ fun App(
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -208,6 +211,7 @@ fun App(
                             initialType = screen.initialType,
                             editingTransaction = screen.editingTransaction,
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onBack = {
                                 navController.goBack()
                             },
@@ -257,6 +261,7 @@ fun App(
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onCancel = {
                                 // Screen.OcrAssistant solo se alcanza desde el formulario manual
                                 // (ver onOcrClick más arriba), así que siempre queda justo debajo
@@ -270,6 +275,7 @@ fun App(
 
                         is Screen.Movimientos -> TransactionsScreen(
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onAddClick = {
                                 navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
                             },

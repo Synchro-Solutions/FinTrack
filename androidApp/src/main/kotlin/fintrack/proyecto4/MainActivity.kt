@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
+import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
@@ -66,6 +67,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        FirebaseEmulatorConfig.connectIfEnabled()
 
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)

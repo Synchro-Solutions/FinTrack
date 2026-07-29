@@ -123,6 +123,7 @@ fun GoalDetailDialog(
                         trackColor =
                             colors.surfaceSecondary
                     )
+
                 }
 
                 GoalAmountsSummary(
@@ -588,7 +589,7 @@ private fun ContributionRow(
 private fun DetailInformationCard(
     label: String,
     value: String,
-    valueColor: Color? = null
+    valueColor: Color = LocalAppColors.current.textPrimary
 ) {
     val colors = LocalAppColors.current
     val resolvedValueColor = valueColor ?: colors.textPrimary

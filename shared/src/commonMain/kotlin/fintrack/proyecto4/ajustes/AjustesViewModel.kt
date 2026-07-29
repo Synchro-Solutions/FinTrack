@@ -16,7 +16,8 @@ data class AjustesUiState(
     val nombre: String = "",
     val email: String = "",
     val moneda: String = "CRC (₡)",
-    val ingresoMensual: Double = 0.0
+    val ingresoMensual: Double = 0.0,
+    val fotoUrl: String? = null
 )
 
 class AjustesViewModel(
@@ -27,11 +28,13 @@ class AjustesViewModel(
     private val _uiState = MutableStateFlow(AjustesUiState())
     val uiState: StateFlow<AjustesUiState> = _uiState.asStateFlow()
 
-    init {
-        loadProfile()
-    }
-
-    private fun loadProfile() {
+    /**
+     * Se llama desde un LaunchedEffect(Unit) en AjustesScreen en vez de en init: el
+     * ViewModel queda cacheado por uid mientras la app vive, así que si se navega a
+     * Editar Perfil y se guardan cambios, hay que refrescar al volver a esta pantalla
+     * en vez de mostrar los datos ya obsoletos de la primera carga.
+     */
+    fun refresh() {
         viewModelScope.launch {
             val profile = runCatching { onboardingRepository.getProfile(uid) }.getOrNull()
             val email = AuthClient.currentUserEmail() ?: ""
@@ -41,7 +44,8 @@ class AjustesViewModel(
                     nombre = profile?.name ?: "",
                     email = email,
                     moneda = if (profile?.currency.isNullOrEmpty()) "CRC (₡)" else "${profile!!.currency} (₡)",
-                    ingresoMensual = profile?.income ?: 0.0
+                    ingresoMensual = profile?.income ?: 0.0,
+                    fotoUrl = profile?.photoPath
                 )
             }
         }

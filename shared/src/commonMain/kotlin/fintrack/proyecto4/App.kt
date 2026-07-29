@@ -16,6 +16,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import fintrack.proyecto4.theme.FinTrackTypography
 import androidx.compose.runtime.*
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +43,7 @@ import fintrack.proyecto4.screens.AjustesScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
+import fintrack.proyecto4.screens.EditarPerfilScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
@@ -103,10 +107,19 @@ fun App(
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     onPickProfilePhoto: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" },
-    onShareText: (String) -> Unit = {}
+    onShareText: (String) -> Unit = {},
+    onUploadProfilePhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de fotos no configurada"))
+    }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
+
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory()) }
+            .build()
+    }
 
     LaunchedEffect(Unit) {
         val token = authRepository.getStoredToken()
@@ -308,7 +321,17 @@ fun App(
                             onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onboardingRepository = onboardingRepository,
                             onBack = { navController.goBack() },
-                            onCerrarSesion = { navController.replace(Screen.Login) }
+                            onCerrarSesion = { navController.replace(Screen.Login) },
+                            onEditProfile = { navController.navigate(Screen.EditarPerfil) }
+                        )
+
+                        is Screen.EditarPerfil -> EditarPerfilScreen(
+                            uid = AuthClient.currentUserId() ?: "",
+                            onboardingRepository = onboardingRepository,
+                            onPickPhoto = onPickProfilePhoto,
+                            uploadPhoto = onUploadProfilePhoto,
+                            onBack = { navController.goBack() },
+                            onSaved = { navController.goBack() }
                         )
 
                         is Screen.FinancialCenter -> FinancialCenterScreen(

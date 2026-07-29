@@ -29,10 +29,13 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,12 +60,15 @@ fun AjustesScreen(
     onToggleTheme: () -> Unit,
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     onBack: () -> Unit = {},
-    onCerrarSesion: () -> Unit = {}
+    onCerrarSesion: () -> Unit = {},
+    onEditProfile: () -> Unit = {}
 ) {
     val c = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { AjustesViewModel(onboardingRepository, uid) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     var notificaciones by remember { mutableStateOf(true) }
     var biometrico by remember { mutableStateOf(false) }
@@ -134,7 +140,16 @@ fun AjustesScreen(
                     .background(FinTrackColors.GreenPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                Text(initials, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                if (state.fotoUrl != null) {
+                    AsyncImage(
+                        model = state.fotoUrl,
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(initials, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -147,7 +162,7 @@ fun AjustesScreen(
                 Text(
                     "Editar perfil →", fontSize = 13.sp,
                     fontWeight = FontWeight.Medium, color = FinTrackColors.GreenPrimary,
-                    modifier = Modifier.clickable { }
+                    modifier = Modifier.clickable(onClick = onEditProfile)
                 )
             }
         }

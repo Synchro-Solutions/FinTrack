@@ -92,6 +92,7 @@ class DashboardViewModel(
                 state.copy(
                     isLoading = false,
                     userName = profile?.name ?: "Usuario",
+                    fotoUrl = profile?.photoPath,
                     mesActual = currentMonthLabel(),
                     kpis = KpiData(
                         ingresos = ingresos,

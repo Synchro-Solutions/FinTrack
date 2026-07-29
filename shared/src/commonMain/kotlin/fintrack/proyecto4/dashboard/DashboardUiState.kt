@@ -6,6 +6,7 @@ data class DashboardUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val userName: String = "Usuario",
+    val fotoUrl: String? = null,
     val mesActual: String = "",
     val saldoVisible: Boolean = true,
     val kpis: KpiData = KpiData(),

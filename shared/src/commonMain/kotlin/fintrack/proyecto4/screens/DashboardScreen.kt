@@ -35,8 +35,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import fintrack.proyecto4.ai.AnomalyAlert
 import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.ai.MonthlySummaryState
@@ -94,6 +96,11 @@ fun DashboardScreen(
     }
     val weeklyState by weeklyViewModel.state.collectAsStateWithLifecycle()
 
+    // Refresca al volver de otra pantalla (ej. Editar Perfil) para no mostrar
+    // nombre/foto/saldos obsoletos: el ViewModel queda cacheado por uid mientras
+    // vive la app, y su carga inicial solo corre una vez.
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
     val colors = LocalAppColors.current
     Box(modifier = Modifier.fillMaxSize().background(colors.bg)) {
     PullToRefreshBox(
@@ -108,6 +115,7 @@ fun DashboardScreen(
             item {
                 DashboardHeader(
                     userName = state.userName,
+                    fotoUrl = state.fotoUrl,
                     notificationCount = state.notificationCount,
                     onBellClick = { viewModel.marcarNotificacionesLeidas() },
                     onAvatarClick = onNavigateToAjustes
@@ -385,6 +393,7 @@ private fun MonthlySummarySection(
 @Composable
 private fun DashboardHeader(
     userName: String,
+    fotoUrl: String? = null,
     notificationCount: Int,
     onBellClick: () -> Unit,
     onAvatarClick: () -> Unit = {}
@@ -435,10 +444,19 @@ private fun DashboardHeader(
                     .clickable(onClick = onAvatarClick),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
-                    color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = montserratFamily()
-                )
+                if (fotoUrl != null) {
+                    AsyncImage(
+                        model = fotoUrl,
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
+                        color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = montserratFamily()
+                    )
+                }
             }
         }
     }

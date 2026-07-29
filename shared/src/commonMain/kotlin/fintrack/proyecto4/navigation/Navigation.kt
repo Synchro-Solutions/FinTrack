@@ -31,6 +31,9 @@ sealed interface Screen {
     data object Mas : Screen
     data object Ajustes : Screen
 
+    /** Editar nombre, foto, ingreso y moneda del perfil (US-09). */
+    data object EditarPerfil : Screen
+
     data class TransactionForm(
         val initialType: TransactionType,
         /** Si no es null, el formulario edita esta transacción en vez de crear una nueva (US-14). */

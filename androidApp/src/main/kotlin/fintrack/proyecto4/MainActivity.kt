@@ -18,6 +18,7 @@ import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
+import fintrack.proyecto4.profile.CloudinaryUploader
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -101,7 +102,8 @@ class MainActivity : ComponentActivity() {
                 onRecognizeReceiptText = { imagePath ->
                     recognizeReceiptText(applicationContext, imagePath)
                 },
-                onShareText = { text -> shareText(text) }
+                onShareText = { text -> shareText(text) },
+                onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) }
             )
         }
     }

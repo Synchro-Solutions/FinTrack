@@ -1,6 +1,7 @@
 package fintrack.proyecto4
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
@@ -13,9 +14,11 @@ import androidx.datastore.preferences.preferencesDataStore
 import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
+import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
+import fintrack.proyecto4.profile.CloudinaryUploader
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -67,6 +70,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        FirebaseEmulatorConfig.connectIfEnabled()
+
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
         val onboardingRepository = FirestoreOnboardingRepository()
@@ -96,9 +101,20 @@ class MainActivity : ComponentActivity() {
                 },
                 onRecognizeReceiptText = { imagePath ->
                     recognizeReceiptText(applicationContext, imagePath)
-                }
+                },
+                onShareText = { text -> shareText(text) },
+                onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) }
             )
         }
+    }
+
+    private fun shareText(text: String) {
+        if (text.isBlank()) return
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(sendIntent, "Compartir resumen"))
     }
 
     /**

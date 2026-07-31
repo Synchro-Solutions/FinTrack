@@ -123,6 +123,7 @@ fun GoalDetailDialog(
                         trackColor =
                             colors.surfaceSecondary
                     )
+
                 }
 
                 GoalAmountsSummary(

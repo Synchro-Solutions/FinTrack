@@ -1,0 +1,195 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSignedIn()
+        && exists(userPath)
+        && get(userPath).data.roles is list
+        && "ADMIN" in get(userPath).data.roles;
+    }
+
+    // =========================
+    // Validación de forma por colección
+    // (solo para las colecciones con un escritor real en la app hoy;
+    // hasAll (no hasOnly) para permitir agregar campos nuevos sin romper
+    // documentos existentes, siguiendo el mismo criterio del código Kotlin)
+    // =========================
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(["name", "photoPath", "income", "currency", "onboardingComplete"])
+        && data.name is string
+        && data.photoPath is string
+        && data.income is number
+        && data.currency is string
+        && data.onboardingComplete is bool;
+    }
+
+    function isValidOnboardingConsent(data) {
+      return (!("privacyAccepted" in data) || data.privacyAccepted is bool)
+        && (!("termsAccepted" in data) || data.termsAccepted is bool);
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(["type", "amount", "description", "category", "paymentMethod", "date", "createdAt"])
+        && data.type in ["INCOME", "EXPENSE"]
+        && data.amount is number
+        && data.description is string
+        && data.category is string
+        && (data.paymentMethod == null || data.paymentMethod in ["CASH", "CARD", "SINPE", "TRANSFER"])
+        && data.date is string
+        && data.createdAt is number;
+    }
+
+    function isValidBudget(data) {
+      return data.keys().hasAll(["categoryName", "categoryIcon", "categoryColorHex", "spent", "limit", "period", "alertThreshold"])
+        && data.categoryName is string
+        && data.categoryIcon is string
+        && data.categoryColorHex is string
+        && data.spent is number
+        && data.limit is number
+        && data.period is string
+        && data.alertThreshold is number;
+    }
+
+    function isValidGoal(data) {
+      return data.keys().hasAll(["name", "targetAmount", "currentAmount", "iconName", "status", "category", "colorName", "priority", "notes"])
+        && data.name is string
+        && data.targetAmount is number
+        && data.currentAmount is number
+        && data.iconName is string
+        && data.status in ["ACTIVE", "COMPLETED", "CANCELLED"]
+        && data.category in ["HOME", "VEHICLE", "TRAVEL", "EDUCATION", "TECHNOLOGY", "EMERGENCY", "HEALTH", "OTHER"]
+        && data.colorName in ["GREEN", "BLUE", "ORANGE", "PURPLE", "RED"]
+        && data.priority in ["LOW", "MEDIUM", "HIGH"]
+        && data.notes is string
+        && (!("deadline" in data) || data.deadline == null || data.deadline is string);
+    }
+
+    function isValidGoalEntry(data) {
+      return data.keys().hasAll(["amount", "createdAt"])
+        && data.amount is number
+        && data.createdAt is string;
+    }
+
+    // =========================
+    // Datos privados del usuario
+    // =========================
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && !("roles" in request.resource.data)
+        && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["roles"])
+        && isValidUserProfile(request.resource.data);
+
+      match /categories/{categoryId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /transactions/{transactionId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidTransaction(request.resource.data);
+      }
+
+      match /budgets/{budgetId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidBudget(request.resource.data);
+      }
+
+      match /goals/{goalId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidGoal(request.resource.data);
+
+        match /entries/{entryId} {
+          allow read, delete: if isOwner(userId);
+          allow create, update: if isOwner(userId) && isValidGoalEntry(request.resource.data);
+        }
+      }
+
+      match /merchants/{merchantId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /ocrCaptures/{ocrCaptureId} {
+        allow read, create, update, delete: if isOwner(userId);
+
+        match /detectedFields/{fieldId} {
+          allow read, create, update, delete: if isOwner(userId);
+        }
+      }
+
+      match /financialCalculations/{calculationId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /deviceTokens/{tokenId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /consents/{consentId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidOnboardingConsent(request.resource.data);
+      }
+
+      match /auditLogs/{auditLogId} {
+        allow read, create: if isOwner(userId);
+        allow update, delete: if false;
+      }
+    }
+
+    // =========================
+    // Catálogos globales
+    // =========================
+    match /systemCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /currencies/{currencyCode} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /paymentMethods/{paymentMethodCode} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /exchangeRates/{rateId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /financialTips/{tipId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /appConfig/{configId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // =========================
+    // Todo lo demás bloqueado
+    // =========================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -74,6 +74,8 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(compose.materialIconsExtended)
             implementation(libs.gitlive.firebase.firestore)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)

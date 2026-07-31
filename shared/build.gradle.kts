@@ -90,6 +90,8 @@ kotlin {
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
             implementation(libs.ktor.client.js)
+            implementation(libs.gitlive.firebase.common)
+            implementation(libs.gitlive.firebase.auth)
         }
     }
 }

@@ -589,7 +589,7 @@ private fun ContributionRow(
 private fun DetailInformationCard(
     label: String,
     value: String,
-    valueColor: Color = LocalAppColors.current.textPrimary
+    valueColor: Color? = null
 ) {
     val colors = LocalAppColors.current
     val resolvedValueColor = valueColor ?: colors.textPrimary

@@ -8,6 +8,7 @@ sealed class LoginResult {
 
 interface AuthRepository {
     suspend fun signIn(email: String, password: String, rememberMe: Boolean): LoginResult
+    suspend fun signInWithGoogleIdToken(idToken: String): LoginResult
     suspend fun getStoredToken(): String?
     suspend fun signOut()
 }

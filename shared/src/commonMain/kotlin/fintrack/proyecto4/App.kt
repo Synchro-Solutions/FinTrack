@@ -107,6 +107,9 @@ fun App(
     onShareText: (String) -> Unit = {},
     onUploadProfilePhoto: suspend (String) -> Result<String> = {
         Result.failure(UnsupportedOperationException("Subida de fotos no configurada"))
+    },
+    onGoogleSignInRequested: suspend () -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
     }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
@@ -172,6 +175,7 @@ fun App(
                         when (screen) {
                             is Screen.Login -> LoginScreen(
                                 authRepository = authRepository,
+                                onGoogleSignInClick = onGoogleSignInRequested,
                                 onLoginSuccess = {
                                     scope.launch {
                                         val uid = AuthClient.currentUserId()

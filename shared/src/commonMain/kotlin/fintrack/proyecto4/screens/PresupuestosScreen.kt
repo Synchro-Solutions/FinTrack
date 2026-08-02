@@ -73,7 +73,7 @@ fun PresupuestosScreen(
     }
 
     Scaffold(
-        containerColor = colors.bg,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             FloatingActionButton(

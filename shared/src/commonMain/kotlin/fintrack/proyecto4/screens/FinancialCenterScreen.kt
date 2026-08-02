@@ -88,7 +88,6 @@ fun FinancialCenterScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         val compact = maxWidth < 360.dp
         val horizontalPadding = if (compact) 12.dp else 16.dp

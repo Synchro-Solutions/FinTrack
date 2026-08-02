@@ -96,7 +96,6 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Calculadora de Vacaciones", onBack = onBack)
 

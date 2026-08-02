@@ -58,7 +58,6 @@ fun MetasScreen(onBack: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

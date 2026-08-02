@@ -98,7 +98,6 @@ fun TransactionsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionsHeader(onAddClick = onAddClick)
 

@@ -211,7 +211,6 @@ fun CurrencyConverterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Conversor de divisas", onBack = onBack)
 

@@ -168,7 +168,6 @@ fun NetSalaryCalculatorScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(
             title = "Salario neto estimado",

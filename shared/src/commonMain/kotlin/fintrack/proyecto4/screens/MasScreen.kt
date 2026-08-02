@@ -32,7 +32,6 @@ fun MasScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
             .padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(28.dp))

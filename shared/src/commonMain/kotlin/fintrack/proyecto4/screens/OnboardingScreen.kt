@@ -82,7 +82,6 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(

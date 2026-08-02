@@ -70,7 +70,6 @@ fun OcrConfirmScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Confirmar transacción OCR", onBack = onCancel)
 

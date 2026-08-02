@@ -51,7 +51,6 @@ fun OcrAssistantScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Asistente OCR", onBack = onBack)
 

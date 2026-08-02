@@ -60,7 +60,6 @@ fun AiChatScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
             .imePadding()
     ) {
         ScreenHeader(

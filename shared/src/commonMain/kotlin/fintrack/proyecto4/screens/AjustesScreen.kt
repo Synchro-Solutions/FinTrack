@@ -87,7 +87,6 @@ fun AjustesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(c.bg)
             .verticalScroll(rememberScrollState())
     ) {
         // ── TopBar ───────────────────────────────────────────────────────────

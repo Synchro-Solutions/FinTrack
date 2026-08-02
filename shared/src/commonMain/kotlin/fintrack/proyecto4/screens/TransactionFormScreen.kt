@@ -91,7 +91,6 @@ fun TransactionFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionHeader(
             title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",

@@ -64,7 +64,7 @@ fun TransactionDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
-        modifier = Modifier.fillMaxSize().background(colors.bg)
+        modifier = Modifier.fillMaxSize()
     ) {
         ScreenHeader(
             title = "Detalle de movimiento",

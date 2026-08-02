@@ -74,7 +74,6 @@ fun CreateBudgetScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         // Top bar
         Row(

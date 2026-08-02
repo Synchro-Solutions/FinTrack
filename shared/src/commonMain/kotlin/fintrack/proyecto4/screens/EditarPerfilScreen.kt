@@ -58,6 +58,7 @@ import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.profile.EditarPerfilViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 
 @Composable
 fun EditarPerfilScreen(
@@ -110,11 +111,12 @@ fun EditarPerfilScreen(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Text(
+            ShimmerText(
                 text = "Editar perfil",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = c.textPrimary
+                baseColor = c.textPrimary,
+                accentColor = c.primary
             )
         }
 

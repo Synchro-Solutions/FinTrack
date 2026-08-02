@@ -42,6 +42,7 @@ import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.DateScope
@@ -185,9 +186,10 @@ private fun TransactionsHeader(onAddClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        ShimmerText(
             text = "Movimientos",
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat

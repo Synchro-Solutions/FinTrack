@@ -52,6 +52,7 @@ import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.util.formatColones
 
@@ -114,11 +115,12 @@ fun AjustesScreen(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Text(
+            ShimmerText(
                 text = "Ajustes",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = c.textPrimary
+                baseColor = c.textPrimary,
+                accentColor = c.primary
             )
         }
         Spacer(Modifier.height(8.dp))

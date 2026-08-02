@@ -32,6 +32,7 @@ import fintrack.proyecto4.savings.viewmodel.GoalSort
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.launch
 
@@ -355,9 +356,10 @@ private fun GoalsHeader(
 ) {
     val colors = LocalAppColors.current
     Column {
-        Text(
+        ShimmerText(
             text = "Mis metas",
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )

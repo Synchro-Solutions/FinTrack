@@ -45,6 +45,7 @@ import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -104,11 +105,12 @@ fun FinancialCenterScreen(
                     .padding(horizontal = horizontalPadding)
                     .fillMaxWidth()
             ) {
-                Text(
+                ShimmerText(
                     text = "Centro financiero",
                     fontSize = if (compact) 22.sp else 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
+                    baseColor = colors.textPrimary,
+                    accentColor = colors.primary,
                     fontFamily = montserrat
                 )
                 Text(

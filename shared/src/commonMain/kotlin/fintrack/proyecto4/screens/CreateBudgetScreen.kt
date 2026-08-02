@@ -56,6 +56,7 @@ import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.budget.colorFromHex
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.roundToInt
 
@@ -90,9 +91,10 @@ fun CreateBudgetScreen(
                     tint = colors.textPrimary
                 )
             }
-            Text(
+            ShimmerText(
                 text = "Nuevo presupuesto",
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )

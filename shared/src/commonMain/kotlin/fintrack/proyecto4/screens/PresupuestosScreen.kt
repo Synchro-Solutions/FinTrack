@@ -48,6 +48,7 @@ import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.ai.SpendingForecastViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -97,9 +98,10 @@ fun PresupuestosScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-            Text(
+            ShimmerText(
                 text = "Presupuestos",
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 22.dp)

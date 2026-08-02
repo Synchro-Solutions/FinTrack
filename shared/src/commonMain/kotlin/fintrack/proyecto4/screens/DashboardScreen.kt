@@ -158,9 +158,10 @@ fun DashboardScreen(
             }
             item { Spacer(Modifier.height(24.dp)) }
             item {
-                Text(
+                ShimmerText(
                     "Ingresos vs Gastos",
-                    color = colors.textPrimary,
+                    baseColor = colors.textPrimary,
+                    accentColor = colors.primary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = montserratFamily(),
@@ -406,9 +407,9 @@ private fun DashboardHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Hola,", color = colors.textSecondary, fontSize = 15.sp, fontFamily = montserrat)
             Spacer(Modifier.width(5.dp))
-            Text(
-                userName, color = colors.textPrimary, fontSize = 20.sp,
-                fontWeight = FontWeight.Bold, fontFamily = montserrat
+            ShimmerText(
+                userName, baseColor = colors.textPrimary, accentColor = colors.primary,
+                fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat
             )
             Spacer(Modifier.width(6.dp))
             Text("👋", fontSize = 18.sp)
@@ -1025,7 +1026,7 @@ private fun SectionHeader(title: String, actionText: String, onAction: () -> Uni
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
+        ShimmerText(title, baseColor = colors.textPrimary, accentColor = colors.primary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))

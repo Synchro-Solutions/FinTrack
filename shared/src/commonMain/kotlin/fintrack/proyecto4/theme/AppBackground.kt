@@ -61,9 +61,12 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
  * Difumina el borde inferior del contenido hacia transparente en los últimos [height]
  * de alto, para que el scroll no se sienta "cortado" justo donde empieza el bottom nav
  * (que vive transparente sobre [FinTrackAppBackground] y necesita esa transición suave
- * en vez de un corte recto).
+ * en vez de un corte recto). [height] generoso a propósito: una franja angosta solo
+ * difumina el borde de una tarjeta, dejando el resto con corte duro igual; con ~130dp
+ * (similar a la altura de una tarjeta típica) toda la tarjeta se percibe apareciendo
+ * gradualmente en vez de "cortada".
  */
-fun Modifier.bottomFadeEdge(height: Dp = 28.dp): Modifier = this
+fun Modifier.bottomFadeEdge(height: Dp = 130.dp): Modifier = this
     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
     .drawWithContent {
         drawContent()

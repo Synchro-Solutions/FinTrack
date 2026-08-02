@@ -26,6 +26,10 @@ fun envValue(key: String): String =
 
 val generatedEnvDir = layout.buildDirectory.dir("generated/env/kotlin")
 
+// generateEnvConfig solo se crea/configura de verdad cuando algo depende de
+// ella (ver dependsOn en compileKotlinJs, más abajo), así que "./gradlew lint"
+// u otro comando que solo configure el proyecto sin compilar webApp no exige
+// tener el .env. envValue() solo se evalúa en ese momento, no antes.
 val generateEnvConfig by tasks.registering {
     val firebaseApiKey = envValue("FIREBASE_API_KEY")
     val firebaseAppId = envValue("FIREBASE_APP_ID")
@@ -84,8 +88,16 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
         }
 
+        // srcDir aparte (sin pasar por el TaskProvider) para que resolver el
+        // árbol de fuentes no fuerce la creación de generateEnvConfig.
         matching { it.name == "webMain" }.configureEach {
-            kotlin.srcDir(generateEnvConfig.map { generatedEnvDir.get() })
+            kotlin.srcDir(generatedEnvDir)
         }
     }
+}
+
+// La dependencia real: solo al compilar webApp se ejecuta generateEnvConfig
+// (y solo entonces se exige el .env).
+tasks.matching { it.name == "compileKotlinJs" }.configureEach {
+    dependsOn(generateEnvConfig)
 }

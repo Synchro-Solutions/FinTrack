@@ -62,16 +62,3 @@ val LocalAppColors = compositionLocalOf { DarkAppColors }
  */
 val AppColors.subtleSurface: Color
     get() = if (isDark) surfaceSecondary else Color(0xFFE1E7F0)
-
-/**
- * Superficie translúcida (glassmorphism ligero) para tarjetas que viven sobre el
- * fondo decorativo del app shell (FinTrackAppBackground): deja pasar un poco de ese
- * fondo en vez de taparlo con un panel opaco. No usar en diálogos/menús/dropdowns,
- * que necesitan quedar opacos para legibilidad sobre cualquier contenido detrás.
- */
-val AppColors.glassSurface: Color
-    get() = surface.copy(alpha = if (isDark) 0.6f else 0.85f)
-
-/** Borde sutil a juego con [glassSurface], refuerza el efecto de vidrio. */
-val AppColors.glassBorder: Color
-    get() = if (isDark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.5f)

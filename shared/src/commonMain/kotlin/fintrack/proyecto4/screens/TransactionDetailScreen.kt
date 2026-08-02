@@ -23,7 +23,7 @@ import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
@@ -91,7 +91,7 @@ fun TransactionDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(colors.glassSurface)
+                    .glassCard()
                     .padding(vertical = 24.dp, horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -242,7 +242,7 @@ private fun DetailInfoCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         content = content
     )

@@ -57,7 +57,7 @@ import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import kotlinx.coroutines.delay
 
 @Composable
@@ -477,7 +477,7 @@ private fun FormCard(content: @Composable androidx.compose.foundation.layout.Col
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(16.dp),
         content = content
     )

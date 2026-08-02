@@ -53,7 +53,7 @@ import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.util.formatColones
 
 @Composable
@@ -131,7 +131,7 @@ fun AjustesScreen(
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .background(c.glassSurface)
+                .glassCard()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -245,7 +245,7 @@ private fun SectionCard(c: AppColors, content: @Composable () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(c.glassSurface)
+            .glassCard()
     ) {
         content()
     }

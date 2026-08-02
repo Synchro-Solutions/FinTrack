@@ -11,10 +11,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -64,20 +64,26 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
 
 /**
  * Fade de aparición por tarjeta/ítem: mientras el ítem sube desde abajo (donde vive el
- * bottom nav, transparente sobre [FinTrackAppBackground]) va apareciendo "fantasma"
- * (alpha 0 -> 1) en los últimos [fadeZoneHeight] antes de asentarse. A diferencia de una
- * máscara fija en la posición del viewport, esto es por ítem y con memoria: una vez que
- * el ítem termina de aparecer, el alpha queda clavado en 1 para siempre (no se vuelve a
- * desvanecer aunque el ítem vuelva a pasar por esa franja al hacer scroll hacia abajo).
+ * bottom nav, transparente sobre [FinTrackAppBackground]) queda tapado por un velo de
+ * [veilColor] (por defecto el fondo de la página: blanco en claro, oscuro en oscuro) que
+ * se retira a medida que el ítem se asienta, en los últimos [fadeZoneHeight] de recorrido.
+ * A diferencia de animar alpha del contenido (que dejaría ver el degradado verde de fondo
+ * a través de la tarjeta mientras aparece), el contenido de la tarjeta siempre se dibuja
+ * opaco; lo único que cambia es la opacidad del velo por encima. Es por ítem y con
+ * memoria: una vez que el velo se retira del todo, queda así para siempre (no vuelve a
+ * cubrir la tarjeta aunque esta pase de nuevo por esa franja al hacer scroll hacia abajo).
  *
  * Usa la posición del ítem en la ventana (no necesita LazyListState ni keys): se puede
  * aplicar directo a cualquier tarjeta dentro de un LazyColumn/LazyVerticalGrid.
  */
 @Composable
-fun Modifier.scrollRevealFade(fadeZoneHeight: Dp = 130.dp): Modifier {
+fun Modifier.scrollRevealFade(
+    fadeZoneHeight: Dp = 130.dp,
+    veilColor: Color = LocalAppColors.current.bg
+): Modifier {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
-    var maxAlpha by remember { mutableFloatStateOf(0f) }
+    var maxReveal by remember { mutableFloatStateOf(0f) }
     val fadeZonePx = with(density) { fadeZoneHeight.toPx() }
 
     return this
@@ -85,8 +91,14 @@ fun Modifier.scrollRevealFade(fadeZoneHeight: Dp = 130.dp): Modifier {
             val itemBottom = coordinates.boundsInWindow().bottom
             val windowHeight = windowInfo.containerSize.height.toFloat()
             val clearedAboveBottom = windowHeight - itemBottom
-            val alpha = (clearedAboveBottom / fadeZonePx).coerceIn(0f, 1f)
-            if (alpha > maxAlpha) maxAlpha = alpha
+            val reveal = (clearedAboveBottom / fadeZonePx).coerceIn(0f, 1f)
+            if (reveal > maxReveal) maxReveal = reveal
         }
-        .graphicsLayer { alpha = maxAlpha }
+        .drawWithContent {
+            drawContent()
+            val veilAlpha = 1f - maxReveal
+            if (veilAlpha > 0f) {
+                drawRect(color = veilColor, alpha = veilAlpha)
+            }
+        }
 }

@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.ShimmerText
 
 private data class NavItem(
     val label: String,
@@ -111,13 +110,10 @@ fun FinTrackBottomBar(
                         }
                     },
                     label = {
-                        ShimmerText(
+                        Text(
                             text = item.label,
-                            baseColor = if (selected) navSelectedColor else navContentColor,
-                            accentColor = colors.primaryLight,
                             fontSize = 10.sp,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            intensity = if (selected) 1.7f else 0.8f
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(

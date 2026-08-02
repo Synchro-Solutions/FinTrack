@@ -57,7 +57,7 @@ import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.scrollRevealFade
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -226,7 +226,7 @@ private fun WeeklyAnomalyCard(anomalies: List<AnomalyAlert>) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -298,7 +298,7 @@ private fun MonthlySummarySection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(colors.glassSurface)
+                .glassCard()
                 .padding(16.dp)
         ) {
             Row(
@@ -677,7 +677,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
             .padding(bottom = 10.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(16.dp)
     ) {
         Column {
@@ -749,7 +749,7 @@ private fun MetaCard(item: MetaItem) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(19.dp))
-                .background(colors.glassSurface)
+                .glassCard()
                 .padding(18.dp)
         ) {
             Column {
@@ -763,7 +763,7 @@ private fun MetaCard(item: MetaItem) {
                             modifier = Modifier
                                 .size(44.dp)
                                 .background(
-                                    FinTrackColors.GradientMeta,
+                                    FinTrackColors.GradientGreen,
                                     RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -853,7 +853,7 @@ private fun EmptyPresupuestosState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -897,7 +897,7 @@ private fun EmptyMetaState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -918,7 +918,7 @@ private fun EmptyMetaState(onNavigate: () -> Unit) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(FinTrackColors.GradientMeta)
+                    .background(FinTrackColors.GradientGreen)
                     .clickable(onClick = onNavigate)
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
@@ -1052,7 +1052,7 @@ private fun DarkCard(modifier: Modifier = Modifier, content: @Composable ColumnS
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.glassSurface)
+            .glassCard()
             .padding(18.dp)
     ) {
         Column(content = content)

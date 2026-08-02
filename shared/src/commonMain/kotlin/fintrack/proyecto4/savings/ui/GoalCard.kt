@@ -22,7 +22,7 @@ import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.util.formatColones
 
 @Composable
@@ -47,8 +47,8 @@ fun GoalCard(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = colors.glassSurface,
+        modifier = modifier.fillMaxWidth().glassCard(),
+        color = Color.Transparent,
         shape = RoundedCornerShape(22.dp),
         tonalElevation = 0.dp
     ) {

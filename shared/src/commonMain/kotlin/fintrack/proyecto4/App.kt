@@ -61,6 +61,9 @@ import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalHazeState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -188,10 +191,17 @@ fun App(
             val ocrAssistantViewModel = remember {
                 OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
             }
+            val hazeState = remember { HazeState() }
 
-            CompositionLocalProvider(LocalNavController provides navController) {
+            CompositionLocalProvider(
+                LocalNavController provides navController,
+                LocalHazeState provides hazeState
+            ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    FinTrackAppBackground(colors = appColors, modifier = Modifier.fillMaxSize())
+                    FinTrackAppBackground(
+                        colors = appColors,
+                        modifier = Modifier.fillMaxSize().hazeSource(state = hazeState)
+                    )
                     Scaffold(
                         containerColor = Color.Transparent,
                         bottomBar = {

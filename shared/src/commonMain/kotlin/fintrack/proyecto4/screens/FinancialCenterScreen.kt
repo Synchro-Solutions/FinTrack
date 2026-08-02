@@ -46,7 +46,7 @@ import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -168,10 +168,11 @@ private fun FinancialCard(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .glassCard(),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.5.dp, FinTrackColors.GreenPrimary.copy(alpha = 0.6f)),
-        colors = CardDefaults.cardColors(containerColor = colors.glassSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(

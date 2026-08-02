@@ -33,6 +33,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -48,7 +49,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.glassSurface
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.round
@@ -218,9 +219,9 @@ fun NetSalaryCalculatorScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().glassCard(),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.glassSurface),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(
@@ -274,13 +275,13 @@ fun NetSalaryCalculatorScreen(
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = null,
-                                tint = FinTrackColors.BlueMeta,
+                                tint = FinTrackColors.GreenPrimary,
                                 modifier = Modifier.height(16.dp)
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = "Agregar rebaja",
-                                color = FinTrackColors.BlueMeta,
+                                color = FinTrackColors.GreenPrimary,
                                 fontFamily = montserrat,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp
@@ -612,7 +613,7 @@ private fun AddDeductionPanel(
                 enabled = canConfirm,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.BlueMeta)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Text(text = "Agregar", fontFamily = montserrat, fontWeight = FontWeight.SemiBold)
             }

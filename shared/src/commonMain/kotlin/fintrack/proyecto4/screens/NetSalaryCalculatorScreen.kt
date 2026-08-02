@@ -322,11 +322,11 @@ fun NetSalaryCalculatorScreen(
                 }
             }
 
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Button(
                 onClick = { onSaved() },
                 enabled = grossSalary > 0,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
@@ -337,6 +337,7 @@ fun NetSalaryCalculatorScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
+            }
             }
         }
     }

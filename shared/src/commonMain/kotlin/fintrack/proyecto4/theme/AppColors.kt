@@ -70,7 +70,7 @@ val AppColors.subtleSurface: Color
  * que necesitan quedar opacos para legibilidad sobre cualquier contenido detrás.
  */
 val AppColors.glassSurface: Color
-    get() = surface.copy(alpha = if (isDark) 0.6f else 0.72f)
+    get() = surface.copy(alpha = if (isDark) 0.6f else 0.85f)
 
 /** Borde sutil a juego con [glassSurface], refuerza el efecto de vidrio. */
 val AppColors.glassBorder: Color

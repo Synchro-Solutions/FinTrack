@@ -56,6 +56,7 @@ import fintrack.proyecto4.dashboard.MovimientoItem
 import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -268,19 +269,21 @@ private fun MonthlySummarySection(
 
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         if (!state.hasRequested) {
-            Button(
-                onClick = onGenerate,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
-            ) {
-                Text(
-                    "✨  Resumen IA del mes",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = montserrat
-                )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier.height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
+                ) {
+                    Text(
+                        "✨  Resumen IA del mes",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = montserrat
+                    )
+                }
             }
             return
         }
@@ -329,9 +332,10 @@ private fun MonthlySummarySection(
                             color = FinTrackColors.GreenPrimary
                         )
                         Spacer(Modifier.width(10.dp))
-                        Text(
-                            "Generando tu resumen…",
-                            color = colors.textSecondary,
+                        ShimmerText(
+                            text = "Generando tu resumen…",
+                            baseColor = colors.textSecondary,
+                            accentColor = colors.primary,
                             fontSize = 13.sp,
                             fontFamily = montserrat
                         )

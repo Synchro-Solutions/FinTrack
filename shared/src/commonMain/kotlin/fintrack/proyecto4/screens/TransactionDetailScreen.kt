@@ -161,24 +161,26 @@ fun TransactionDetailScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                enabled = !isDeleting,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinTrackColors.ErrorColor)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (isDeleting) "Eliminando..." else "Eliminar movimiento",
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = montserratFamily()
-                )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = !isDeleting,
+                    modifier = Modifier.height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = FinTrackColors.ErrorColor)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (isDeleting) "Eliminando..." else "Eliminar movimiento",
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserratFamily()
+                    )
+                }
             }
         }
     }

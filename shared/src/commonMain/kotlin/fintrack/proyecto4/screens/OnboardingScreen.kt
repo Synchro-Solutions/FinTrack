@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -153,12 +154,17 @@ fun OnboardingScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Button(
                     onClick = viewModel::submit,
                     enabled = !state.isSaving,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .defaultMinSize(minWidth = 220.dp)
                         .height(54.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(

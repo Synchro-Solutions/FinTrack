@@ -7,8 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -40,7 +46,7 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
             val heightPx = constraints.maxHeight.toFloat()
             val brush = Brush.radialGradient(
                 colorStops = arrayOf(
-                    0.7f to androidx.compose.ui.graphics.Color.White,
+                    0.7f to Color.White,
                     1f to colors.primary
                 ),
                 center = Offset(widthPx * 0.5f, heightPx * 0.1f),
@@ -50,3 +56,23 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * Difumina el borde inferior del contenido hacia transparente en los últimos [height]
+ * de alto, para que el scroll no se sienta "cortado" justo donde empieza el bottom nav
+ * (que vive transparente sobre [FinTrackAppBackground] y necesita esa transición suave
+ * en vez de un corte recto).
+ */
+fun Modifier.bottomFadeEdge(height: Dp = 28.dp): Modifier = this
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Black, Color.Transparent),
+                startY = size.height - height.toPx(),
+                endY = size.height
+            ),
+            blendMode = BlendMode.DstIn
+        )
+    }

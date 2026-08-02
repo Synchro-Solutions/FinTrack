@@ -268,18 +268,20 @@ private fun SuccessContent(onReviewData: () -> Unit) {
 
         Spacer(Modifier.height(20.dp))
 
-        Button(
-            onClick = onReviewData,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
-        ) {
-            Text(
-                text = "Revisar datos detectados",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontFamily = montserratFamily()
-            )
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Button(
+                onClick = onReviewData,
+                modifier = Modifier.height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
+            ) {
+                Text(
+                    text = "Revisar datos detectados",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily()
+                )
+            }
         }
     }
 }
@@ -313,9 +315,10 @@ private fun ErrorContent(message: String?, onRetry: () -> Unit) {
 
         Spacer(Modifier.height(20.dp))
 
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Button(
             onClick = onRetry,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
+            modifier = Modifier.height(54.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
         ) {
@@ -325,6 +328,7 @@ private fun ErrorContent(message: String?, onRetry: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 fontFamily = montserratFamily()
             )
+        }
         }
     }
 }

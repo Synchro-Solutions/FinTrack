@@ -772,11 +772,12 @@ private fun SaveTransactionButton(
         else -> "Guardar ingreso"
     }
 
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .fillMaxWidth()
+            .defaultMinSize(minWidth = 200.dp)
             .height(54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
@@ -799,6 +800,7 @@ private fun SaveTransactionButton(
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFamily()
         )
+    }
     }
 }
 

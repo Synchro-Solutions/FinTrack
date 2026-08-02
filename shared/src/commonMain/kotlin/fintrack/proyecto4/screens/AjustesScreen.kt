@@ -206,17 +206,16 @@ fun AjustesScreen(
         Spacer(Modifier.height(28.dp))
 
         // ── Cerrar sesión ────────────────────────────────────────────────────
-        Button(
-            onClick = onCerrarSesion,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
-        ) {
-            Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Button(
+                onClick = onCerrarSesion,
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
+            ) {
+                Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
 
         Spacer(Modifier.height(28.dp))

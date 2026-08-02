@@ -5,15 +5,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -58,24 +63,30 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
 }
 
 /**
- * Difumina el borde inferior del contenido hacia transparente en los últimos [height]
- * de alto, para que el scroll no se sienta "cortado" justo donde empieza el bottom nav
- * (que vive transparente sobre [FinTrackAppBackground] y necesita esa transición suave
- * en vez de un corte recto). [height] generoso a propósito: una franja angosta solo
- * difumina el borde de una tarjeta, dejando el resto con corte duro igual; con ~130dp
- * (similar a la altura de una tarjeta típica) toda la tarjeta se percibe apareciendo
- * gradualmente en vez de "cortada".
+ * Fade de aparición por tarjeta/ítem: mientras el ítem sube desde abajo (donde vive el
+ * bottom nav, transparente sobre [FinTrackAppBackground]) va apareciendo "fantasma"
+ * (alpha 0 -> 1) en los últimos [fadeZoneHeight] antes de asentarse. A diferencia de una
+ * máscara fija en la posición del viewport, esto es por ítem y con memoria: una vez que
+ * el ítem termina de aparecer, el alpha queda clavado en 1 para siempre (no se vuelve a
+ * desvanecer aunque el ítem vuelva a pasar por esa franja al hacer scroll hacia abajo).
+ *
+ * Usa la posición del ítem en la ventana (no necesita LazyListState ni keys): se puede
+ * aplicar directo a cualquier tarjeta dentro de un LazyColumn/LazyVerticalGrid.
  */
-fun Modifier.bottomFadeEdge(height: Dp = 130.dp): Modifier = this
-    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-    .drawWithContent {
-        drawContent()
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color.Black, Color.Transparent),
-                startY = size.height - height.toPx(),
-                endY = size.height
-            ),
-            blendMode = BlendMode.DstIn
-        )
-    }
+@Composable
+fun Modifier.scrollRevealFade(fadeZoneHeight: Dp = 130.dp): Modifier {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    var maxAlpha by remember { mutableFloatStateOf(0f) }
+    val fadeZonePx = with(density) { fadeZoneHeight.toPx() }
+
+    return this
+        .onGloballyPositioned { coordinates ->
+            val itemBottom = coordinates.boundsInWindow().bottom
+            val windowHeight = windowInfo.containerSize.height.toFloat()
+            val clearedAboveBottom = windowHeight - itemBottom
+            val alpha = (clearedAboveBottom / fadeZonePx).coerceIn(0f, 1f)
+            if (alpha > maxAlpha) maxAlpha = alpha
+        }
+        .graphicsLayer { alpha = maxAlpha }
+}

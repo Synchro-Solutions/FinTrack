@@ -59,6 +59,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.scrollRevealFade
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
@@ -133,28 +134,32 @@ fun DashboardScreen(
             }
 
             if (weeklyState.anomalies.isNotEmpty()) {
-                item { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) }
+                item { Box(Modifier.scrollRevealFade()) { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) } }
                 item { Spacer(Modifier.height(12.dp)) }
             }
             item {
-                BalanceCard(
-                    mesActual    = state.mesActual,
-                    balance      = state.kpis.balance,
-                    ingresos     = state.kpis.ingresos,
-                    gastos       = state.kpis.gastos,
-                    ahorro       = state.kpis.ahorroPercent,
-                    saldoVisible = state.saldoVisible,
-                    onToggle     = { viewModel.toggleSaldoVisible() }
-                )
+                Box(Modifier.scrollRevealFade()) {
+                    BalanceCard(
+                        mesActual    = state.mesActual,
+                        balance      = state.kpis.balance,
+                        ingresos     = state.kpis.ingresos,
+                        gastos       = state.kpis.gastos,
+                        ahorro       = state.kpis.ahorroPercent,
+                        saldoVisible = state.saldoVisible,
+                        onToggle     = { viewModel.toggleSaldoVisible() }
+                    )
+                }
             }
             item { Spacer(Modifier.height(20.dp)) }
             item {
-                MonthlySummarySection(
-                    state = summaryState,
-                    onGenerate = { summaryViewModel.generateSummary() },
-                    onRegenerate = { summaryViewModel.generateSummary(force = true) },
-                    onShare = onShareText
-                )
+                Box(Modifier.scrollRevealFade()) {
+                    MonthlySummarySection(
+                        state = summaryState,
+                        onGenerate = { summaryViewModel.generateSummary() },
+                        onRegenerate = { summaryViewModel.generateSummary(force = true) },
+                        onShare = onShareText
+                    )
+                }
             }
             item { Spacer(Modifier.height(24.dp)) }
             item {
@@ -169,33 +174,33 @@ fun DashboardScreen(
                 )
             }
             item { Spacer(Modifier.height(12.dp)) }
-            item { ChartSection(data = state.chartData) }
+            item { Box(Modifier.scrollRevealFade()) { ChartSection(data = state.chartData) } }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
             item { Spacer(Modifier.height(12.dp)) }
             if (state.presupuestos.isEmpty()) {
-                item { EmptyPresupuestosState(onNavigateToPresupuestos) }
+                item { Box(Modifier.scrollRevealFade()) { EmptyPresupuestosState(onNavigateToPresupuestos) } }
             } else {
-                items(state.presupuestos) { PresupuestoCard(it) }
+                items(state.presupuestos) { Box(Modifier.scrollRevealFade()) { PresupuestoCard(it) } }
             }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Meta principal", "Ver metas") { onNavigateToMetas() } }
             item { Spacer(Modifier.height(12.dp)) }
             val meta = state.metaPrincipal
             if (meta == null) {
-                item { EmptyMetaState(onNavigateToMetas) }
+                item { Box(Modifier.scrollRevealFade()) { EmptyMetaState(onNavigateToMetas) } }
             } else {
-                item { MetaCard(meta) }
+                item { Box(Modifier.scrollRevealFade()) { MetaCard(meta) } }
             }
             item { Spacer(Modifier.height(16.dp)) }
             if (state.consejoFinanciero.isNotBlank()) {
-                item { ConsejoCard(state.consejoFinanciero) }
+                item { Box(Modifier.scrollRevealFade()) { ConsejoCard(state.consejoFinanciero) } }
                 item { Spacer(Modifier.height(24.dp)) }
             }
             item { SectionHeader("Últimos movimientos", "Ver todos") { onNavigateToMovimientos() } }
             item { Spacer(Modifier.height(12.dp)) }
             item {
-                DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                DarkCard(modifier = Modifier.padding(horizontal = 16.dp).scrollRevealFade()) {
                     if (state.ultimosMovimientos.isEmpty()) {
                         EmptyMovimientosState()
                     } else {

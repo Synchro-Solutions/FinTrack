@@ -34,26 +34,33 @@ fun ShimmerText(
     fontSize: TextUnit,
     modifier: Modifier = Modifier,
     fontFamily: FontFamily? = null,
-    fontWeight: FontWeight? = null
+    fontWeight: FontWeight? = null,
+    // 1f = intensidad estandar. Valores mayores = banda de brillo mas ancha y barrido
+    // mas rapido/frecuente, para casos como el item seleccionado del nav, que necesita
+    // notarse mas obvio que el resto.
+    intensity: Float = 1f
 ) {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val progress by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2600, easing = LinearEasing),
+            animation = tween(durationMillis = (2600 / intensity).toInt(), easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmerProgress"
     )
-    // Barre de derecha (+sweep) a izquierda (-sweep); la banda de acento es angosta
-    // frente a las zonas solidas en baseColor a los lados, para que predomine el blanco.
-    val sweep = 220f
+    // Barre de derecha (+sweep) a izquierda (-sweep). La banda de acento tiene una
+    // meseta (dos paradas seguidas en accentColor, no solo un punto medio) para que
+    // el brillo se note con mas fuerza al pasar, y un sweep mas corto para que cruce
+    // el texto mas seguido; sigue siendo sutil porque el resto del ciclo es baseColor.
+    val sweep = 160f
     val centerX = lerp(sweep, -sweep, progress)
+    val bandHalfWidth = 95f * intensity
     val brush = Brush.linearGradient(
-        colors = listOf(baseColor, baseColor, accentColor, baseColor, baseColor),
-        start = Offset(centerX - 70f, 0f),
-        end = Offset(centerX + 70f, 0f)
+        colors = listOf(baseColor, accentColor, accentColor, baseColor),
+        start = Offset(centerX - bandHalfWidth, 0f),
+        end = Offset(centerX + bandHalfWidth, 0f)
     )
     Text(
         text = text,

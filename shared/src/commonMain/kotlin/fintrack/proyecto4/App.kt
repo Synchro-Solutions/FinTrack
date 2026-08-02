@@ -61,7 +61,6 @@ import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors
-import fintrack.proyecto4.theme.bottomFadeEdge
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -207,9 +206,7 @@ fun App(
                     ) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .let { if (showBottomBar) it.bottomFadeEdge() else it }
+                        modifier = Modifier.padding(innerPadding)
                     ) { screen ->
                         when (screen) {
                             is Screen.Login -> LoginScreen(

@@ -16,17 +16,13 @@ val envProperties = Properties().apply {
     }
 }
 
-fun envValue(key: String): String? =
+fun envValue(key: String): String =
     System.getenv(key)
         ?: envProperties.getProperty(key)?.takeIf { it.isNotBlank() }
-
-fun requiredEnvValue(key: String) =
-    providers.provider {
-        envValue(key) ?: error(
+        ?: error(
             "Falta la variable de entorno '$key'. Copia webApp/.env.example a " +
                 "webApp/.env y completa los valores (ver Firebase Console)."
         )
-    }
 
 val generatedEnvDir = layout.buildDirectory.dir("generated/env/kotlin")
 
@@ -35,13 +31,13 @@ val generatedEnvDir = layout.buildDirectory.dir("generated/env/kotlin")
 // u otro comando que solo configure el proyecto sin compilar webApp no exige
 // tener el .env. envValue() solo se evalúa en ese momento, no antes.
 val generateEnvConfig by tasks.registering {
-    val firebaseApiKey = requiredEnvValue("FIREBASE_API_KEY")
-    val firebaseAppId = requiredEnvValue("FIREBASE_APP_ID")
-    val firebaseProjectId = requiredEnvValue("FIREBASE_PROJECT_ID")
-    val firebaseAuthDomain = requiredEnvValue("FIREBASE_AUTH_DOMAIN")
-    val firebaseStorageBucket = requiredEnvValue("FIREBASE_STORAGE_BUCKET")
-    val firebaseGcmSenderId = requiredEnvValue("FIREBASE_GCM_SENDER_ID")
-    val googleWebClientId = requiredEnvValue("GOOGLE_WEB_CLIENT_ID")
+    val firebaseApiKey = envValue("FIREBASE_API_KEY")
+    val firebaseAppId = envValue("FIREBASE_APP_ID")
+    val firebaseProjectId = envValue("FIREBASE_PROJECT_ID")
+    val firebaseAuthDomain = envValue("FIREBASE_AUTH_DOMAIN")
+    val firebaseStorageBucket = envValue("FIREBASE_STORAGE_BUCKET")
+    val firebaseGcmSenderId = envValue("FIREBASE_GCM_SENDER_ID")
+    val googleWebClientId = envValue("GOOGLE_WEB_CLIENT_ID")
 
     inputs.property("firebaseApiKey", firebaseApiKey)
     inputs.property("firebaseAppId", firebaseAppId)
@@ -62,13 +58,13 @@ val generateEnvConfig by tasks.registering {
             package fintrack.proyecto4.config
 
             internal object EnvConfig {
-                const val FIREBASE_API_KEY = "${firebaseApiKey.get()}"
-                const val FIREBASE_APP_ID = "${firebaseAppId.get()}"
-                const val FIREBASE_PROJECT_ID = "${firebaseProjectId.get()}"
-                const val FIREBASE_AUTH_DOMAIN = "${firebaseAuthDomain.get()}"
-                const val FIREBASE_STORAGE_BUCKET = "${firebaseStorageBucket.get()}"
-                const val FIREBASE_GCM_SENDER_ID = "${firebaseGcmSenderId.get()}"
-                const val GOOGLE_WEB_CLIENT_ID = "${googleWebClientId.get()}"
+                const val FIREBASE_API_KEY = "$firebaseApiKey"
+                const val FIREBASE_APP_ID = "$firebaseAppId"
+                const val FIREBASE_PROJECT_ID = "$firebaseProjectId"
+                const val FIREBASE_AUTH_DOMAIN = "$firebaseAuthDomain"
+                const val FIREBASE_STORAGE_BUCKET = "$firebaseStorageBucket"
+                const val FIREBASE_GCM_SENDER_ID = "$firebaseGcmSenderId"
+                const val GOOGLE_WEB_CLIENT_ID = "$googleWebClientId"
             }
 
             """.trimIndent()

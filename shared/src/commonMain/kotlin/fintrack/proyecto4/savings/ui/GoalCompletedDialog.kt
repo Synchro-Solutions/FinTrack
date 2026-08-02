@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun GoalCompletedDialog(
@@ -59,13 +60,4 @@ fun GoalCompletedDialog(
     )
 }
 
-private fun formatMoney(amount: Double): String {
-    val cleanAmount = amount.toInt()
-    val formatted = cleanAmount.toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatMoney(amount: Double): String = formatColones(amount)

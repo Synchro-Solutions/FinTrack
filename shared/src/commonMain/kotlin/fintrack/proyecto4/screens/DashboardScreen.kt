@@ -68,15 +68,11 @@ fun DashboardScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
-    onNavigateToIngreso: () -> Unit = {},
-    onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
-    onNavigateToReportes: () -> Unit = {},
     onNavigateToAjustes: () -> Unit = {},
     onNavigateToMovimientos: () -> Unit = {},
     onNavigateToPresupuestos: () -> Unit = {},
     onNavigateToMetas: () -> Unit = {},
-    onNavigateToChat: () -> Unit = {},
     onShareText: (String) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
@@ -102,11 +98,10 @@ fun DashboardScreen(
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     val colors = LocalAppColors.current
-    Box(modifier = Modifier.fillMaxSize().background(colors.bg)) {
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = { viewModel.refresh() },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().background(colors.bg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -118,6 +113,7 @@ fun DashboardScreen(
                     fotoUrl = state.fotoUrl,
                     notificationCount = state.notificationCount,
                     onBellClick = { viewModel.marcarNotificacionesLeidas() },
+                    onCameraClick = onNavigateToOcr,
                     onAvatarClick = onNavigateToAjustes
                 )
             }
@@ -150,15 +146,6 @@ fun DashboardScreen(
                 )
             }
             item { Spacer(Modifier.height(20.dp)) }
-            item {
-                QuickActionsRow(
-                    onIngreso = onNavigateToIngreso,
-                    onGasto = onNavigateToGasto,
-                    onOcr = onNavigateToOcr,
-                    onReportes = onNavigateToReportes
-                )
-            }
-            item { Spacer(Modifier.height(24.dp)) }
             item {
                 MonthlySummarySection(
                     state = summaryState,
@@ -208,15 +195,6 @@ fun DashboardScreen(
                 }
             }
         }
-    }
-
-    // FAB flotante del asistente IA
-    AiFloatingButton(
-        onClick = onNavigateToChat,
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(end = 20.dp, bottom = 20.dp)
-    )
     }
 }
 
@@ -396,6 +374,7 @@ private fun DashboardHeader(
     fotoUrl: String? = null,
     notificationCount: Int,
     onBellClick: () -> Unit,
+    onCameraClick: () -> Unit = {},
     onAvatarClick: () -> Unit = {}
 ) {
     val colors = LocalAppColors.current
@@ -419,6 +398,15 @@ private fun DashboardHeader(
             Text("👋", fontSize = 18.sp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(colors.surfaceSecondary, CircleShape)
+                    .clickable(onClick = onCameraClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = "Escanear recibo", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+            }
             BadgedBox(badge = {
                 if (notificationCount > 0) Badge(containerColor = FinTrackColors.ErrorColor) {
                     Text(if (notificationCount > 9) "9+" else "$notificationCount", fontSize = 9.sp, color = Color.White)
@@ -572,47 +560,6 @@ private fun KpiPill(label: String, value: String, icon: ImageVector, iconColor: 
     }
 }
 
-/* Accesos rápidos */
-
-@Composable
-private fun QuickActionsRow(
-    onIngreso: () -> Unit, onGasto: () -> Unit,
-    onOcr: () -> Unit, onReportes: () -> Unit
-) {
-    val colors = LocalAppColors.current
-    val montserrat = montserratFamily()
-    val actions = listOf(
-        Triple("Ingreso",   Icons.Default.TrendingUp,  FinTrackColors.GradientGreen),
-        Triple("Gasto",     Icons.Default.TrendingDown, FinTrackColors.GradientRed),
-        Triple("OCR",       Icons.Default.CameraAlt,    FinTrackColors.GradientIndigo),
-        Triple("Reportes",  Icons.Default.TrendingUp,   FinTrackColors.GradientViolet)
-    )
-    val callbacks = listOf(onIngreso, onGasto, onOcr, onReportes)
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        actions.zip(callbacks).forEach { (action, cb) ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable(onClick = cb)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(action.third),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(action.second, contentDescription = action.first, tint = Color.White, modifier = Modifier.size(26.dp))
-                }
-                Spacer(Modifier.height(7.dp))
-                Text(action.first, color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
-            }
-        }
-    }
-}
 
 /* Gráfica */
 
@@ -1051,43 +998,6 @@ private fun MovimientoRow(item: MovimientoItem) {
 }
 
 /* Componentes base */
-
-@Composable
-private fun AiFloatingButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        // Halo exterior pulsante
-        Box(
-            modifier = Modifier
-                .size(68.dp)
-                .align(Alignment.Center)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            FinTrackColors.GreenPrimary.copy(alpha = 0.35f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = CircleShape
-                )
-        )
-        // Botón principal
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .align(Alignment.Center)
-                .background(
-                    brush = Brush.linearGradient(
-                        listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                    ),
-                    shape = CircleShape
-                )
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("✦", color = Color.White, fontSize = 24.sp)
-        }
-    }
-}
 
 @Composable
 private fun SectionHeader(title: String, actionText: String, onAction: () -> Unit) {

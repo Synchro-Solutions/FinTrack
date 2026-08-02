@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -58,6 +59,8 @@ internal data class FinancialMenuItem(
 )
 
 internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
+    FinancialMenuItem("Metas", "Tus objetivos de ahorro", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.Metas),
+    FinancialMenuItem("Reportes", "Analisis de tus finanzas", Icons.Default.BarChart, FinTrackColors.GradientGreen, Screen.Reportes),
     FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.AguinaldoCalculator),
     FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientGreen, Screen.CurrencyConverter),
     FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),

@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,10 +32,11 @@ import fintrack.proyecto4.savings.viewmodel.GoalSort
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.launch
 
 @Composable
-fun MetasScreen() {
+fun MetasScreen(onBack: () -> Unit = {}) {
     val colors = LocalAppColors.current
     val viewModel = remember { SavingsViewModel() }
     val scope = rememberCoroutineScope()
@@ -68,6 +70,16 @@ fun MetasScreen() {
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            item {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = colors.textPrimary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(onClick = onBack)
+                )
+            }
             item {
                 GoalsHeader(
                     activeCount = activeCount,
@@ -703,17 +715,4 @@ private fun emptyMessageForFilter(
     }
 }
 
-private fun formatMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
-
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatMoney(amount: Double): String = formatColones(amount)

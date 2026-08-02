@@ -49,6 +49,7 @@ import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.util.formatColones
 import kotlin.math.round
 
 /** Rebaja adicional opcional agregada manualmente por el usuario (ej. pensión, préstamo). */
@@ -87,14 +88,6 @@ private fun calculateEstimatedIncomeTax(grossSalary: Long): Long {
 
 private fun calculateCcssContribution(grossSalary: Long, ratePercent: Double): Long =
     round(grossSalary * ratePercent / 100.0).toLong()
-
-/** Formatea un monto en colones con separador de miles '.', ej. 850000 -> "₡850.000", -50000 -> "-₡50.000". */
-private fun formatColonesDot(amount: Long): String {
-    val isNegative = amount < 0
-    val abs = if (isNegative) -amount else amount
-    val grouped = abs.toString().reversed().chunked(3).joinToString(".").reversed()
-    return "${if (isNegative) "-" else ""}₡$grouped"
-}
 
 private fun sanitizeDigitsInput(input: String): String = input.filter(Char::isDigit)
 
@@ -468,7 +461,7 @@ private fun BreakdownRow(label: String, amount: Long, montserrat: FontFamily) {
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = formatColonesDot(amount),
+            text = formatColones(amount),
             color = if (amount < 0) FinTrackColors.ErrorColor else colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 14.sp,
@@ -497,7 +490,7 @@ private fun DeductionRow(deduction: Deduction, montserrat: FontFamily, onRemove:
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = formatColonesDot(-deduction.amount),
+            text = formatColones(-deduction.amount),
             color = FinTrackColors.ErrorColor,
             fontFamily = montserrat,
             fontSize = 13.sp,
@@ -536,7 +529,7 @@ private fun NetSalaryBanner(
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = formatColonesDot(netSalary),
+            text = formatColones(netSalary),
             color = FinTrackColors.White,
             fontFamily = montserrat,
             fontSize = 32.sp,

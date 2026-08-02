@@ -9,9 +9,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -39,8 +39,8 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem("Inicio", Icons.Default.Home, Screen.Dashboard),
     NavItem("Movimientos", Icons.Default.SwapHoriz, Screen.Movimientos),
+    NavItem("Asistente IA", Icons.Default.AutoAwesome, Screen.AiChat),
     NavItem("Presupuestos", Icons.Default.AccountBalance, Screen.Presupuestos),
-    NavItem("Metas", Icons.Default.Star, Screen.Metas),
     NavItem("Más", Icons.Default.MoreHoriz, Screen.FinancialCenter)
 )
 

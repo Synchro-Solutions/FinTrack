@@ -207,17 +207,14 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
-                                onNavigateToIngreso = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
-                                },
-                                onNavigateToGasto = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                onNavigateToOcr = {
+                                    ocrAssistantViewModel.reset()
+                                    navController.navigate(Screen.OcrAssistant)
                                 },
                                 onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
-                                onNavigateToMetas = { navController.replace(Screen.Metas) },
-                                onNavigateToChat = { navController.navigate(Screen.AiChat) },
+                                onNavigateToMetas = { navController.navigate(Screen.Metas) },
                                 onShareText = onShareText
                             )
 
@@ -304,7 +301,9 @@ fun App(
                             onBack = { navController.goBack() },
                             onSaved = { navController.replace(Screen.Presupuestos) }
                         )
-                        is Screen.Metas -> MetasScreen()
+                        is Screen.Metas -> MetasScreen(
+                            onBack = { navController.goBack() }
+                        )
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
@@ -336,6 +335,10 @@ fun App(
                             historyCount = 0,
                             transactionRepository = transactionRepository,
                             budgetRepository = budgetRepository
+                        )
+                        is Screen.Reportes -> CalculatorPlaceholderScreen(
+                            title = "Reportes",
+                            description = "Aqui van los reportes financieros."
                         )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }

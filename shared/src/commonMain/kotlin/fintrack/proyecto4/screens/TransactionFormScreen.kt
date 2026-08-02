@@ -32,6 +32,7 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.MaxDescriptionLength
@@ -508,7 +509,7 @@ private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(16.dp),
         content = content
     )

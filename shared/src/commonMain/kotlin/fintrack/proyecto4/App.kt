@@ -60,6 +60,7 @@ import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackAppBackground
+import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -67,20 +68,53 @@ import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
+// Se mapean todos los roles usados por componentes Material3 sin color explicito
+// (labels de campos, iconos deshabilitados, outlines, etc.) para que nada quede
+// heredando el gris por defecto de Material3 en vez de la paleta oficial.
 private val DarkColorScheme = darkColorScheme(
-    primary      = DarkAppColors.primary,
-    background   = DarkAppColors.bg,
-    surface      = DarkAppColors.surface,
-    onBackground = DarkAppColors.textPrimary,
-    onSurface    = DarkAppColors.textPrimary
+    primary             = DarkAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = DarkAppColors.primaryDark,
+    onPrimaryContainer  = Color.White,
+    secondary           = DarkAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = DarkAppColors.surfaceSecondary,
+    onSecondaryContainer = DarkAppColors.textPrimary,
+    tertiary            = DarkAppColors.primaryLight,
+    onTertiary          = DarkAppColors.bg,
+    background          = DarkAppColors.bg,
+    onBackground        = DarkAppColors.textPrimary,
+    surface             = DarkAppColors.surface,
+    onSurface           = DarkAppColors.textPrimary,
+    surfaceVariant      = DarkAppColors.surfaceSecondary,
+    onSurfaceVariant    = DarkAppColors.textSecondary,
+    outline             = DarkAppColors.border,
+    outlineVariant      = DarkAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary      = LightAppColors.primary,
-    background   = LightAppColors.bg,
-    surface      = LightAppColors.surface,
-    onBackground = LightAppColors.textPrimary,
-    onSurface    = LightAppColors.textPrimary
+    primary             = LightAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = LightAppColors.primaryLight,
+    onPrimaryContainer  = LightAppColors.textPrimary,
+    secondary           = LightAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = LightAppColors.surfaceSecondary,
+    onSecondaryContainer = LightAppColors.textPrimary,
+    tertiary            = LightAppColors.primaryDark,
+    onTertiary          = Color.White,
+    background          = LightAppColors.bg,
+    onBackground        = LightAppColors.textPrimary,
+    surface             = LightAppColors.surface,
+    onSurface           = LightAppColors.textPrimary,
+    surfaceVariant      = LightAppColors.surfaceSecondary,
+    onSurfaceVariant    = LightAppColors.textSecondary,
+    outline             = LightAppColors.border,
+    outlineVariant      = LightAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 /**

@@ -369,7 +369,7 @@ private fun GoalsHeader(
             color = if (canCreateGoal) {
                 colors.primary
             } else {
-                Color(0xFFEF4444)
+                FinTrackColors.ErrorColor
             },
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold

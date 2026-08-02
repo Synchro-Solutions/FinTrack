@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.round
@@ -219,7 +220,7 @@ fun NetSalaryCalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                colors = CardDefaults.cardColors(containerColor = colors.glassSurface),
                 border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 
@@ -389,7 +390,7 @@ private fun SummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        colors = CardDefaults.cardColors(containerColor = colors.glassSurface),
         border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = if (ultraCompactLayout) 4.dp else if (compactLayout) 5.dp else 7.dp)) {

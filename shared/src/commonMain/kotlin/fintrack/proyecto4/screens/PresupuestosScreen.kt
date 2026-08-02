@@ -48,6 +48,7 @@ import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.ai.SpendingForecastViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
@@ -177,7 +178,7 @@ private fun SummaryCard(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -220,7 +221,7 @@ private fun BudgetCard(budget: BudgetItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(

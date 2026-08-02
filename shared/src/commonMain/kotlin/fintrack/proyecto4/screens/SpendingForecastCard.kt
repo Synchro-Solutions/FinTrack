@@ -38,6 +38,7 @@ import fintrack.proyecto4.ai.CategoryForecast
 import fintrack.proyecto4.ai.ForecastState
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 
@@ -75,7 +76,7 @@ fun SpendingForecastSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
+                .background(colors.glassSurface)
                 .padding(16.dp)
         ) {
             Row(

@@ -52,6 +52,7 @@ import fintrack.proyecto4.screens.common.AppDatePickerDialog
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.vacation.VacationCalculationInput
@@ -211,7 +212,7 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(colors.surface)
+                        .background(colors.glassSurface)
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -277,7 +278,7 @@ private fun SectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         if (title != null) {
@@ -537,7 +538,7 @@ private fun ResultTile(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

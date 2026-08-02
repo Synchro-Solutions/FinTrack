@@ -56,6 +56,7 @@ import fintrack.proyecto4.dashboard.MovimientoItem
 import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassSurface
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -155,6 +156,17 @@ fun DashboardScreen(
                 )
             }
             item { Spacer(Modifier.height(24.dp)) }
+            item {
+                Text(
+                    "Ingresos vs Gastos",
+                    color = colors.textPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily(),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+            item { Spacer(Modifier.height(12.dp)) }
             item { ChartSection(data = state.chartData) }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
@@ -207,7 +219,7 @@ private fun WeeklyAnomalyCard(anomalies: List<AnomalyAlert>) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -277,7 +289,7 @@ private fun MonthlySummarySection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
+                .background(colors.glassSurface)
                 .padding(16.dp)
         ) {
             Row(
@@ -568,14 +580,7 @@ private fun ChartSection(data: List<MonthlyChartData>) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Ingresos vs Gastos", color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
-            Text("Últimos 6 meses", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
-        }
+        Text("Últimos 6 meses", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendDot(FinTrackColors.GreenPrimary, "Ingresos")
@@ -648,13 +653,21 @@ private fun PresupuestoCard(item: PresupuestoItem) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val emoji = presupuestoEmojis[item.nombre] ?: "💰"
+    // Color semantico oficial (no el color arbitrario de la categoria) para el
+    // porcentaje y la barra: verde si va bien, ambar en alerta, rojo en critico.
+    val pct = item.porcentaje / 100f
+    val statusColor = when {
+        pct >= 0.90f -> FinTrackColors.ErrorColor
+        pct >= 0.8f  -> FinTrackColors.WarningColor
+        else         -> FinTrackColors.GreenPrimary
+    }
     Box(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .padding(bottom = 10.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(16.dp)
     ) {
         Column {
@@ -680,7 +693,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                 }
                 Text(
                     "${item.porcentaje}%",
-                    color = item.color, fontSize = 15.sp,
+                    color = statusColor, fontSize = 15.sp,
                     fontWeight = FontWeight.Bold, fontFamily = montserrat
                 )
             }
@@ -690,7 +703,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(CircleShape)
-                    .background(item.color.copy(alpha = 0.12f))
+                    .background(statusColor.copy(alpha = 0.12f))
             ) {
                 Box(
                     modifier = Modifier
@@ -698,7 +711,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                         .fillMaxHeight()
                         .clip(CircleShape)
                         .background(
-                            Brush.horizontalGradient(listOf(item.color.copy(alpha = 0.7f), item.color))
+                            Brush.horizontalGradient(listOf(statusColor.copy(alpha = 0.7f), statusColor))
                         )
                 )
             }
@@ -726,7 +739,7 @@ private fun MetaCard(item: MetaItem) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(19.dp))
-                .background(colors.surface)
+                .background(colors.glassSurface)
                 .padding(18.dp)
         ) {
             Column {
@@ -830,7 +843,7 @@ private fun EmptyPresupuestosState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -874,7 +887,7 @@ private fun EmptyMetaState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -1029,7 +1042,7 @@ private fun DarkCard(modifier: Modifier = Modifier, content: @Composable ColumnS
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.surface)
+            .background(colors.glassSurface)
             .padding(18.dp)
     ) {
         Column(content = content)

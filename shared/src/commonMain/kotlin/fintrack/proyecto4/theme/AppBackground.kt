@@ -4,11 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
@@ -21,7 +17,11 @@ import androidx.compose.ui.unit.dp
  * inspirado en `radial-gradient(125% 125% at 50% 10%, #fff 40%, var(--primary) 100%)`, pero
  * retocado para que sature a primary completo alrededor del 75% de la altura hacia abajo
  * (así el bottom nav, que vive detrás con fondo transparente, queda sobre verde sólido).
- * En oscuro: base sólida + un halo difuminado del color primaryDark ("Glow").
+ * En oscuro: capa completa (`inset-0`) del color primaryDark ("Glow") al 20% de opacidad y
+ * blur de 100dp sobre la base sólida, inspirado en
+ * `bg-neutral-900` + `absolute inset-0 bg-[glow] opacity-20 blur-[100px]`
+ * (el `bg-size:20px_20px` del original no aplica: es una propiedad de imagen de fondo,
+ * no tiene efecto sobre un color sólido, así que no hay nada que replicar ahí).
  */
 @Composable
 fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
@@ -29,10 +29,8 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
         Box(modifier = modifier.fillMaxSize().background(colors.bg)) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-120).dp)
-                    .size(420.dp)
-                    .background(colors.primaryDark.copy(alpha = 0.35f), CircleShape)
+                    .fillMaxSize()
+                    .background(colors.primaryDark.copy(alpha = 0.2f))
                     .blur(100.dp)
             )
         }

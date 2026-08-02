@@ -162,8 +162,8 @@ fun OnboardingScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = FinTrackColors.GreenPrimary,
-                        disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                        containerColor = FinTrackColors.GreenDark,
+                        disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.4f)
                     )
                 ) {
                     if (state.isSaving) {

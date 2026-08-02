@@ -260,7 +260,7 @@ private fun MonthlySummarySection(
                 onClick = onGenerate,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Text(
                     "✨  Resumen IA del mes",

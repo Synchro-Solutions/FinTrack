@@ -289,7 +289,7 @@ private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = FinTrackColors.GreenPrimary,
+                checkedTrackColor = FinTrackColors.GreenDark,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = c.divider
             )

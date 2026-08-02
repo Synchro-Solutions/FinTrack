@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -54,19 +53,18 @@ internal data class FinancialMenuItem(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val iconBrush: Brush,
     val route: Screen
 )
 
 internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
-    FinancialMenuItem("Metas", "Tus objetivos de ahorro", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.Metas),
-    FinancialMenuItem("Reportes", "Analisis de tus finanzas", Icons.Default.BarChart, FinTrackColors.GradientGreen, Screen.Reportes),
-    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.AguinaldoCalculator),
-    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientGreen, Screen.CurrencyConverter),
-    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),
-    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.Default.Description, FinTrackColors.GradientGreen, Screen.LiquidacionCalculator),
-    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, FinTrackColors.GradientGreen, Screen.VacacionesCalculator),
-    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, FinTrackColors.GradientGreen, Screen.CalculationHistory)
+    FinancialMenuItem("Metas", "Tus objetivos de ahorro", Icons.Default.Star, Screen.Metas),
+    FinancialMenuItem("Reportes", "Analisis de tus finanzas", Icons.Default.BarChart, Screen.Reportes),
+    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, Screen.AguinaldoCalculator),
+    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, Screen.CurrencyConverter),
+    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, Screen.NetSalaryCalculator),
+    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.Default.Description, Screen.LiquidacionCalculator),
+    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, Screen.VacacionesCalculator),
+    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, Screen.CalculationHistory)
 )
 
 @Composable
@@ -188,7 +186,7 @@ private fun FinancialCard(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(item.iconBrush),
+                        .background(FinTrackColors.GradientGreen),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -201,7 +199,7 @@ private fun FinancialCard(
 
                 if (badgeCount > 0) {
                     Badge(
-                        containerColor = FinTrackColors.GreenPrimary,
+                        containerColor = FinTrackColors.GreenDark,
                         contentColor = Color.White
                     ) {
                         Text(

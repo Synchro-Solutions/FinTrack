@@ -329,7 +329,7 @@ fun NetSalaryCalculatorScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Text(
                     text = "Guardar cálculo",
@@ -724,8 +724,8 @@ private fun EditParamsDialog(
                         checked = autoTax,
                         onCheckedChange = { autoTax = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = FinTrackColors.GreenPrimary,
-                            checkedTrackColor = FinTrackColors.GreenPrimary.copy(alpha = 0.5f),
+                            checkedThumbColor = FinTrackColors.GreenDark,
+                            checkedTrackColor = FinTrackColors.GreenDark.copy(alpha = 0.5f),
                             uncheckedThumbColor = colors.textPrimary,
                             uncheckedTrackColor = colors.surfaceSecondary
                         )

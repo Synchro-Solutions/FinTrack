@@ -51,6 +51,7 @@ import kotlin.time.Clock
 
 /** Rojo para Gasto, verde para Ingreso — mismo acento que ya usan TransactionsScreen/
  *  TransactionDetailScreen/DashboardScreen para distinguir movimientos por tipo. */
+@Composable
 private fun typeAccentColor(type: TransactionType): Color =
     if (type == TransactionType.EXPENSE) FinTrackColors.ErrorColor else FinTrackColors.GreenPrimary
 
@@ -259,7 +260,7 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
  * salía gris casi ilegible sobre la tarjeta blanca forzada del picker.
  */
 private val LightDatePickerColorScheme = lightColorScheme(
-    primary = FinTrackColors.GreenPrimary,
+    primary = LightAppColors.primary,
     onPrimary = Color.White,
     background = Color.White,
     surface = Color.White,
@@ -779,8 +780,8 @@ private fun SaveTransactionButton(
             .height(54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = FinTrackColors.GreenPrimary,
-            disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
+            containerColor = FinTrackColors.GreenDark,
+            disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.45f)
         )
     ) {
         if (isSaving) {

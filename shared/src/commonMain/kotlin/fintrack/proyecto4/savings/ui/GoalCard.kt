@@ -272,7 +272,7 @@ fun GoalCard(
                             colors =
                                 ButtonDefaults.buttonColors(
                                     containerColor =
-                                        FinTrackColors.GreenPrimary,
+                                        FinTrackColors.GreenDark,
                                     contentColor =
                                         FinTrackColors.White
                                 ),
@@ -375,6 +375,7 @@ private fun PriorityBadge(
     }
 }
 
+@Composable
 private fun goalAccentColor(
     color: GoalColor
 ): Color {

@@ -177,8 +177,8 @@ fun CreateBudgetScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinTrackColors.GreenPrimary,
-                    disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                    containerColor = FinTrackColors.GreenDark,
+                    disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.4f)
                 )
             ) {
                 if (state.isSaving) {
@@ -280,8 +280,8 @@ private fun AlertSlider(
         steps = 8,
         modifier = Modifier.fillMaxWidth(),
         colors = SliderDefaults.colors(
-            thumbColor = FinTrackColors.GreenPrimary,
-            activeTrackColor = FinTrackColors.GreenPrimary,
+            thumbColor = FinTrackColors.GreenDark,
+            activeTrackColor = FinTrackColors.GreenDark,
             inactiveTrackColor = LocalAppColors.current.surfaceSecondary
         )
     )

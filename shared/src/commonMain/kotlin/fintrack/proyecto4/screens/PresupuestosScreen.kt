@@ -78,7 +78,7 @@ fun PresupuestosScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNuevoPresupuesto,
-                containerColor = FinTrackColors.GreenPrimary,
+                containerColor = FinTrackColors.GreenDark,
                 contentColor = Color.White,
                 shape = CircleShape
             ) {

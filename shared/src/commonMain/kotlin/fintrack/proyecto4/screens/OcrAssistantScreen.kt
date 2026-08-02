@@ -169,7 +169,7 @@ private fun IdleContent(
                 onClick = onTakePhotoClick,
                 modifier = Modifier.weight(1f).height(54.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
@@ -273,7 +273,7 @@ private fun SuccessContent(onReviewData: () -> Unit) {
             onClick = onReviewData,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
         ) {
             Text(
                 text = "Revisar datos detectados",
@@ -318,7 +318,7 @@ private fun ErrorContent(message: String?, onRetry: () -> Unit) {
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
         ) {
             Text(
                 text = "Reintentar",

@@ -339,7 +339,7 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                 ) {
                     Text(
                         text = "Aceptar",
-                        color = Color(0xFF22C55E)
+                        color = colors.primary
                     )
                 }
             }
@@ -368,7 +368,7 @@ private fun GoalsHeader(
         Text(
             text = "$activeCount / $maxGoals metas activas",
             color = if (canCreateGoal) {
-                Color(0xFF22C55E)
+                colors.primary
             } else {
                 Color(0xFFEF4444)
             },
@@ -390,7 +390,7 @@ private fun GoalsHeader(
             onClick = onCreateGoal,
             enabled = canCreateGoal,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF22C55E),
+                containerColor = colors.primaryDark,
                 contentColor = Color.White,
                 disabledContainerColor = colors.border,
                 disabledContentColor = colors.textSecondary
@@ -534,14 +534,14 @@ private fun GoalFilters(
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = colors.surface,
                         labelColor = colors.textSecondary,
-                        selectedContainerColor = Color(0xFF22C55E),
+                        selectedContainerColor = colors.primaryDark,
                         selectedLabelColor = Color.White
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = selectedFilter == filter,
                         borderColor = colors.border,
-                        selectedBorderColor = Color(0xFF22C55E)
+                        selectedBorderColor = colors.primaryDark
                     )
                 )
             }
@@ -617,7 +617,7 @@ private fun GoalSortSelector(
                             Text(
                                 text = sortLabel(sort),
                                 color = if (selectedSort == sort) {
-                                    Color(0xFF22C55E)
+                                    colors.primary
                                 } else {
                                     colors.textPrimary
                                 }

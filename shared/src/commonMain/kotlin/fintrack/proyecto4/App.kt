@@ -59,7 +59,7 @@ import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
-import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -68,7 +68,7 @@ import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
 private val DarkColorScheme = darkColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
+    primary      = DarkAppColors.primary,
     background   = DarkAppColors.bg,
     surface      = DarkAppColors.surface,
     onBackground = DarkAppColors.textPrimary,
@@ -76,7 +76,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
+    primary      = LightAppColors.primary,
     background   = LightAppColors.bg,
     surface      = LightAppColors.surface,
     onBackground = LightAppColors.textPrimary,
@@ -156,18 +156,20 @@ fun App(
             }
 
             CompositionLocalProvider(LocalNavController provides navController) {
-                Scaffold(
-                    containerColor = appColors.bg,
-                    bottomBar = {
-                        FinTrackBottomBar(
-                            currentScreen = currentScreen,
-                            visible = showBottomBar,
-                            onTabSelected = { screen ->
-                                if (screen != currentScreen) navController.replace(screen)
-                            }
-                        )
-                    }
-                ) { innerPadding ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    FinTrackAppBackground(colors = appColors, modifier = Modifier.fillMaxSize())
+                    Scaffold(
+                        containerColor = Color.Transparent,
+                        bottomBar = {
+                            FinTrackBottomBar(
+                                currentScreen = currentScreen,
+                                visible = showBottomBar,
+                                onTabSelected = { screen ->
+                                    if (screen != currentScreen) navController.replace(screen)
+                                }
+                            )
+                        }
+                    ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         modifier = Modifier.padding(innerPadding)
@@ -370,6 +372,7 @@ fun App(
                             description = "Aqui va el historial de calculos guardados."
                         )
                         }
+                    }
                     }
                 }
             }

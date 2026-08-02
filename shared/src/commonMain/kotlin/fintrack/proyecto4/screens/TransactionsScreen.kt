@@ -487,7 +487,7 @@ private fun FiltersSheet(
                         .weight(1.3f)
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
                 ) {
                     Text(
                         text = "Aplicar filtros",
@@ -714,6 +714,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
 }
 
 /** US-50: resalta la subcadena de [text] que coincide con [query] (búsqueda por texto). */
+@Composable
 private fun highlightedText(text: String, query: String): AnnotatedString {
     val trimmed = query.trim()
     if (trimmed.isBlank()) return AnnotatedString(text)

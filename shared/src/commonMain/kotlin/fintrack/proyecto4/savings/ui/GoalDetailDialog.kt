@@ -244,7 +244,7 @@ fun GoalDetailDialog(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(
                         containerColor =
-                            FinTrackColors.GreenPrimary,
+                            FinTrackColors.GreenDark,
                         contentColor =
                             FinTrackColors.White
                     ),

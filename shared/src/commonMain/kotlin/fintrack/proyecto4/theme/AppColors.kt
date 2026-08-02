@@ -7,6 +7,12 @@ data class AppColors(
     val bg: Color,
     val surface: Color,
     val surfaceSecondary: Color,
+    /** Verde principal de marca, distinto por tema (claro #3B8F74 / oscuro #62C9A7). */
+    val primary: Color,
+    /** Sombra del primary: color de botones en claro, color de glow en oscuro. */
+    val primaryDark: Color,
+    /** Tinte claro del primary, derivado (no especificado en la paleta original). */
+    val primaryLight: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val divider: Color,
@@ -16,26 +22,32 @@ data class AppColors(
 )
 
 val DarkAppColors = AppColors(
-    bg               = Color(0xFF080E1A),
-    surface          = Color(0xFF111827),
-    surfaceSecondary = Color(0xFF1A2332),
-    textPrimary      = Color(0xFFF1F5F9),
-    textSecondary    = Color(0xFF64748B),
-    divider          = Color(0xFF1E293B),
-    border           = Color(0x33FFFFFF),
-    navBar           = Color(0xFF0F1923),
+    bg               = Color(0xFF081C19),
+    surface          = Color(0xFF102C26),
+    surfaceSecondary = Color(0xFF15352E),
+    primary          = Color(0xFF62C9A7),
+    primaryDark      = Color(0xFF1A8A74),
+    primaryLight     = Color(0xFF91D9C1),
+    textPrimary      = Color(0xFFE7F4EE),
+    textSecondary    = Color(0xFF8FB3A9),
+    divider          = Color(0xFF1E3A33),
+    border           = Color(0x33E7F4EE),
+    navBar           = Color(0xFF102C26),
     isDark           = true
 )
 
 val LightAppColors = AppColors(
-    bg               = Color(0xFFF1F5F9),
-    surface          = Color(0xFFFFFFFF),
-    surfaceSecondary = Color(0xFFEFF4F8),
-    textPrimary      = Color(0xFF0F172A),
-    textSecondary    = Color(0xFF64748B),
-    divider          = Color(0xFFE2E8F0),
-    border           = Color(0xFFCBD5E1),
-    navBar           = Color(0xFFFFFFFF),
+    bg               = Color(0xFFF4F7F2),
+    surface          = Color(0xFFF8FAF7),
+    surfaceSecondary = Color(0xFFEAF0E9),
+    primary          = Color(0xFF3B8F74),
+    primaryDark      = Color(0xFF26705B),
+    primaryLight     = Color(0xFF80B6A5),
+    textPrimary      = Color(0xFF102721),
+    textSecondary    = Color(0xFF4B6B62),
+    divider          = Color(0xFFDCE6DA),
+    border           = Color(0xFFCBD9CE),
+    navBar           = Color(0xFFF8FAF7),
     isDark           = false
 )
 

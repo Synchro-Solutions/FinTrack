@@ -7,7 +7,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +40,7 @@ fun GoalCompletedDialog(
 
                 Text(
                     text = "Monto final: ${formatMoney(goal.targetAmount)}",
-                    color = Color(0xFF22C55E),
+                    color = colors.primary,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -53,7 +52,7 @@ fun GoalCompletedDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Aceptar", color = Color(0xFF22C55E))
+                Text("Aceptar", color = colors.primary)
             }
         },
         shape = RoundedCornerShape(22.dp)

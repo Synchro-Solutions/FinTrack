@@ -271,7 +271,7 @@ fun EditarPerfilScreen(
                 enabled = !state.isSaving && !state.isUploadingPhoto && !state.isLoading,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark),
                 contentPadding = PaddingValues(0.dp)
             ) {
                 if (state.isSaving) {

@@ -32,6 +32,23 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
+    fun signInWithGoogle(requestIdToken: suspend () -> Result<String>) {
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            val idTokenResult = requestIdToken()
+            _uiState.value = idTokenResult.fold(
+                onSuccess = { idToken ->
+                    when (val result = authRepository.signInWithGoogleIdToken(idToken)) {
+                        is LoginResult.Success -> LoginUiState.Success
+                        is LoginResult.Error -> LoginUiState.Error(result.message)
+                        is LoginResult.AccountLocked -> LoginUiState.Locked(result.minutesRemaining)
+                    }
+                },
+                onFailure = { LoginUiState.Error("No se pudo iniciar sesión con Google") }
+            )
+        }
+    }
+
     fun resetState() {
         _uiState.value = LoginUiState.Idle
     }

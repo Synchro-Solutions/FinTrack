@@ -18,12 +18,18 @@ class FakeAuthRepository : AuthRepository {
     var lastPassword: String? = null
     var lastRememberMe: Boolean? = null
     var signOutCalled = false
+    var lastGoogleIdToken: String? = null
 
     override suspend fun signIn(email: String, password: String, rememberMe: Boolean): LoginResult {
         signInCallCount++
         lastEmail = email
         lastPassword = password
         lastRememberMe = rememberMe
+        return nextSignInResult
+    }
+
+    override suspend fun signInWithGoogleIdToken(idToken: String): LoginResult {
+        lastGoogleIdToken = idToken
         return nextSignInResult
     }
 

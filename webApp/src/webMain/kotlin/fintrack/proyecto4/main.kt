@@ -7,24 +7,29 @@ import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.initialize
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.auth.JsSessionStore
+import fintrack.proyecto4.auth.requestGoogleIdToken
+import fintrack.proyecto4.config.EnvConfig
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     Firebase.initialize(
         context = null,
         options = FirebaseOptions(
-            applicationId = "1:852790158784:web:729be6dc457b8d1c229425",
-            apiKey = "AIzaSyCIzypZsOuWNTjlRCtjuFyUs1WLpYfspOQ",
-            projectId = "fintrack-bm0911",
-            authDomain = "fintrack-bm0911.firebaseapp.com",
-            storageBucket = "fintrack-bm0911.firebasestorage.app",
-            gcmSenderId = "852790158784"
+            applicationId = EnvConfig.FIREBASE_APP_ID,
+            apiKey = EnvConfig.FIREBASE_API_KEY,
+            projectId = EnvConfig.FIREBASE_PROJECT_ID,
+            authDomain = EnvConfig.FIREBASE_AUTH_DOMAIN,
+            storageBucket = EnvConfig.FIREBASE_STORAGE_BUCKET,
+            gcmSenderId = EnvConfig.FIREBASE_GCM_SENDER_ID
         )
     )
 
     ComposeViewport {
         val sessionStore = JsSessionStore()
         val authRepository = FirebaseAuthRepository(sessionStore)
-        App(authRepository = authRepository)
+        App(
+            authRepository = authRepository,
+            onGoogleSignInRequested = { requestGoogleIdToken(EnvConfig.GOOGLE_WEB_CLIENT_ID) }
+        )
     }
 }

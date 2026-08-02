@@ -2,6 +2,7 @@ package fintrack.proyecto4.auth
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuthException
+import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -37,6 +38,19 @@ class FirebaseAuthRepository(private val sessionStore: SessionStore) : AuthRepos
             }
         } catch (e: Exception) {
             LoginResult.Error("Error de conexión. Intente de nuevo.")
+        }
+    }
+
+    override suspend fun signInWithGoogleIdToken(idToken: String): LoginResult {
+        return try {
+            val credential = GoogleAuthProvider.credential(idToken, null)
+            val result = auth.signInWithCredential(credential)
+            val token = result.user?.getIdToken(false) ?: ""
+            sessionStore.clearFailedAttempts()
+            sessionStore.setRememberMe(true)
+            LoginResult.Success(token)
+        } catch (e: Exception) {
+            LoginResult.Error("No se pudo iniciar sesión con Google")
         }
     }
 

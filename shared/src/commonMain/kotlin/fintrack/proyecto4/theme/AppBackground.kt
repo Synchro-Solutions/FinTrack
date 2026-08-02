@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.dp
 /**
  * Fondo decorativo de marca, fijo detrás de toda la navegación (no se estira con el
  * contenido de cada pantalla). En claro: gradiente radial blanco -> primary, arriba-centro,
- * inspirado en `radial-gradient(125% 125% at 50% 10%, #fff 40%, var(--primary) 100%)`.
+ * inspirado en `radial-gradient(125% 125% at 50% 10%, #fff 40%, var(--primary) 100%)`, pero
+ * retocado para que sature a primary completo alrededor del 75% de la altura hacia abajo
+ * (así el bottom nav, que vive detrás con fondo transparente, queda sobre verde sólido).
  * En oscuro: base sólida + un halo difuminado del color primaryDark ("Glow").
  */
 @Composable
@@ -40,11 +42,11 @@ fun FinTrackAppBackground(colors: AppColors, modifier: Modifier = Modifier) {
             val heightPx = constraints.maxHeight.toFloat()
             val brush = Brush.radialGradient(
                 colorStops = arrayOf(
-                    0.4f to androidx.compose.ui.graphics.Color.White,
+                    0.7f to androidx.compose.ui.graphics.Color.White,
                     1f to colors.primary
                 ),
                 center = Offset(widthPx * 0.5f, heightPx * 0.1f),
-                radius = maxOf(widthPx, heightPx) * 1.25f
+                radius = maxOf(widthPx, heightPx) * 0.9f
             )
             Box(modifier = Modifier.fillMaxSize().background(brush))
         }

@@ -62,8 +62,16 @@ fun FinTrackBottomBar(
         ) { it } + fadeOut(tween(NavTransitionDurationMillis, easing = NavTransitionEasing))
     ) {
         val colors = LocalAppColors.current
+        // En claro, el fondo decorativo del app shell (FinTrackAppBackground) ya llega
+        // saturado en primary a esta altura de la pantalla, así que el nav queda
+        // transparente para fundirse con ese verde en vez de tapar con su propia
+        // superficie clara. En oscuro el glow es solo un halo arriba, no llega abajo,
+        // así que ahí sigue con su superficie opaca normal.
+        val navContainerColor = if (colors.isDark) colors.navBar else Color.Transparent
+        val navContentColor = if (colors.isDark) colors.textSecondary else Color.White.copy(alpha = 0.7f)
+        val navSelectedColor = if (colors.isDark) FinTrackColors.GreenPrimary else Color.White
         NavigationBar(
-            containerColor = colors.navBar,
+            containerColor = navContainerColor,
             tonalElevation = 0.dp
         ) {
             navItems.forEach { item ->
@@ -109,11 +117,11 @@ fun FinTrackBottomBar(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = FinTrackColors.GreenPrimary,
-                        selectedTextColor = FinTrackColors.GreenPrimary,
-                        unselectedIconColor = colors.textSecondary,
-                        unselectedTextColor = colors.textSecondary,
-                        indicatorColor = FinTrackColors.GreenPrimary.copy(alpha = 0.15f)
+                        selectedIconColor = navSelectedColor,
+                        selectedTextColor = navSelectedColor,
+                        unselectedIconColor = navContentColor,
+                        unselectedTextColor = navContentColor,
+                        indicatorColor = navSelectedColor.copy(alpha = 0.15f)
                     )
                 )
             }

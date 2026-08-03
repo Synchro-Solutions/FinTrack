@@ -46,8 +46,8 @@ import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
-import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.shimmerBorderBrush
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 
@@ -164,16 +164,26 @@ private fun FinancialCard(
 ) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    // Fondo plano (como los botones circulares del nav: colors.surfaceSecondary, sin
+    // blur) en vez de glassCard(): el vidrio esmerilado se veia mal en estas tarjetas
+    // chicas de grilla. El borde verde animado (mismo ritmo que el shimmer de texto)
+    // es lo que le da personalidad ahora.
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .clickable(onClick = onClick)
-            .glassCard(),
+            .clip(RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.5.dp, FinTrackColors.GreenPrimary.copy(alpha = 0.6f)),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(
+            1.5.dp,
+            shimmerBorderBrush(
+                baseColor = FinTrackColors.GreenPrimary.copy(alpha = 0.35f),
+                accentColor = FinTrackColors.GreenPrimary
+            )
+        ),
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceSecondary),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -189,7 +199,7 @@ private fun FinancialCard(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(FinTrackColors.GradientGreen),
+                        .background(colors.primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -222,9 +232,10 @@ private fun FinancialCard(
                 }
             }
 
-            Text(
+            ShimmerText(
                 text = item.title,
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 17.sp,
                 fontFamily = montserrat,

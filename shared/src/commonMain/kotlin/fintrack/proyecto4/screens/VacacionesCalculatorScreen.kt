@@ -64,6 +64,7 @@ import fintrack.proyecto4.vacation.VacationPaymentModality
 import fintrack.proyecto4.vacation.formatVacationDays
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -589,8 +590,8 @@ private fun BreakdownRow(label: String, value: String, montserrat: FontFamily) {
 }
 
 private fun formatLocalDateUs(date: LocalDate): String {
-    val month = date.monthNumber.toString().padStart(2, '0')
-    val day = date.dayOfMonth.toString().padStart(2, '0')
+    val month = date.month.number.toString().padStart(2, '0')
+    val day = date.day.toString().padStart(2, '0')
     return "$month/$day/${date.year}"
 }
 

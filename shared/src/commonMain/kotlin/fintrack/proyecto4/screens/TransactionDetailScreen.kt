@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -104,9 +104,9 @@ fun TransactionDetailScreen(
                 ) {
                     Icon(
                         imageVector = if (transaction.type == TransactionType.INCOME) {
-                            Icons.Default.TrendingUp
+                            Icons.AutoMirrored.Filled.TrendingUp
                         } else {
-                            Icons.Default.TrendingDown
+                            Icons.AutoMirrored.Filled.TrendingDown
                         },
                         contentDescription = null,
                         tint = accentColor,

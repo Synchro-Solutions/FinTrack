@@ -73,7 +73,6 @@ fun AjustesScreen(
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     var notificaciones by remember { mutableStateOf(true) }
-    var biometrico by remember { mutableStateOf(false) }
 
     val initials = state.nombre
         .split(" ")
@@ -200,20 +199,21 @@ fun AjustesScreen(
         SectionCard(c) {
             ToggleRow("Notificaciones push", notificaciones, { notificaciones = it }, c)
             RowDivider(c)
-            ToggleRow("Acceso biométrico", biometrico, { biometrico = it }, c)
-            RowDivider(c)
             ToggleRow("Tema oscuro", isDarkTheme, { onToggleTheme() }, c)
         }
 
         Spacer(Modifier.height(28.dp))
 
         // ── Cerrar sesión ────────────────────────────────────────────────────
+        // Fondo tintado (no transparente puro): un borde solo sobre el degradado
+        // del fondo se perdia, sin peso visual. El tinte rojo suave le da presencia
+        // sin volverlo un boton de "peligro" opaco tipo alerta.
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Button(
                 onClick = onCerrarSesion,
                 modifier = Modifier.height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.ErrorColor.copy(alpha = 0.14f)),
                 border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
             ) {
                 Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)

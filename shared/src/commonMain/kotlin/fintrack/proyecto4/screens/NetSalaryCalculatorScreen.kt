@@ -219,7 +219,7 @@ fun NetSalaryCalculatorScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth().glassCard(),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).glassCard(),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 border = BorderStroke(1.dp, colors.border)

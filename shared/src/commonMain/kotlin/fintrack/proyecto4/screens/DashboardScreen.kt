@@ -1,6 +1,12 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,16 +14,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -59,11 +66,13 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
-import fintrack.proyecto4.theme.scrollRevealFade
+import fintrack.proyecto4.theme.shimmerBorderBrush
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.util.formatColonesCompacto
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,6 +97,7 @@ fun DashboardScreen(
         MonthlySummaryViewModel(transactionRepository, uid)
     }
     val summaryState by summaryViewModel.state.collectAsStateWithLifecycle()
+    var showAiSummarySheet by remember { mutableStateOf(false) }
 
     val anomalyAlert by AnomalyAlertBus.current.collectAsStateWithLifecycle()
     val weeklyViewModel = viewModel(key = "weekly_$uid") {
@@ -95,10 +105,16 @@ fun DashboardScreen(
     }
     val weeklyState by weeklyViewModel.state.collectAsStateWithLifecycle()
 
-    // Refresca al volver de otra pantalla (ej. Editar Perfil) para no mostrar
+    // Recarga al volver de otra pantalla (ej. Editar Perfil) para no mostrar
     // nombre/foto/saldos obsoletos: el ViewModel queda cacheado por uid mientras
-    // vive la app, y su carga inicial solo corre una vez.
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // vive la app, y su carga inicial solo corre una vez. Usa loadDashboard() (no
+    // refresh()) a proposito: refresh() prende isRefreshing, que dispara el spinner
+    // visible de pull-to-refresh en CADA entrada a la pantalla, aunque los datos
+    // viejos ya cacheados sigan mostrandose debajo — se siente como que "vuelve a
+    // cargar todo" cuando en realidad los datos casi nunca cambiaron. loadDashboard()
+    // hace la misma revalidacion en silencio, sin spinner; isRefreshing/el spinner
+    // queda reservado para cuando el usuario arrastra a proposito para refrescar.
+    LaunchedEffect(Unit) { viewModel.loadDashboard() }
 
     val colors = LocalAppColors.current
     PullToRefreshBox(
@@ -117,7 +133,8 @@ fun DashboardScreen(
                     notificationCount = state.notificationCount,
                     onBellClick = { viewModel.marcarNotificacionesLeidas() },
                     onCameraClick = onNavigateToOcr,
-                    onAvatarClick = onNavigateToAjustes
+                    onAvatarClick = onNavigateToAjustes,
+                    onAiSummaryClick = { showAiSummarySheet = true }
                 )
             }
             item { Spacer(Modifier.height(4.dp)) }
@@ -134,32 +151,19 @@ fun DashboardScreen(
             }
 
             if (weeklyState.anomalies.isNotEmpty()) {
-                item { Box(Modifier.scrollRevealFade()) { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) } }
+                item { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) }
                 item { Spacer(Modifier.height(12.dp)) }
             }
             item {
-                Box(Modifier.scrollRevealFade()) {
-                    BalanceCard(
-                        mesActual    = state.mesActual,
-                        balance      = state.kpis.balance,
-                        ingresos     = state.kpis.ingresos,
-                        gastos       = state.kpis.gastos,
-                        ahorro       = state.kpis.ahorroPercent,
-                        saldoVisible = state.saldoVisible,
-                        onToggle     = { viewModel.toggleSaldoVisible() }
-                    )
-                }
-            }
-            item { Spacer(Modifier.height(20.dp)) }
-            item {
-                Box(Modifier.scrollRevealFade()) {
-                    MonthlySummarySection(
-                        state = summaryState,
-                        onGenerate = { summaryViewModel.generateSummary() },
-                        onRegenerate = { summaryViewModel.generateSummary(force = true) },
-                        onShare = onShareText
-                    )
-                }
+                BalanceCard(
+                    mesActual    = state.mesActual,
+                    balance      = state.kpis.balance,
+                    ingresos     = state.kpis.ingresos,
+                    gastos       = state.kpis.gastos,
+                    ahorro       = state.kpis.ahorroPercent,
+                    saldoVisible = state.saldoVisible,
+                    onToggle     = { viewModel.toggleSaldoVisible() }
+                )
             }
             item { Spacer(Modifier.height(24.dp)) }
             item {
@@ -174,33 +178,33 @@ fun DashboardScreen(
                 )
             }
             item { Spacer(Modifier.height(12.dp)) }
-            item { Box(Modifier.scrollRevealFade()) { ChartSection(data = state.chartData) } }
+            item { ChartSection(data = state.chartData) }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
             item { Spacer(Modifier.height(12.dp)) }
             if (state.presupuestos.isEmpty()) {
-                item { Box(Modifier.scrollRevealFade()) { EmptyPresupuestosState(onNavigateToPresupuestos) } }
+                item { EmptyPresupuestosState(onNavigateToPresupuestos) }
             } else {
-                items(state.presupuestos) { Box(Modifier.scrollRevealFade()) { PresupuestoCard(it) } }
+                items(state.presupuestos) { PresupuestoCard(it) }
             }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Meta principal", "Ver metas") { onNavigateToMetas() } }
             item { Spacer(Modifier.height(12.dp)) }
             val meta = state.metaPrincipal
             if (meta == null) {
-                item { Box(Modifier.scrollRevealFade()) { EmptyMetaState(onNavigateToMetas) } }
+                item { EmptyMetaState(onNavigateToMetas) }
             } else {
-                item { Box(Modifier.scrollRevealFade()) { MetaCard(meta) } }
+                item { MetaCard(meta) }
             }
             item { Spacer(Modifier.height(16.dp)) }
             if (state.consejoFinanciero.isNotBlank()) {
-                item { Box(Modifier.scrollRevealFade()) { ConsejoCard(state.consejoFinanciero) } }
+                item { ConsejoCard(state.consejoFinanciero) }
                 item { Spacer(Modifier.height(24.dp)) }
             }
             item { SectionHeader("Últimos movimientos", "Ver todos") { onNavigateToMovimientos() } }
             item { Spacer(Modifier.height(12.dp)) }
             item {
-                DarkCard(modifier = Modifier.padding(horizontal = 16.dp).scrollRevealFade()) {
+                DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
                     if (state.ultimosMovimientos.isEmpty()) {
                         EmptyMovimientosState()
                     } else {
@@ -213,6 +217,18 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (showAiSummarySheet) {
+        ModalBottomSheet(onDismissRequest = { showAiSummarySheet = false }) {
+            MonthlySummarySection(
+                state = summaryState,
+                onGenerate = { summaryViewModel.generateSummary() },
+                onRegenerate = { summaryViewModel.generateSummary(force = true) },
+                onShare = onShareText,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
         }
     }
 }
@@ -267,13 +283,14 @@ private fun MonthlySummarySection(
     state: MonthlySummaryState,
     onGenerate: () -> Unit,
     onRegenerate: () -> Unit,
-    onShare: (String) -> Unit
+    onShare: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     var collapsed by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = modifier.padding(horizontal = 16.dp)) {
         if (!state.hasRequested) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Button(
@@ -397,7 +414,8 @@ private fun DashboardHeader(
     notificationCount: Int,
     onBellClick: () -> Unit,
     onCameraClick: () -> Unit = {},
-    onAvatarClick: () -> Unit = {}
+    onAvatarClick: () -> Unit = {},
+    onAiSummaryClick: () -> Unit = {}
 ) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
@@ -419,15 +437,32 @@ private fun DashboardHeader(
             Spacer(Modifier.width(6.dp))
             Text("👋", fontSize = 18.sp)
         }
+        // Los 3 botones de accion (camara, IA, campana) van del mismo tamano entre si
+        // (antes la campana era 40dp y los otros dos 34dp, se notaba disparejo) y con
+        // un anillo animado (mismo shimmer que el borde de Centro Financiero) para
+        // que tengan la misma "vida" que el resto de la app. El avatar se mantiene
+        // mas grande que los 3: es la jerarquia visual (el usuario, no una accion).
+        val actionButtonSize = 36.dp
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(actionButtonSize)
                     .background(colors.surfaceSecondary, CircleShape)
+                    .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
                     .clickable(onClick = onCameraClick),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.CameraAlt, contentDescription = "Escanear recibo", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+            }
+            Box(
+                modifier = Modifier
+                    .size(actionButtonSize)
+                    .background(colors.surfaceSecondary, CircleShape)
+                    .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
+                    .clickable(onClick = onAiSummaryClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = "Resumen IA del mes", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
             }
             BadgedBox(badge = {
                 if (notificationCount > 0) Badge(containerColor = FinTrackColors.ErrorColor) {
@@ -436,17 +471,18 @@ private fun DashboardHeader(
             }) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(actionButtonSize)
                         .background(colors.surfaceSecondary, CircleShape)
+                        .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
                         .clickable(onClick = onBellClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(18.dp))
                 }
             }
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .background(
                         Brush.linearGradient(listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)),
                         CircleShape
@@ -480,6 +516,16 @@ private fun BalanceCard(
     gastos: Long, ahorro: Int, saldoVisible: Boolean, onToggle: () -> Unit
 ) {
     val montserrat = montserratFamily()
+    // Los dos circulos decorativos ya existian (fijos); ahora ondean lento, como el
+    // fondo del tema oscuro. Es el "movimiento" pedido sin mover la tarjeta ni su
+    // contenido de lugar — solo la textura de fondo respira.
+    val infiniteTransition = rememberInfiniteTransition(label = "balanceCardDrift")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * kotlin.math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 14_000, easing = LinearEasing)),
+        label = "balanceCardPhase"
+    )
     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
         Box(
             modifier = Modifier
@@ -488,11 +534,13 @@ private fun BalanceCard(
                 .background(FinTrackColors.GradientBalance)
         ) {
             Box(
-                Modifier.size(200.dp).offset(x = 140.dp, y = (-60).dp)
+                Modifier.size(200.dp)
+                    .offset(x = 140.dp + 14.dp * sin(phase), y = -60.dp + 10.dp * cos(phase))
                     .background(Color.White.copy(alpha = 0.04f), CircleShape)
             )
             Box(
-                Modifier.size(140.dp).offset(x = 160.dp, y = 60.dp)
+                Modifier.size(140.dp)
+                    .offset(x = 160.dp + 10.dp * sin(phase + kotlin.math.PI.toFloat()), y = 60.dp + 14.dp * cos(phase + kotlin.math.PI.toFloat() / 2f))
                     .background(Color.White.copy(alpha = 0.03f), CircleShape)
             )
 
@@ -542,13 +590,13 @@ private fun BalanceCard(
                     KpiPill(
                         label = "Ingresos",
                         value = if (saldoVisible) formatColonesCompacto(ingresos) else "₡•••",
-                        icon = Icons.Default.TrendingUp,
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
                         iconColor = FinTrackColors.GreenLight
                     )
                     KpiPill(
                         label = "Gastos",
                         value = if (saldoVisible) formatColonesCompacto(gastos) else "₡•••",
-                        icon = Icons.Default.TrendingDown,
+                        icon = Icons.AutoMirrored.Filled.TrendingDown,
                         iconColor = FinTrackColors.RedLight
                     )
                     Column(horizontalAlignment = Alignment.End) {
@@ -987,7 +1035,7 @@ private fun MovimientoRow(item: MovimientoItem) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (item.esIngreso) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                imageVector = if (item.esIngreso) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)
@@ -1040,7 +1088,7 @@ private fun SectionHeader(title: String, actionText: String, onAction: () -> Uni
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(actionText, color = FinTrackColors.GreenPrimary, fontSize = 12.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(16.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(16.dp))
         }
     }
 }

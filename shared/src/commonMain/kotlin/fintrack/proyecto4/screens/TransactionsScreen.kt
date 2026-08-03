@@ -19,8 +19,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -658,7 +658,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isIncome) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                imageVector = if (isIncome) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)

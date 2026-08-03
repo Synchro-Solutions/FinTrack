@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassNav
 
 private data class NavItem(
     val label: String,
@@ -70,9 +71,15 @@ fun FinTrackBottomBar(
         val navContainerColor = if (colors.isDark) colors.navBar else Color.Transparent
         val navContentColor = if (colors.isDark) colors.textSecondary else Color.White.copy(alpha = 0.7f)
         val navSelectedColor = if (colors.isDark) FinTrackColors.GreenPrimary else Color.White
+        // Solo en claro: ahí el fondo decorativo detras del nav es el degradado saturado
+        // en primary (contenido real que vale la pena esmerilar). En oscuro el glow no
+        // llega hasta esta altura, esmerilarlo no aportaria nada visible, asi que se
+        // mantiene con su superficie opaca normal.
+        val navModifier = if (colors.isDark) Modifier else Modifier.glassNav()
         NavigationBar(
             containerColor = navContainerColor,
-            tonalElevation = 0.dp
+            tonalElevation = 0.dp,
+            modifier = navModifier
         ) {
             navItems.forEach { item ->
                 val selected = currentScreen == item.screen

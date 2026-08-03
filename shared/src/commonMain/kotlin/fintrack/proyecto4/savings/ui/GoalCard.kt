@@ -47,7 +47,7 @@ fun GoalCard(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth().glassCard(),
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).glassCard(),
         color = Color.Transparent,
         shape = RoundedCornerShape(22.dp),
         tonalElevation = 0.dp

@@ -389,7 +389,7 @@ private fun SummaryCard(
 ) {
     val colors = LocalAppColors.current
     Card(
-        modifier = Modifier.fillMaxWidth().glassCard(),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).glassCard(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)

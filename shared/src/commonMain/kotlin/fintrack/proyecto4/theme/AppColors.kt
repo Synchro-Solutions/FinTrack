@@ -22,9 +22,9 @@ data class AppColors(
 )
 
 val DarkAppColors = AppColors(
-    bg               = Color(0xFF112620),
-    surface          = Color(0xFF102C26),
-    surfaceSecondary = Color(0xFF15352E),
+    bg               = Color(0xFF1C4038),
+    surface          = Color(0xFF254F44),
+    surfaceSecondary = Color(0xFF2F6153),
     primary          = Color(0xFF62C9A7),
     primaryDark      = Color(0xFF41A87F),
     primaryLight     = Color(0xFF91D9C1),
@@ -32,7 +32,7 @@ val DarkAppColors = AppColors(
     textSecondary    = Color(0xFF8FB3A9),
     divider          = Color(0xFF1E3A33),
     border           = Color(0x33E7F4EE),
-    navBar           = Color(0xFF102C26),
+    navBar           = Color(0xFF254F44),
     isDark           = true
 )
 

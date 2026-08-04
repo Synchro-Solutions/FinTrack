@@ -1,5 +1,7 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -671,15 +673,19 @@ private fun BarChart(data: List<MonthlyChartData>) {
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Bottom
     ) {
-        data.forEach { item ->
+        data.forEachIndexed { index, item ->
+            // Stagger por mes: cada columna arranca un poco despues que la anterior,
+            // para que el crecimiento se lea de izquierda a derecha en vez de todas
+            // las barras subiendo a la vez.
+            val barDelay = index * 70
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.Bottom,
                     modifier = Modifier.height(maxH)
                 ) {
-                    GradientBar(fraction = item.ingresos / maxVal, width = 11.dp, brush = FinTrackColors.GradientGreenV)
-                    GradientBar(fraction = item.gastos / maxVal, width = 11.dp, brush = FinTrackColors.GradientRedV)
+                    GradientBar(fraction = item.ingresos / maxVal, width = 11.dp, brush = FinTrackColors.GradientGreenV, delayMillis = barDelay)
+                    GradientBar(fraction = item.gastos / maxVal, width = 11.dp, brush = FinTrackColors.GradientRedV, delayMillis = barDelay + 60)
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(item.mes, color = colors.textSecondary, fontSize = 10.sp, fontFamily = montserrat)
@@ -689,11 +695,19 @@ private fun BarChart(data: List<MonthlyChartData>) {
 }
 
 @Composable
-private fun GradientBar(fraction: Float, width: Dp, brush: Brush) {
+private fun GradientBar(fraction: Float, width: Dp, brush: Brush, delayMillis: Int = 0) {
+    val targetFraction = fraction.coerceIn(0.03f, 1f)
+    val animatedFraction = remember { Animatable(0f) }
+    LaunchedEffect(targetFraction) {
+        animatedFraction.animateTo(
+            targetValue = targetFraction,
+            animationSpec = tween(durationMillis = 650, delayMillis = delayMillis, easing = FastOutSlowInEasing)
+        )
+    }
     Box(
         modifier = Modifier
             .width(width)
-            .fillMaxHeight(fraction.coerceIn(0.03f, 1f))
+            .fillMaxHeight(animatedFraction.value.coerceIn(0.001f, 1f))
             .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
             .background(brush)
     )

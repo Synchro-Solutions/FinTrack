@@ -82,6 +82,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.haze)
             implementation(libs.haze.materials)
+            implementation(libs.confettikit)
         }
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)

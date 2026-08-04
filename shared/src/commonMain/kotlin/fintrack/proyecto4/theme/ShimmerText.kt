@@ -11,14 +11,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.util.lerp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.drawWithCache
 
 /**
  * Texto con un brillo (shimmer) que barre de derecha a izquierda, en bucle continuo
@@ -111,5 +117,55 @@ fun shimmerBorderBrush(
         colors = listOf(baseColor, accentColor, accentColor, baseColor),
         start = Offset(centerX - bandHalfWidth, 0f),
         end = Offset(centerX + bandHalfWidth, 0f)
+    )
+}
+
+/**
+ * Mismo barrido animado que [ShimmerText] pero aplicado a un [Icon] en vez de texto:
+ * el icono se pinta primero en [baseColor] y luego se le superpone el brillo con
+ * `BlendMode.SrcAtop`, así que el barrido solo tiñe los pixeles del icono, no el
+ * cuadrado completo. El sweep se escala al tamaño real del icono (en vez de valores
+ * fijos como en el texto) para que se vea proporcional sin importar el `size` usado.
+ */
+@Composable
+fun ShimmerIcon(
+    imageVector: ImageVector,
+    contentDescription: String?,
+    baseColor: Color,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    intensity: Float = 1f
+) {
+    val transition = rememberInfiniteTransition(label = "iconShimmer")
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = (2600 / intensity).toInt(), easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "iconShimmerProgress"
+    )
+    Icon(
+        imageVector = imageVector,
+        contentDescription = contentDescription,
+        tint = baseColor,
+        modifier = modifier
+            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+            .drawWithCache {
+                val sweep = size.width * 1.6f
+                val centerX = lerp(sweep, -sweep, progress)
+                val bandHalfWidth = size.width * 0.9f * intensity
+                val diagonalTilt = size.height * 0.5f
+                val brush = Brush.linearGradient(
+                    colors = listOf(baseColor, accentColor, accentColor, baseColor),
+                    start = Offset(centerX - bandHalfWidth, -diagonalTilt),
+                    end = Offset(centerX + bandHalfWidth, diagonalTilt)
+                )
+                onDrawWithContent {
+                    drawContent()
+                    drawRect(brush = brush, blendMode = BlendMode.SrcAtop)
+                }
+            }
     )
 }

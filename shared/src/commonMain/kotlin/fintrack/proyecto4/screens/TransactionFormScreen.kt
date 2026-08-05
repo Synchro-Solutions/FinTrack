@@ -895,7 +895,7 @@ private fun ReceiptPickerButtons(
             onClick = onTakePhotoClick,
             modifier = Modifier.weight(1f).height(48.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
         ) {
             Icon(
                 imageVector = Icons.Default.CameraAlt,

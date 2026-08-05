@@ -171,7 +171,7 @@ fun TransactionDetailScreen(
                         .fillMaxWidth()
                         .height(180.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(colors.surface)
+                        .glassCard()
                 )
             }
 

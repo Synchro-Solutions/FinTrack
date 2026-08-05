@@ -8,6 +8,7 @@ import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.savings.remote.SavingsFirestoreRepository
+import fintrack.proyecto4.ai.SavingsPlan
 import kotlinx.datetime.LocalDate
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -68,7 +69,8 @@ class SavingsRepository(
         category: GoalCategory,
         colorName: GoalColor,
         priority: GoalPriority,
-        notes: String
+        notes: String,
+        savingsPlan: SavingsPlan? = null
     ): Result<SavingsGoal> {
         if (name.isBlank()) {
             return Result.failure(
@@ -114,7 +116,25 @@ class SavingsRepository(
             category = category,
             colorName = colorName,
             priority = priority,
-            notes = notes.trim()
+            notes = notes.trim(),
+
+            aiMonthlySaving =
+                savingsPlan?.monthlySaving,
+
+            aiCategoriesToReduce =
+                savingsPlan
+                    ?.categoriesToReduce
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotBlank() }
+                    ?.distinct()
+                    ?.take(3)
+                    ?: emptyList(),
+
+            aiExplanation =
+                savingsPlan
+                    ?.explanation
+                    ?.trim()
+                    .orEmpty()
         )
 
         return try {

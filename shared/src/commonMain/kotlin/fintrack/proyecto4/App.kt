@@ -60,7 +60,11 @@ import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
+import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalHazeState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
@@ -68,20 +72,53 @@ import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
+// Se mapean todos los roles usados por componentes Material3 sin color explicito
+// (labels de campos, iconos deshabilitados, outlines, etc.) para que nada quede
+// heredando el gris por defecto de Material3 en vez de la paleta oficial.
 private val DarkColorScheme = darkColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
-    background   = DarkAppColors.bg,
-    surface      = DarkAppColors.surface,
-    onBackground = DarkAppColors.textPrimary,
-    onSurface    = DarkAppColors.textPrimary
+    primary             = DarkAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = DarkAppColors.primaryDark,
+    onPrimaryContainer  = Color.White,
+    secondary           = DarkAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = DarkAppColors.surfaceSecondary,
+    onSecondaryContainer = DarkAppColors.textPrimary,
+    tertiary            = DarkAppColors.primaryLight,
+    onTertiary          = DarkAppColors.bg,
+    background          = DarkAppColors.bg,
+    onBackground        = DarkAppColors.textPrimary,
+    surface             = DarkAppColors.surface,
+    onSurface           = DarkAppColors.textPrimary,
+    surfaceVariant      = DarkAppColors.surfaceSecondary,
+    onSurfaceVariant    = DarkAppColors.textSecondary,
+    outline             = DarkAppColors.border,
+    outlineVariant      = DarkAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
-    background   = LightAppColors.bg,
-    surface      = LightAppColors.surface,
-    onBackground = LightAppColors.textPrimary,
-    onSurface    = LightAppColors.textPrimary
+    primary             = LightAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = LightAppColors.primaryLight,
+    onPrimaryContainer  = LightAppColors.textPrimary,
+    secondary           = LightAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = LightAppColors.surfaceSecondary,
+    onSecondaryContainer = LightAppColors.textPrimary,
+    tertiary            = LightAppColors.primaryDark,
+    onTertiary          = Color.White,
+    background          = LightAppColors.bg,
+    onBackground        = LightAppColors.textPrimary,
+    surface             = LightAppColors.surface,
+    onSurface           = LightAppColors.textPrimary,
+    surfaceVariant      = LightAppColors.surfaceSecondary,
+    onSurfaceVariant    = LightAppColors.textSecondary,
+    outline             = LightAppColors.border,
+    outlineVariant      = LightAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 /**
@@ -155,20 +192,29 @@ fun App(
             val ocrAssistantViewModel = remember {
                 OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
             }
+            val hazeState = remember { HazeState() }
 
-            CompositionLocalProvider(LocalNavController provides navController) {
-                Scaffold(
-                    containerColor = appColors.bg,
-                    bottomBar = {
-                        FinTrackBottomBar(
-                            currentScreen = currentScreen,
-                            visible = showBottomBar,
-                            onTabSelected = { screen ->
-                                if (screen != currentScreen) navController.replace(screen)
-                            }
-                        )
-                    }
-                ) { innerPadding ->
+            CompositionLocalProvider(
+                LocalNavController provides navController,
+                LocalHazeState provides hazeState
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    FinTrackAppBackground(
+                        colors = appColors,
+                        modifier = Modifier.fillMaxSize().hazeSource(state = hazeState)
+                    )
+                    Scaffold(
+                        containerColor = Color.Transparent,
+                        bottomBar = {
+                            FinTrackBottomBar(
+                                currentScreen = currentScreen,
+                                visible = showBottomBar,
+                                onTabSelected = { screen ->
+                                    if (screen != currentScreen) navController.replace(screen)
+                                }
+                            )
+                        }
+                    ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         modifier = Modifier.padding(innerPadding)
@@ -213,17 +259,14 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
-                                onNavigateToIngreso = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
-                                },
-                                onNavigateToGasto = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                onNavigateToOcr = {
+                                    ocrAssistantViewModel.reset()
+                                    navController.navigate(Screen.OcrAssistant)
                                 },
                                 onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
-                                onNavigateToMetas = { navController.replace(Screen.Metas) },
-                                onNavigateToChat = { navController.navigate(Screen.AiChat) },
+                                onNavigateToMetas = { navController.navigate(Screen.Metas) },
                                 onShareText = onShareText
                             )
 
@@ -310,7 +353,9 @@ fun App(
                             onBack = { navController.goBack() },
                             onSaved = { navController.replace(Screen.Presupuestos) }
                         )
-                        is Screen.Metas -> MetasScreen()
+                        is Screen.Metas -> MetasScreen(
+                            onBack = { navController.goBack() }
+                        )
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
@@ -343,6 +388,10 @@ fun App(
                             transactionRepository = transactionRepository,
                             budgetRepository = budgetRepository
                         )
+                        is Screen.Reportes -> CalculatorPlaceholderScreen(
+                            title = "Reportes",
+                            description = "Aqui van los reportes financieros."
+                        )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }
                         )
@@ -373,6 +422,7 @@ fun App(
                             description = "Aqui va el historial de calculos guardados."
                         )
                         }
+                    }
                     }
                 }
             }

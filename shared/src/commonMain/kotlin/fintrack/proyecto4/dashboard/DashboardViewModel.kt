@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -169,7 +170,7 @@ class DashboardViewModel(
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val result = mutableListOf<MonthlyChartData>()
         for (offset in 5 downTo 0) {
-            var monthNum = today.monthNumber - offset
+            var monthNum = today.month.number - offset
             var year = today.year
             if (monthNum <= 0) { monthNum += 12; year-- }
             val label = Month(monthNum).toSpanishLabel().take(3)

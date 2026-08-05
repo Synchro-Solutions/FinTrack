@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +23,7 @@ import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
@@ -64,7 +65,7 @@ fun TransactionDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
-        modifier = Modifier.fillMaxSize().background(colors.bg)
+        modifier = Modifier.fillMaxSize()
     ) {
         ScreenHeader(
             title = "Detalle de movimiento",
@@ -90,7 +91,7 @@ fun TransactionDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(colors.surface)
+                    .glassCard()
                     .padding(vertical = 24.dp, horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -103,9 +104,9 @@ fun TransactionDetailScreen(
                 ) {
                     Icon(
                         imageVector = if (transaction.type == TransactionType.INCOME) {
-                            Icons.Default.TrendingUp
+                            Icons.AutoMirrored.Filled.TrendingUp
                         } else {
-                            Icons.Default.TrendingDown
+                            Icons.AutoMirrored.Filled.TrendingDown
                         },
                         contentDescription = null,
                         tint = accentColor,
@@ -160,24 +161,26 @@ fun TransactionDetailScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                enabled = !isDeleting,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = FinTrackColors.ErrorColor)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (isDeleting) "Eliminando..." else "Eliminar movimiento",
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = montserratFamily()
-                )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = !isDeleting,
+                    modifier = Modifier.height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = FinTrackColors.ErrorColor)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (isDeleting) "Eliminando..." else "Eliminar movimiento",
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserratFamily()
+                    )
+                }
             }
         }
     }
@@ -239,7 +242,7 @@ private fun DetailInfoCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         content = content
     )

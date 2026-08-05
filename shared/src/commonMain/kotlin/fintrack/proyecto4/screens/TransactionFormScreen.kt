@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
@@ -32,6 +32,7 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.MaxDescriptionLength
@@ -51,6 +52,7 @@ import kotlin.time.Clock
 
 /** Rojo para Gasto, verde para Ingreso — mismo acento que ya usan TransactionsScreen/
  *  TransactionDetailScreen/DashboardScreen para distinguir movimientos por tipo. */
+@Composable
 private fun typeAccentColor(type: TransactionType): Color =
     if (type == TransactionType.EXPENSE) FinTrackColors.ErrorColor else FinTrackColors.GreenPrimary
 
@@ -90,7 +92,6 @@ fun TransactionFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionHeader(
             title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
@@ -259,7 +260,7 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
  * salía gris casi ilegible sobre la tarjeta blanca forzada del picker.
  */
 private val LightDatePickerColorScheme = lightColorScheme(
-    primary = FinTrackColors.GreenPrimary,
+    primary = LightAppColors.primary,
     onPrimary = Color.White,
     background = Color.White,
     surface = Color.White,
@@ -371,7 +372,7 @@ private fun TransactionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.ArrowBack,
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Volver",
             tint = colors.textPrimary,
             modifier = Modifier
@@ -508,7 +509,7 @@ private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(16.dp),
         content = content
     )
@@ -771,16 +772,17 @@ private fun SaveTransactionButton(
         else -> "Guardar ingreso"
     }
 
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .fillMaxWidth()
+            .defaultMinSize(minWidth = 200.dp)
             .height(54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = FinTrackColors.GreenPrimary,
-            disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
+            containerColor = FinTrackColors.GreenDark,
+            disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.45f)
         )
     ) {
         if (isSaving) {
@@ -798,6 +800,7 @@ private fun SaveTransactionButton(
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFamily()
         )
+    }
     }
 }
 

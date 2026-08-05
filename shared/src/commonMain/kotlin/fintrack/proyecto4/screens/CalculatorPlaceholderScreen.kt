@@ -26,7 +26,6 @@ fun CalculatorPlaceholderScreen(title: String, description: String) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
             .padding(horizontal = 16.dp, vertical = 18.dp)
     ) {
         Row(

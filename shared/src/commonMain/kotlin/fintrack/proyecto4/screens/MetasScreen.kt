@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,16 +26,19 @@ import fintrack.proyecto4.savings.ui.CreateGoalDialog
 import fintrack.proyecto4.savings.ui.EditGoalDialog
 import fintrack.proyecto4.savings.ui.GoalCard
 import fintrack.proyecto4.savings.ui.GoalCompletedDialog
+import fintrack.proyecto4.savings.ui.GoalConfetti
 import fintrack.proyecto4.savings.ui.GoalDetailDialog
 import fintrack.proyecto4.savings.viewmodel.GoalFilter
 import fintrack.proyecto4.savings.viewmodel.GoalSort
 import fintrack.proyecto4.savings.viewmodel.SavingsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.launch
 
 @Composable
-fun MetasScreen() {
+fun MetasScreen(onBack: () -> Unit = {}) {
     val colors = LocalAppColors.current
     val viewModel = remember { SavingsViewModel() }
     val scope = rememberCoroutineScope()
@@ -56,7 +60,6 @@ fun MetasScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -68,6 +71,16 @@ fun MetasScreen() {
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            item {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = colors.textPrimary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(onClick = onBack)
+                )
+            }
             item {
                 GoalsHeader(
                     activeCount = activeCount,
@@ -229,6 +242,8 @@ fun MetasScreen() {
     }
 
     completedGoal?.let { goal ->
+        GoalConfetti()
+
         GoalCompletedDialog(
             goal = goal,
             onDismiss = {
@@ -327,7 +342,7 @@ fun MetasScreen() {
                 ) {
                     Text(
                         text = "Aceptar",
-                        color = Color(0xFF22C55E)
+                        color = colors.primary
                     )
                 }
             }
@@ -344,9 +359,10 @@ private fun GoalsHeader(
 ) {
     val colors = LocalAppColors.current
     Column {
-        Text(
+        ShimmerText(
             text = "Mis metas",
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
@@ -356,9 +372,9 @@ private fun GoalsHeader(
         Text(
             text = "$activeCount / $maxGoals metas activas",
             color = if (canCreateGoal) {
-                Color(0xFF22C55E)
+                colors.primary
             } else {
-                Color(0xFFEF4444)
+                FinTrackColors.ErrorColor
             },
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold
@@ -378,7 +394,7 @@ private fun GoalsHeader(
             onClick = onCreateGoal,
             enabled = canCreateGoal,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF22C55E),
+                containerColor = colors.primaryDark,
                 contentColor = Color.White,
                 disabledContainerColor = colors.border,
                 disabledContentColor = colors.textSecondary
@@ -522,14 +538,14 @@ private fun GoalFilters(
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = colors.surface,
                         labelColor = colors.textSecondary,
-                        selectedContainerColor = Color(0xFF22C55E),
+                        selectedContainerColor = colors.primaryDark,
                         selectedLabelColor = Color.White
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = selectedFilter == filter,
                         borderColor = colors.border,
-                        selectedBorderColor = Color(0xFF22C55E)
+                        selectedBorderColor = colors.primaryDark
                     )
                 )
             }
@@ -605,7 +621,7 @@ private fun GoalSortSelector(
                             Text(
                                 text = sortLabel(sort),
                                 color = if (selectedSort == sort) {
-                                    Color(0xFF22C55E)
+                                    colors.primary
                                 } else {
                                     colors.textPrimary
                                 }
@@ -703,17 +719,4 @@ private fun emptyMessageForFilter(
     }
 }
 
-private fun formatMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
-
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatMoney(amount: Double): String = formatColones(amount)

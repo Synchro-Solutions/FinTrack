@@ -70,7 +70,6 @@ fun OcrConfirmScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Confirmar transacción OCR", onBack = onCancel)
 
@@ -225,8 +224,8 @@ fun OcrConfirmScreen(
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = FinTrackColors.GreenPrimary,
-                        disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
+                        containerColor = FinTrackColors.GreenDark,
+                        disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.45f)
                     )
                 ) {
                     if (isSaving) {

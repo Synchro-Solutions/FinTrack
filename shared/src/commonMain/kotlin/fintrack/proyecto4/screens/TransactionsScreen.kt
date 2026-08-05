@@ -19,8 +19,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +42,7 @@ import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
 import fintrack.proyecto4.transaction.DateScope
@@ -98,7 +99,6 @@ fun TransactionsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionsHeader(onAddClick = onAddClick)
 
@@ -186,9 +186,10 @@ private fun TransactionsHeader(onAddClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        ShimmerText(
             text = "Movimientos",
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat
@@ -487,7 +488,7 @@ private fun FiltersSheet(
                         .weight(1.3f)
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
                 ) {
                     Text(
                         text = "Aplicar filtros",
@@ -657,7 +658,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isIncome) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                imageVector = if (isIncome) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)
@@ -714,6 +715,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
 }
 
 /** US-50: resalta la subcadena de [text] que coincide con [query] (búsqueda por texto). */
+@Composable
 private fun highlightedText(text: String, query: String): AnnotatedString {
     val trimmed = query.trim()
     if (trimmed.isBlank()) return AnnotatedString(text)

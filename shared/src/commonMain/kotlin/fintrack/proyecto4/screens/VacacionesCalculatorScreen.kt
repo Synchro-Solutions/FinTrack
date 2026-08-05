@@ -52,6 +52,7 @@ import fintrack.proyecto4.screens.common.AppDatePickerDialog
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.vacation.VacationCalculationInput
@@ -63,6 +64,7 @@ import fintrack.proyecto4.vacation.VacationPaymentModality
 import fintrack.proyecto4.vacation.formatVacationDays
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -96,7 +98,6 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Calculadora de Vacaciones", onBack = onBack)
 
@@ -212,7 +213,7 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(colors.surface)
+                        .glassCard()
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -278,7 +279,7 @@ private fun SectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         if (title != null) {
@@ -538,7 +539,7 @@ private fun ResultTile(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -589,8 +590,8 @@ private fun BreakdownRow(label: String, value: String, montserrat: FontFamily) {
 }
 
 private fun formatLocalDateUs(date: LocalDate): String {
-    val month = date.monthNumber.toString().padStart(2, '0')
-    val day = date.dayOfMonth.toString().padStart(2, '0')
+    val month = date.month.number.toString().padStart(2, '0')
+    val day = date.day.toString().padStart(2, '0')
     return "$month/$day/${date.year}"
 }
 

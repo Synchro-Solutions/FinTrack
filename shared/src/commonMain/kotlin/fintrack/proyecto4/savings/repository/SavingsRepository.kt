@@ -9,6 +9,7 @@ import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.savings.remote.SavingsFirestoreRepository
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -351,12 +352,12 @@ class SavingsRepository(
             )
 
         val day =
-            date.dayOfMonth
+            date.day
                 .toString()
                 .padStart(2, '0')
 
         val month =
-            date.monthNumber
+            date.month.number
                 .toString()
                 .padStart(2, '0')
 
@@ -399,8 +400,8 @@ class SavingsRepository(
 
         return LocalDate(
             year = parts[2].toInt(),
-            monthNumber = parts[1].toInt(),
-            dayOfMonth = parts[0].toInt()
+            month = parts[1].toInt(),
+            day = parts[0].toInt()
         )
     }
 

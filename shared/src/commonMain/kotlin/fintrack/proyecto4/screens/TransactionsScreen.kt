@@ -45,7 +45,9 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.DateScope
+import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.Transaction
@@ -70,11 +72,12 @@ private const val VisibleCategoriesCount = 5
 @Composable
 fun TransactionsScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     onAddClick: () -> Unit = {},
     onTransactionClick: (Transaction) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
-    val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid) }
+    val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid, categoryRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
     var showFilters by remember { mutableStateOf(false) }

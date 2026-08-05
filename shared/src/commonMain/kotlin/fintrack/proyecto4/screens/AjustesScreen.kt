@@ -52,6 +52,8 @@ import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.theme.AppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.util.formatColones
 
 @Composable
@@ -71,7 +73,6 @@ fun AjustesScreen(
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     var notificaciones by remember { mutableStateOf(true) }
-    var biometrico by remember { mutableStateOf(false) }
 
     val initials = state.nombre
         .split(" ")
@@ -87,7 +88,6 @@ fun AjustesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(c.bg)
             .verticalScroll(rememberScrollState())
     ) {
         // ── TopBar ───────────────────────────────────────────────────────────
@@ -114,11 +114,12 @@ fun AjustesScreen(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Text(
+            ShimmerText(
                 text = "Ajustes",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = c.textPrimary
+                baseColor = c.textPrimary,
+                accentColor = c.primary
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -129,7 +130,7 @@ fun AjustesScreen(
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .background(c.surface)
+                .glassCard()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -198,25 +199,25 @@ fun AjustesScreen(
         SectionCard(c) {
             ToggleRow("Notificaciones push", notificaciones, { notificaciones = it }, c)
             RowDivider(c)
-            ToggleRow("Acceso biométrico", biometrico, { biometrico = it }, c)
-            RowDivider(c)
             ToggleRow("Tema oscuro", isDarkTheme, { onToggleTheme() }, c)
         }
 
         Spacer(Modifier.height(28.dp))
 
         // ── Cerrar sesión ────────────────────────────────────────────────────
-        Button(
-            onClick = onCerrarSesion,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
-        ) {
-            Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        // Fondo tintado (no transparente puro): un borde solo sobre el degradado
+        // del fondo se perdia, sin peso visual. El tinte rojo suave le da presencia
+        // sin volverlo un boton de "peligro" opaco tipo alerta.
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Button(
+                onClick = onCerrarSesion,
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.ErrorColor.copy(alpha = 0.14f)),
+                border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
+            ) {
+                Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
 
         Spacer(Modifier.height(28.dp))
@@ -244,7 +245,7 @@ private fun SectionCard(c: AppColors, content: @Composable () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(c.surface)
+            .glassCard()
     ) {
         content()
     }
@@ -289,7 +290,7 @@ private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = FinTrackColors.GreenPrimary,
+                checkedTrackColor = FinTrackColors.GreenDark,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = c.divider
             )

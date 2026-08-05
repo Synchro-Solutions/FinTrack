@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -26,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +45,9 @@ import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.shimmerBorderBrush
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 
@@ -53,17 +55,18 @@ internal data class FinancialMenuItem(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val iconBrush: Brush,
     val route: Screen
 )
 
 internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
-    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, FinTrackColors.GradientGreen, Screen.AguinaldoCalculator),
-    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, FinTrackColors.GradientGreen, Screen.CurrencyConverter),
-    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, FinTrackColors.GradientGreen, Screen.NetSalaryCalculator),
-    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.Default.Description, FinTrackColors.GradientGreen, Screen.LiquidacionCalculator),
-    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, FinTrackColors.GradientGreen, Screen.VacacionesCalculator),
-    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, FinTrackColors.GradientGreen, Screen.CalculationHistory)
+    FinancialMenuItem("Metas", "Tus objetivos de ahorro", Icons.Default.Star, Screen.Metas),
+    FinancialMenuItem("Reportes", "Analisis de tus finanzas", Icons.Default.BarChart, Screen.Reportes),
+    FinancialMenuItem("Aguinaldo", "Calcula tu aguinaldo estimado", Icons.Default.Star, Screen.AguinaldoCalculator),
+    FinancialMenuItem("Conversor", "CRC, USD, EUR y mas", Icons.Default.SwapHoriz, Screen.CurrencyConverter),
+    FinancialMenuItem("Salario neto", "Rebajas CCSS y renta", Icons.Default.AttachMoney, Screen.NetSalaryCalculator),
+    FinancialMenuItem("Liquidacion", "Estimado laboral al cesar", Icons.Default.Description, Screen.LiquidacionCalculator),
+    FinancialMenuItem("Vacaciones", "Dias pendientes de pago", Icons.Default.CalendarToday, Screen.VacacionesCalculator),
+    FinancialMenuItem("Historial", "Calculos guardados", Icons.Default.MoreHoriz, Screen.CalculationHistory)
 )
 
 @Composable
@@ -87,7 +90,6 @@ fun FinancialCenterScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         val compact = maxWidth < 360.dp
         val horizontalPadding = if (compact) 12.dp else 16.dp
@@ -103,11 +105,12 @@ fun FinancialCenterScreen(
                     .padding(horizontal = horizontalPadding)
                     .fillMaxWidth()
             ) {
-                Text(
+                ShimmerText(
                     text = "Centro financiero",
                     fontSize = if (compact) 22.sp else 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
+                    baseColor = colors.textPrimary,
+                    accentColor = colors.primary,
                     fontFamily = montserrat
                 )
                 Text(
@@ -161,15 +164,26 @@ private fun FinancialCard(
 ) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    // Fondo plano (como los botones circulares del nav: colors.surfaceSecondary, sin
+    // blur) en vez de glassCard(): el vidrio esmerilado se veia mal en estas tarjetas
+    // chicas de grilla. El borde verde animado (mismo ritmo que el shimmer de texto)
+    // es lo que le da personalidad ahora.
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .clip(RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.5.dp, FinTrackColors.GreenPrimary.copy(alpha = 0.6f)),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(
+            1.5.dp,
+            shimmerBorderBrush(
+                baseColor = FinTrackColors.GreenPrimary.copy(alpha = 0.35f),
+                accentColor = FinTrackColors.GreenPrimary
+            )
+        ),
+        colors = CardDefaults.cardColors(containerColor = colors.surfaceSecondary),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -185,7 +199,7 @@ private fun FinancialCard(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(item.iconBrush),
+                        .background(colors.primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -198,7 +212,7 @@ private fun FinancialCard(
 
                 if (badgeCount > 0) {
                     Badge(
-                        containerColor = FinTrackColors.GreenPrimary,
+                        containerColor = FinTrackColors.GreenDark,
                         contentColor = Color.White
                     ) {
                         Text(
@@ -218,9 +232,10 @@ private fun FinancialCard(
                 }
             }
 
-            Text(
+            ShimmerText(
                 text = item.title,
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 17.sp,
                 fontFamily = montserrat,

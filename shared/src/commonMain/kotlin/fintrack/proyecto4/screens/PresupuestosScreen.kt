@@ -48,6 +48,8 @@ import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.ai.SpendingForecastViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
@@ -73,12 +75,12 @@ fun PresupuestosScreen(
     }
 
     Scaffold(
-        containerColor = colors.bg,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNuevoPresupuesto,
-                containerColor = FinTrackColors.GreenPrimary,
+                containerColor = FinTrackColors.GreenDark,
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
@@ -96,9 +98,10 @@ fun PresupuestosScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-            Text(
+            ShimmerText(
                 text = "Presupuestos",
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 22.dp)
@@ -177,7 +180,7 @@ private fun SummaryCard(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -220,7 +223,7 @@ private fun BudgetCard(budget: BudgetItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(

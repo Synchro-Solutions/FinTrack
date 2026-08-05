@@ -63,6 +63,7 @@ sealed interface Screen {
     data object AiChat : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
+    data object Reportes : Screen
     data object AguinaldoCalculator : Screen
     data object CurrencyConverter : Screen
     data object NetSalaryCalculator : Screen
@@ -76,8 +77,8 @@ sealed interface Screen {
 val mainScreens = setOf(
     Screen.Dashboard,
     Screen.Movimientos,
+    Screen.AiChat,
     Screen.Presupuestos,
-    Screen.Metas,
     Screen.FinancialCenter
 )
 

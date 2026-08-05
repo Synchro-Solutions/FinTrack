@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +32,7 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.TransactionRepository
 
@@ -60,7 +61,6 @@ fun AiChatScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
             .imePadding()
     ) {
         ScreenHeader(
@@ -230,10 +230,17 @@ private fun ChatInputBar(
 
     val canSend = text.isNotBlank() && !isLoading
 
+    // En claro esta barra vive sobre la zona ya saturada en primary del degradado
+    // (FinTrackAppBackground), así que se integra con fondo/texto transparentes en
+    // vez de tapar con un panel opaco; en oscuro no hay ese verde detrás, se deja como
+    // estaba.
+    val isLight = !colors.isDark
+    val fieldTextColor = if (isLight) Color.White else colors.textPrimary
+
     Surface(
-        color = colors.surface,
+        color = if (isLight) Color.Transparent else colors.surface,
         tonalElevation = 0.dp,
-        shadowElevation = 8.dp
+        shadowElevation = if (isLight) 0.dp else 8.dp
     ) {
         Row(
             modifier = Modifier
@@ -247,21 +254,31 @@ private fun ChatInputBar(
                 onValueChange = { text = it },
                 modifier = Modifier.weight(1f),
                 placeholder = {
-                    Text(
-                        "Pregúntame algo...",
-                        color = colors.textSecondary,
-                        fontSize = 14.sp,
-                        fontFamily = montserrat
-                    )
+                    if (isLight) {
+                        ShimmerText(
+                            text = "Pregúntame algo...",
+                            baseColor = Color.White,
+                            accentColor = colors.primaryLight,
+                            fontSize = 14.sp,
+                            fontFamily = montserrat
+                        )
+                    } else {
+                        Text(
+                            "Pregúntame algo...",
+                            color = colors.textSecondary,
+                            fontSize = 14.sp,
+                            fontFamily = montserrat
+                        )
+                    }
                 },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = colors.bg,
-                    unfocusedContainerColor = colors.bg,
+                    focusedContainerColor = if (isLight) Color.Transparent else colors.bg,
+                    unfocusedContainerColor = if (isLight) Color.Transparent else colors.bg,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = colors.textPrimary,
-                    unfocusedTextColor = colors.textPrimary,
-                    cursorColor = FinTrackColors.GreenPrimary
+                    focusedTextColor = fieldTextColor,
+                    unfocusedTextColor = fieldTextColor,
+                    cursorColor = if (isLight) Color.White else FinTrackColors.GreenPrimary
                 ),
                 shape = RoundedCornerShape(24.dp),
                 singleLine = false,
@@ -298,7 +315,7 @@ private fun ChatInputBar(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Send,
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Enviar",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)

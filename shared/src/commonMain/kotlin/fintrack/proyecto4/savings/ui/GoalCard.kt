@@ -22,6 +22,8 @@ import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun GoalCard(
@@ -45,8 +47,8 @@ fun GoalCard(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = colors.surface,
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).glassCard(),
+        color = Color.Transparent,
         shape = RoundedCornerShape(22.dp),
         tonalElevation = 0.dp
     ) {
@@ -271,7 +273,7 @@ fun GoalCard(
                             colors =
                                 ButtonDefaults.buttonColors(
                                     containerColor =
-                                        FinTrackColors.GreenPrimary,
+                                        FinTrackColors.GreenDark,
                                     contentColor =
                                         FinTrackColors.White
                                 ),
@@ -374,6 +376,7 @@ private fun PriorityBadge(
     }
 }
 
+@Composable
 private fun goalAccentColor(
     color: GoalColor
 ): Color {
@@ -395,17 +398,4 @@ private fun goalAccentColor(
     }
 }
 
-private fun formatGoalMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
-
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatGoalMoney(amount: Double): String = formatColones(amount)

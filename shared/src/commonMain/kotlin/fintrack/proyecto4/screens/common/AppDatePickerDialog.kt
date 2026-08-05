@@ -55,6 +55,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
@@ -98,7 +99,7 @@ fun AppDatePickerDialog(
     val startDate = initialDate ?: today
 
     var selectedDate by rememberSaveable { mutableStateOf(startDate) }
-    var displayedYearMonth by rememberSaveable { mutableStateOf(YearMonth(startDate.year, startDate.monthNumber)) }
+    var displayedYearMonth by rememberSaveable { mutableStateOf(YearMonth(startDate.year, startDate.month.number)) }
     var mode by rememberSaveable { mutableStateOf(PickerMode.CALENDAR) }
     var showYearPicker by rememberSaveable { mutableStateOf(false) }
     var textInput by rememberSaveable { mutableStateOf(formatForInput(selectedDate)) }
@@ -172,7 +173,7 @@ fun AppDatePickerDialog(
                         parseInputDate(digits)?.let { parsed ->
                             if (!isOutOfRange(parsed)) {
                                 selectedDate = parsed
-                                displayedYearMonth = YearMonth(parsed.year, parsed.monthNumber)
+                                displayedYearMonth = YearMonth(parsed.year, parsed.month.number)
                                 textInputError = false
                             }
                         }
@@ -346,7 +347,7 @@ private fun DayCell(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = date.dayOfMonth.toString(),
+                text = date.day.toString(),
                 color = when {
                     selected -> FinTrackColors.White
                     disabled -> colors.textSecondary.copy(alpha = 0.4f)
@@ -476,12 +477,12 @@ private fun parseInputDate(text: String): LocalDate? {
 }
 
 private fun formatForInput(date: LocalDate): String {
-    val day = date.dayOfMonth.toString().padStart(2, '0')
-    val month = date.monthNumber.toString().padStart(2, '0')
+    val day = date.day.toString().padStart(2, '0')
+    val month = date.month.number.toString().padStart(2, '0')
     return "$day/$month/${date.year}"
 }
 
 private fun formatHeaderDate(date: LocalDate): String {
-    val month = MONTHS_SHORT[date.monthNumber - 1]
-    return "${date.dayOfMonth} $month ${date.year}"
+    val month = MONTHS_SHORT[date.month.number - 1]
+    return "${date.day} $month ${date.year}"
 }

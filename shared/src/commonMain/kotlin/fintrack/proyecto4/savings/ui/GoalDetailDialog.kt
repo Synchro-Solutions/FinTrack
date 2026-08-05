@@ -23,6 +23,7 @@ import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun GoalDetailDialog(
@@ -243,7 +244,7 @@ fun GoalDetailDialog(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(
                         containerColor =
-                            FinTrackColors.GreenPrimary,
+                            FinTrackColors.GreenDark,
                         contentColor =
                             FinTrackColors.White
                     ),
@@ -698,17 +699,4 @@ private fun DetailPriorityBadge(
     }
 }
 
-private fun formatDetailMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
-
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatDetailMoney(amount: Double): String = formatColones(amount)

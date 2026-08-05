@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -139,11 +140,6 @@ class WeeklyAnomalyViewModel(
             )
         }
     }
-}
-
-private fun formatColones(amount: Long): String {
-    val n = amount.toString().reversed().chunked(3).joinToString(" ").reversed()
-    return "₡$n"
 }
 
 private val ANOMALY_SYSTEM_PROMPT = """

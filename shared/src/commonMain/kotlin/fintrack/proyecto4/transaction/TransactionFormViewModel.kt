@@ -26,6 +26,7 @@ class TransactionFormViewModel(
     initialType: TransactionType = TransactionType.EXPENSE,
     private val editingTransaction: Transaction? = null,
     private val anomalyDetector: AnomalyDetector = AnomalyDetector(),
+    private val categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     private val uploadReceipt: suspend (String) -> Result<String> = {
         Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
     }
@@ -44,6 +45,22 @@ class TransactionFormViewModel(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
+    private val _customCategories = MutableStateFlow<List<CustomCategory>>(emptyList())
+    val customCategories: StateFlow<List<CustomCategory>> = _customCategories.asStateFlow()
+
+    private val _categoryFormError = MutableStateFlow<String?>(null)
+    val categoryFormError: StateFlow<String?> = _categoryFormError.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _customCategories.value = try {
+                categoryRepository.getCategories(uid)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+    }
+
     fun changeType(type: TransactionType) {
         _uiState.update { it.copy(type = type, selectedCategory = null, description = "") }
     }
@@ -59,6 +76,107 @@ class TransactionFormViewModel(
 
     fun selectCategory(category: String) {
         _uiState.update { it.copy(selectedCategory = category) }
+    }
+
+    fun clearCategoryFormError() {
+        _categoryFormError.value = null
+    }
+
+    /** Nombre ya usado por una categoría fija o personalizada del mismo tipo, excluyendo
+     *  [excludingId] (para permitir guardar una edición sin nombre, sin chocar consigo misma). */
+    private fun isDuplicateCategoryName(name: String, type: TransactionType, excludingId: String?): Boolean {
+        val fixed = if (type == TransactionType.EXPENSE) ExpenseCategories else IncomeCategories
+        val trimmed = name.trim()
+        val fixedClash = fixed.any { it.equals(trimmed, ignoreCase = true) }
+        val customClash = _customCategories.value.any {
+            it.id != excludingId && it.type == type && it.name.equals(trimmed, ignoreCase = true)
+        }
+        return fixedClash || customClash
+    }
+
+    fun createCategory(name: String, icon: String?, onSuccess: () -> Unit = {}) {
+        val trimmed = name.trim()
+        val type = _uiState.value.type
+        if (trimmed.isBlank()) {
+            _categoryFormError.value = "Ingresa un nombre para la categoría."
+            return
+        }
+        if (isDuplicateCategoryName(trimmed, type, excludingId = null)) {
+            _categoryFormError.value = "Ya tienes una categoría con este nombre"
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val created = categoryRepository.addCategory(
+                    uid,
+                    CustomCategory(name = trimmed, type = type, icon = icon?.trim()?.ifBlank { null })
+                )
+                _customCategories.update { it + created }
+                _categoryFormError.value = null
+                selectCategory(created.name)
+                onSuccess()
+            } catch (e: Exception) {
+                _categoryFormError.value = "No se pudo guardar la categoría. Intenta de nuevo."
+            }
+        }
+    }
+
+    fun updateCategory(original: CustomCategory, name: String, icon: String?, onSuccess: () -> Unit = {}) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) {
+            _categoryFormError.value = "Ingresa un nombre para la categoría."
+            return
+        }
+        if (isDuplicateCategoryName(trimmed, original.type, excludingId = original.id)) {
+            _categoryFormError.value = "Ya tienes una categoría con este nombre"
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val updated = original.copy(name = trimmed, icon = icon?.trim()?.ifBlank { null })
+                categoryRepository.updateCategory(uid, updated)
+                _customCategories.update { list -> list.map { if (it.id == updated.id) updated else it } }
+                _categoryFormError.value = null
+                // Si la categoría editada estaba seleccionada, refleja el nombre nuevo.
+                if (_uiState.value.selectedCategory == original.name) {
+                    selectCategory(updated.name)
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                _categoryFormError.value = "No se pudo guardar la categoría. Intenta de nuevo."
+            }
+        }
+    }
+
+    fun deleteCategory(category: CustomCategory) {
+        viewModelScope.launch {
+            try {
+                categoryRepository.deleteCategory(uid, category.id)
+                _customCategories.update { list -> list.filter { it.id != category.id } }
+                reassignTransactionsToFallback(category.name)
+                if (_uiState.value.selectedCategory == category.name) {
+                    _uiState.update { it.copy(selectedCategory = null) }
+                }
+            } catch (e: Exception) {
+                _categoryFormError.value = "No se pudo eliminar la categoría. Intenta de nuevo."
+            }
+        }
+    }
+
+    /** Al borrar una categoría personalizada, las transacciones que la usaban quedarían con
+     *  un nombre de categoría "huérfano" (ya no aparece en ningún selector). Se reasignan a
+     *  "Otro" — existe como categoría fija tanto para gastos como para ingresos — en vez de
+     *  dejarlas apuntando a algo que ya no existe. Si esto falla, no bloquea el borrado de la
+     *  categoría en sí; el usuario puede reasignar esas transacciones a mano después. */
+    private suspend fun reassignTransactionsToFallback(deletedCategoryName: String) {
+        try {
+            val affected = repository.getTransactions(uid).filter { it.category == deletedCategoryName }
+            affected.forEach { transaction ->
+                repository.updateTransaction(uid, transaction.copy(category = "Otro"))
+            }
+        } catch (e: Exception) {
+            // Silencioso a propósito, ver comentario de la función.
+        }
     }
 
     fun selectPaymentMethod(paymentMethod: PaymentMethod) {

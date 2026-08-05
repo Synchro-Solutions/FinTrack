@@ -36,7 +36,10 @@ data class TransactionsUiState(
     val categoryFilter: String? = null,
     val paymentMethodFilter: PaymentMethod? = null,
     val visibleCount: Int = PageSize,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** US-06: nombres de las categorías personalizadas del usuario (ambos tipos), para que
+     *  el filtro de categoría del historial también las ofrezca. */
+    val customCategoryNames: List<String> = emptyList()
 ) {
     /**
      * Catálogo completo de categorías de la app (no solo las que el usuario ya usó), para que
@@ -44,7 +47,7 @@ data class TransactionsUiState(
      * registrados.
      */
     val availableCategories: List<String>
-        get() = AllTransactionCategories
+        get() = (AllTransactionCategories + customCategoryNames).distinct()
 
     val filteredTransactions: List<Transaction>
         get() = transactions

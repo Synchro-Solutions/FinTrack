@@ -1,6 +1,11 @@
 package fintrack.proyecto4.savings.viewmodel
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import fintrack.proyecto4.ai.SavingsPlan
+import fintrack.proyecto4.ai.SavingsProjection
+import fintrack.proyecto4.ai.SavingsProjectionService
 import fintrack.proyecto4.savings.model.GoalCategory
 import fintrack.proyecto4.savings.model.GoalColor
 import fintrack.proyecto4.savings.model.GoalPriority
@@ -25,8 +30,11 @@ enum class GoalSort {
 }
 
 class SavingsViewModel(
-    private val repository: SavingsRepository = SavingsRepository()
+    private val repository: SavingsRepository = SavingsRepository(),
+    private val projectionService: SavingsProjectionService =
+        SavingsProjectionService()
 ) {
+
     var goals by mutableStateOf(repository.getGoals())
         private set
 
@@ -40,6 +48,22 @@ class SavingsViewModel(
         private set
 
     var selectedSort by mutableStateOf(GoalSort.MOST_RECENT)
+        private set
+
+    /*
+     * Estados de la proyección inteligente.
+     */
+
+    var selectedProjection by mutableStateOf<SavingsProjection?>(null)
+        private set
+
+    var projectionGoalId by mutableStateOf<String?>(null)
+        private set
+
+    var isGeneratingProjection by mutableStateOf(false)
+        private set
+
+    var projectionError by mutableStateOf<String?>(null)
         private set
 
     val activeGoals: List<SavingsGoal>
@@ -128,7 +152,9 @@ class SavingsViewModel(
     val visibleGoals: List<SavingsGoal>
         get() {
             val filteredGoals = when (selectedFilter) {
-                GoalFilter.ALL -> goals
+                GoalFilter.ALL -> {
+                    goals
+                }
 
                 GoalFilter.ACTIVE -> {
                     goals.filter {
@@ -223,6 +249,82 @@ class SavingsViewModel(
         )
     }
 
+    /*
+     * Genera la proyección inteligente de una meta.
+     */
+    suspend fun generateProjection(
+        goal: SavingsGoal
+    ): SavingsProjection? {
+        isGeneratingProjection = true
+        projectionError = null
+        projectionGoalId = goal.id
+
+        val contributions = getContributions(
+            goalId = goal.id
+        )
+
+        val result = projectionService.generateProjection(
+            goal = goal,
+            contributions = contributions
+        )
+
+        val projection = if (result.isSuccess) {
+            result.getOrNull()
+        } else {
+            /*
+             * Si Groq falla, se conserva la proyección
+             * matemática generada localmente.
+             */
+            try {
+                projectionService.calculateLocalProjection(
+                    goal = goal,
+                    contributions = contributions
+                )
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        if (projection != null) {
+            selectedProjection = projection
+            projectionError = null
+        } else {
+            selectedProjection = null
+            projectionError =
+                result.exceptionOrNull()?.message
+                    ?: "No fue posible generar la proyección."
+        }
+
+        isGeneratingProjection = false
+
+        return projection
+    }
+
+    /*
+     * Devuelve la proyección solamente si pertenece
+     * a la meta que se está consultando.
+     */
+    fun getProjectionForGoal(
+        goalId: String
+    ): SavingsProjection? {
+        return if (projectionGoalId == goalId) {
+            selectedProjection
+        } else {
+            null
+        }
+    }
+
+    fun clearProjection() {
+        selectedProjection = null
+        projectionGoalId = null
+        projectionError = null
+        isGeneratingProjection = false
+    }
+
+    fun clearProjectionError() {
+        projectionError = null
+    }
+
     suspend fun createGoal(
         name: String,
         targetAmountText: String,
@@ -231,7 +333,8 @@ class SavingsViewModel(
         category: GoalCategory,
         colorName: GoalColor,
         priority: GoalPriority,
-        notes: String
+        notes: String,
+        savingsPlan: SavingsPlan? = null
     ): Boolean {
         val amount = parseAmount(
             targetAmountText
@@ -252,7 +355,8 @@ class SavingsViewModel(
             category = category,
             colorName = colorName,
             priority = priority,
-            notes = notes
+            notes = notes,
+            savingsPlan = savingsPlan
         )
 
         return handleResult(result)
@@ -278,7 +382,13 @@ class SavingsViewModel(
             amount = amount
         )
 
-        return handleResult(result)
+        val success = handleResult(result)
+
+        if (success && projectionGoalId == goalId) {
+            clearProjection()
+        }
+
+        return success
     }
 
     suspend fun cancelGoal(
@@ -288,7 +398,13 @@ class SavingsViewModel(
             goalId
         )
 
-        return handleResult(result)
+        val success = handleResult(result)
+
+        if (success && projectionGoalId == goalId) {
+            clearProjection()
+        }
+
+        return success
     }
 
     suspend fun updateGoal(
@@ -312,7 +428,13 @@ class SavingsViewModel(
             notes = notes
         )
 
-        return handleResult(result)
+        val success = handleResult(result)
+
+        if (success && projectionGoalId == goalId) {
+            clearProjection()
+        }
+
+        return success
     }
 
     fun clearError() {

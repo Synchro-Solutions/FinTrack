@@ -36,18 +36,88 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.launch
+import fintrack.proyecto4.ai.SavingsAiService
+import fintrack.proyecto4.ai.SavingsPlan
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.savings.model.GoalCategory
+import fintrack.proyecto4.savings.model.GoalColor
+import fintrack.proyecto4.savings.model.GoalPriority
+import fintrack.proyecto4.savings.ui.GenerateSavingsPlanDialog
+import fintrack.proyecto4.savings.ui.SavingsPlanResultDialog
+import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.TransactionRepository
+import fintrack.proyecto4.transaction.TransactionType
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
+
+private data class PendingGoalData(
+    val name: String,
+    val amount: String,
+    val deadline: String?,
+    val icon: String,
+    val category: GoalCategory,
+    val colorName: GoalColor,
+    val priority: GoalPriority,
+    val notes: String
+)
 
 @Composable
-fun MetasScreen(onBack: () -> Unit = {}) {
+fun MetasScreen(
+    transactionRepository: TransactionRepository =
+        NoOpTransactionRepository(),
+    onBack: () -> Unit = {}
+) {
     val colors = LocalAppColors.current
     val viewModel = remember { SavingsViewModel() }
+    val savingsAiService = remember { SavingsAiService() }
     val scope = rememberCoroutineScope()
 
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
-    var detailGoal by remember { mutableStateOf<SavingsGoal?>(null) }
-    var editGoal by remember { mutableStateOf<SavingsGoal?>(null) }
-    var completedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    val uid = AuthClient.currentUserId() ?: ""
+
+    var showCreateDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedGoal by remember {
+        mutableStateOf<SavingsGoal?>(null)
+    }
+
+    var detailGoal by remember {
+        mutableStateOf<SavingsGoal?>(null)
+    }
+
+    var editGoal by remember {
+        mutableStateOf<SavingsGoal?>(null)
+    }
+
+    var completedGoal by remember {
+        mutableStateOf<SavingsGoal?>(null)
+    }
+
+    /*
+     * Estados relacionados con el plan generado por IA.
+     */
+    var pendingGoal by remember {
+        mutableStateOf<PendingGoalData?>(null)
+    }
+
+    var showGeneratePlanDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var generatedPlan by remember {
+        mutableStateOf<SavingsPlan?>(null)
+    }
+
+    var isGeneratingPlan by remember {
+        mutableStateOf(false)
+    }
+
+    var aiErrorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadGoals()
@@ -56,6 +126,122 @@ fun MetasScreen(onBack: () -> Unit = {}) {
     val activeCount = viewModel.activeGoals.size
     val maxGoals = 10
     val canCreateGoal = activeCount < maxGoals
+
+    /*
+     * Guarda definitivamente la meta pendiente.
+     */
+    suspend fun savePendingGoal(): Boolean {
+        val goal = pendingGoal ?: return false
+
+        val saved = viewModel.createGoal(
+            name = goal.name,
+            targetAmountText = goal.amount,
+            deadline = goal.deadline,
+            iconName = goal.icon,
+            category = goal.category,
+            colorName = goal.colorName,
+            priority = goal.priority,
+            notes = goal.notes,
+            savingsPlan = generatedPlan
+        )
+
+        if (saved) {
+            pendingGoal = null
+            generatedPlan = null
+            aiErrorMessage = null
+            showGeneratePlanDialog = false
+        }
+
+        return saved
+    }
+
+    /*
+     * Genera el plan utilizando las transacciones reales del usuario.
+     */
+    suspend fun generatePlan() {
+        val goal = pendingGoal ?: return
+
+        val targetAmount = goal.amount.toDoubleOrNull()
+
+        if (targetAmount == null || targetAmount <= 0.0) {
+            aiErrorMessage =
+                "El monto objetivo debe ser mayor que cero."
+            return
+        }
+
+        isGeneratingPlan = true
+        aiErrorMessage = null
+
+        try {
+            val transactions =
+                transactionRepository.getTransactions(uid)
+
+            val totalIncome = transactions
+                .filter {
+                    it.type == TransactionType.INCOME
+                }
+                .sumOf {
+                    it.amount
+                }
+
+            val totalExpenses = transactions
+                .filter {
+                    it.type == TransactionType.EXPENSE
+                }
+                .sumOf {
+                    it.amount
+                }
+
+            val expensesByCategory = transactions
+                .filter {
+                    it.type == TransactionType.EXPENSE
+                }
+                .groupBy {
+                    it.category
+                }
+                .mapValues { entry ->
+                    entry.value.sumOf {
+                        it.amount
+                    }
+                }
+
+            val requiredMonthlySaving =
+                calculateRequiredMonthlySaving(
+                    targetAmount = targetAmount,
+                    deadline = goal.deadline
+                )
+
+            val result =
+                savingsAiService.generateSavingsPlan(
+                    goalName = goal.name,
+                    targetAmount = targetAmount,
+                    deadline = goal.deadline,
+                    requiredMonthlySaving =
+                        requiredMonthlySaving,
+                    totalIncome = totalIncome,
+                    totalExpenses = totalExpenses,
+                    expensesByCategory =
+                        expensesByCategory
+                )
+
+            result
+                .onSuccess { plan ->
+                    generatedPlan = plan
+                    showGeneratePlanDialog = false
+                }
+                .onFailure { error ->
+                    aiErrorMessage =
+                        error.message
+                            ?: "No fue posible generar el plan."
+                }
+        } catch (e: Exception) {
+            aiErrorMessage =
+                e.message
+                    ?: "No fue posible analizar tus movimientos."
+        } finally {
+            isGeneratingPlan = false
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -69,7 +255,8 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                 end = 20.dp,
                 bottom = 32.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(14.dp)
         ) {
             item {
                 Icon(
@@ -97,23 +284,30 @@ fun MetasScreen(onBack: () -> Unit = {}) {
             item {
                 SavingsSummary(
                     totalSaved = viewModel.totalSaved,
-                    activeGoals = viewModel.activeGoals.size,
-                    completedGoals = viewModel.completedGoals.size,
-                    averageProgress = viewModel.averageProgress
+                    activeGoals =
+                        viewModel.activeGoals.size,
+                    completedGoals =
+                        viewModel.completedGoals.size,
+                    averageProgress =
+                        viewModel.averageProgress
                 )
             }
 
             item {
                 GoalFilters(
-                    selectedFilter = viewModel.selectedFilter,
-                    onFilterSelected = viewModel::selectFilter
+                    selectedFilter =
+                        viewModel.selectedFilter,
+                    onFilterSelected =
+                        viewModel::selectFilter
                 )
             }
 
             item {
                 GoalSortSelector(
-                    selectedSort = viewModel.selectedSort,
-                    onSortSelected = viewModel::selectSort
+                    selectedSort =
+                        viewModel.selectedSort,
+                    onSortSelected =
+                        viewModel::selectSort
                 )
             }
 
@@ -124,10 +318,12 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 30.dp),
-                            contentAlignment = Alignment.Center
+                            contentAlignment =
+                                Alignment.Center
                         ) {
                             CircularProgressIndicator(
-                                color = FinTrackColors.GreenPrimary
+                                color =
+                                    FinTrackColors.GreenPrimary
                             )
                         }
                     }
@@ -136,8 +332,10 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                 viewModel.goals.isEmpty() -> {
                     item {
                         EmptyGoalsMessage(
-                            title = "Crea tu primera meta",
-                            description = "Empieza a ahorrar para cumplir tus objetivos."
+                            title =
+                                "Crea tu primera meta",
+                            description =
+                                "Empieza a ahorrar para cumplir tus objetivos."
                         )
                     }
                 }
@@ -146,17 +344,21 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                     item {
                         EmptyGoalsMessage(
                             title = "No hay metas",
-                            description = emptyMessageForFilter(
-                                viewModel.selectedFilter
-                            )
+                            description =
+                                emptyMessageForFilter(
+                                    viewModel.selectedFilter
+                                )
                         )
                     }
                 }
 
                 else -> {
                     items(
-                        items = viewModel.visibleGoals,
-                        key = { it.id }
+                        items =
+                            viewModel.visibleGoals,
+                        key = {
+                            it.id
+                        }
                     ) { goal ->
                         GoalCard(
                             goal = goal,
@@ -173,10 +375,17 @@ fun MetasScreen(onBack: () -> Unit = {}) {
         }
     }
 
+    /*
+     * Formulario para crear la meta.
+     *
+     * Al presionar Guardar todavía no se almacena.
+     * Primero se pregunta si desea generar un plan.
+     */
     if (showCreateDialog) {
         CreateGoalDialog(
             onDismiss = {
                 showCreateDialog = false
+                pendingGoal = null
                 viewModel.clearError()
             },
             onSave = {
@@ -189,22 +398,79 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                     priority,
                     notes ->
 
-                scope.launch {
-                    val saved = viewModel.createGoal(
-                        name = name,
-                        targetAmountText = amount,
-                        deadline = deadline,
-                        iconName = icon,
-                        category = category,
-                        colorName = colorName,
-                        priority = priority,
-                        notes = notes
-                    )
+                pendingGoal = PendingGoalData(
+                    name = name,
+                    amount = amount,
+                    deadline = deadline,
+                    icon = icon,
+                    category = category,
+                    colorName = colorName,
+                    priority = priority,
+                    notes = notes
+                )
 
-                    if (saved) {
-                        showCreateDialog = false
-                    }
+                showCreateDialog = false
+                showGeneratePlanDialog = true
+                generatedPlan = null
+                aiErrorMessage = null
+            }
+        )
+    }
+
+    /*
+     * Pregunta si se desea generar el plan.
+     */
+    if (
+        showGeneratePlanDialog &&
+        pendingGoal != null
+    ) {
+        GenerateSavingsPlanDialog(
+            isLoading = isGeneratingPlan,
+            errorMessage = aiErrorMessage,
+            onGeneratePlan = {
+                scope.launch {
+                    generatePlan()
                 }
+            },
+            onSkip = {
+                scope.launch {
+                    savePendingGoal()
+                }
+            },
+            onDismiss = {
+                if (!isGeneratingPlan) {
+                    showGeneratePlanDialog = false
+                    pendingGoal = null
+                    aiErrorMessage = null
+                }
+            }
+        )
+    }
+
+    /*
+     * Resultado generado por la IA.
+     */
+    generatedPlan?.let { plan ->
+        SavingsPlanResultDialog(
+            plan = plan,
+            onAccept = {
+                scope.launch {
+                    savePendingGoal()
+                }
+            },
+            onRegenerate = {
+                generatedPlan = null
+                showGeneratePlanDialog = true
+                aiErrorMessage = null
+
+                scope.launch {
+                    generatePlan()
+                }
+            },
+            onCancel = {
+                generatedPlan = null
+                pendingGoal = null
+                aiErrorMessage = null
             }
         )
     }
@@ -218,22 +484,27 @@ fun MetasScreen(onBack: () -> Unit = {}) {
             },
             onSave = { amount ->
                 scope.launch {
-                    val saved = viewModel.addContribution(
-                        goalId = goal.id,
-                        amountText = amount
-                    )
+                    val saved =
+                        viewModel.addContribution(
+                            goalId = goal.id,
+                            amountText = amount
+                        )
 
                     if (saved) {
                         selectedGoal = null
 
-                        val updatedGoal = viewModel.goals
-                            .firstOrNull { it.id == goal.id }
+                        val updatedGoal =
+                            viewModel.goals
+                                .firstOrNull {
+                                    it.id == goal.id
+                                }
 
                         if (
                             updatedGoal?.status ==
                             GoalStatus.COMPLETED
                         ) {
-                            completedGoal = updatedGoal
+                            completedGoal =
+                                updatedGoal
                         }
                     }
                 }
@@ -253,27 +524,59 @@ fun MetasScreen(onBack: () -> Unit = {}) {
     }
 
     detailGoal?.let { selectedDetailGoal ->
-        val currentGoal = viewModel.goals
-            .firstOrNull { it.id == selectedDetailGoal.id }
-            ?: selectedDetailGoal
+        val currentGoal =
+            viewModel.goals
+                .firstOrNull {
+                    it.id == selectedDetailGoal.id
+                }
+                ?: selectedDetailGoal
 
         GoalDetailDialog(
             goal = currentGoal,
-            contributions = viewModel.getContributions(
-                currentGoal.id
-            ),
+
+            contributions =
+                viewModel.getContributions(
+                    currentGoal.id
+                ),
+
+            projection =
+                viewModel.getProjectionForGoal(
+                    currentGoal.id
+                ),
+
+            isGeneratingProjection =
+                viewModel.isGeneratingProjection,
+
+            projectionError =
+                viewModel.projectionError,
+
+            onGenerateProjection = {
+                scope.launch {
+                    viewModel.generateProjection(
+                        currentGoal
+                    )
+                }
+            },
+
             onDismiss = {
                 detailGoal = null
+                viewModel.clearProjection()
             },
+
             onCancelGoal = { goal ->
                 scope.launch {
-                    val cancelled = viewModel.cancelGoal(goal.id)
+                    val cancelled =
+                        viewModel.cancelGoal(
+                            goal.id
+                        )
 
                     if (cancelled) {
                         detailGoal = null
+                        viewModel.clearProjection()
                     }
                 }
             },
+
             onEditGoal = {
                 editGoal = it
             }
@@ -296,16 +599,17 @@ fun MetasScreen(onBack: () -> Unit = {}) {
                     notes ->
 
                 scope.launch {
-                    val updated = viewModel.updateGoal(
-                        goalId = goal.id,
-                        name = name,
-                        deadline = deadline,
-                        iconName = icon,
-                        category = category,
-                        colorName = colorName,
-                        priority = priority,
-                        notes = notes
-                    )
+                    val updated =
+                        viewModel.updateGoal(
+                            goalId = goal.id,
+                            name = name,
+                            deadline = deadline,
+                            iconName = icon,
+                            category = category,
+                            colorName = colorName,
+                            priority = priority,
+                            notes = notes
+                        )
 
                     if (updated) {
                         editGoal = null
@@ -349,7 +653,6 @@ fun MetasScreen(onBack: () -> Unit = {}) {
         )
     }
 }
-
 @Composable
 private fun GoalsHeader(
     activeCount: Int,
@@ -720,3 +1023,46 @@ private fun emptyMessageForFilter(
 }
 
 private fun formatMoney(amount: Double): String = formatColones(amount)
+
+private fun calculateRequiredMonthlySaving(
+    targetAmount: Double,
+    deadline: String?
+): Double {
+    if (deadline.isNullOrBlank()) {
+        return targetAmount
+    }
+
+    return try {
+        val parts = deadline.split("/")
+
+        if (parts.size != 3) {
+            return targetAmount
+        }
+
+        val deadlineDate = LocalDate(
+            year = parts[2].toInt(),
+            monthNumber = parts[1].toInt(),
+            dayOfMonth = parts[0].toInt()
+        )
+
+        val today = Clock.System.todayIn(
+            TimeZone.currentSystemDefault()
+        )
+
+        val remainingDays =
+            deadlineDate.toEpochDays() -
+                    today.toEpochDays()
+
+        if (remainingDays <= 0) {
+            targetAmount
+        } else {
+            val remainingMonths =
+                ((remainingDays + 29) / 30)
+                    .coerceAtLeast(1)
+
+            targetAmount / remainingMonths
+        }
+    } catch (_: Exception) {
+        targetAmount
+    }
+}

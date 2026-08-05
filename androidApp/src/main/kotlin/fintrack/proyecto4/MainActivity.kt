@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onShareText = { text -> shareText(text) },
                 onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) },
+                onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
                 onGoogleSignInRequested = { requestGoogleIdToken() }
             )
         }

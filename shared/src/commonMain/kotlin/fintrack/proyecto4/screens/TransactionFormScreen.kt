@@ -1,5 +1,6 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,11 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
@@ -65,7 +69,13 @@ fun TransactionFormScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
-    onOcrClick: () -> Unit = {}
+    onOcrClick: () -> Unit = {},
+    cameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
+        { _, onCancel -> onCancel() },
+    onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
+    uploadReceiptPhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
+    }
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     // remember (no viewModel(key=...)) a propósito: cada visita a esta pantalla debe partir
@@ -74,12 +84,19 @@ fun TransactionFormScreen(
     // entre visitas consecutivas de "nueva transacción" (misma key), dejando los campos de
     // la transacción anterior visibles al crear una nueva.
     val viewModel = remember(uid, editingTransaction?.id, initialType) {
-        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction)
+        TransactionFormViewModel(
+            repository = transactionRepository,
+            uid = uid,
+            initialType = initialType,
+            editingTransaction = editingTransaction,
+            uploadReceipt = uploadReceiptPhoto
+        )
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    var showReceiptCamera by remember { mutableStateOf(false) }
     val colors = LocalAppColors.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -169,6 +186,19 @@ fun TransactionFormScreen(
                 )
             }
 
+            FormCard {
+                FormSectionTitle("Comprobante")
+                Spacer(Modifier.height(10.dp))
+                ReceiptSection(
+                    receiptUrl = state.receiptUrl,
+                    isUploading = state.isUploadingReceipt,
+                    onTakePhotoClick = { showReceiptCamera = true },
+                    onPickImageClick = {
+                        onPickReceiptImage { path -> if (path != null) viewModel.onReceiptPicked(path) }
+                    }
+                )
+            }
+
             if (saveError != null) {
                 Text(
                     text = saveError ?: "",
@@ -181,7 +211,7 @@ fun TransactionFormScreen(
             SaveTransactionButton(
                 type = state.type,
                 editing = viewModel.isEditing,
-                enabled = state.isValid && !isSaving,
+                enabled = state.isValid && !isSaving && !state.isUploadingReceipt,
                 isSaving = isSaving,
                 onClick = {
                     val editing = viewModel.isEditing
@@ -212,6 +242,13 @@ fun TransactionFormScreen(
             .align(Alignment.BottomCenter)
             .padding(16.dp)
     )
+
+    if (showReceiptCamera) {
+        cameraContent(
+            { path -> showReceiptCamera = false; viewModel.onReceiptPicked(path) },
+            { showReceiptCamera = false }
+        )
+    }
     }
 
     if (showDatePicker) {
@@ -650,6 +687,118 @@ internal fun PaymentMethodSection(
                     onClick = { onPaymentMethodSelected(method) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ReceiptSection(
+    receiptUrl: String?,
+    isUploading: Boolean,
+    onTakePhotoClick: () -> Unit,
+    onPickImageClick: () -> Unit
+) {
+    val colors = LocalAppColors.current
+
+    when {
+        isUploading -> Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = FinTrackColors.GreenPrimary,
+                strokeWidth = 2.dp
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = "Subiendo comprobante...",
+                color = colors.textSecondary,
+                fontSize = 13.sp,
+                fontFamily = montserratFamily()
+            )
+        }
+
+        receiptUrl != null -> Column {
+            AsyncImage(
+                model = receiptUrl,
+                contentDescription = "Comprobante adjunto",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+            Spacer(Modifier.height(12.dp))
+            ReceiptPickerButtons(
+                takePhotoLabel = "Reemplazar",
+                onTakePhotoClick = onTakePhotoClick,
+                onPickImageClick = onPickImageClick
+            )
+        }
+
+        else -> ReceiptPickerButtons(
+            takePhotoLabel = "Tomar foto",
+            onTakePhotoClick = onTakePhotoClick,
+            onPickImageClick = onPickImageClick
+        )
+    }
+}
+
+@Composable
+private fun ReceiptPickerButtons(
+    takePhotoLabel: String,
+    onTakePhotoClick: () -> Unit,
+    onPickImageClick: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(
+            onClick = onTakePhotoClick,
+            modifier = Modifier.weight(1f).height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = takePhotoLabel,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
+
+        OutlinedButton(
+            onClick = onPickImageClick,
+            modifier = Modifier.weight(1f).height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, colors.border),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Description,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Elegir de galería",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
         }
     }
 }

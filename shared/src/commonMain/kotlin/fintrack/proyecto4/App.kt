@@ -109,6 +109,9 @@ fun App(
     onUploadProfilePhoto: suspend (String) -> Result<String> = {
         Result.failure(UnsupportedOperationException("Subida de fotos no configurada"))
     },
+    onUploadReceiptPhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
+    },
     onGoogleSignInRequested: suspend () -> Result<String> = {
         Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
     }
@@ -240,7 +243,10 @@ fun App(
                             onOcrClick = {
                                 ocrAssistantViewModel.reset()
                                 navController.navigate(Screen.OcrAssistant)
-                            }
+                            },
+                            cameraContent = ocrCameraContent,
+                            onPickReceiptImage = onPickReceiptImage,
+                            uploadReceiptPhoto = onUploadReceiptPhoto
                         )
 
                         is Screen.TransactionDetail -> TransactionDetailScreen(

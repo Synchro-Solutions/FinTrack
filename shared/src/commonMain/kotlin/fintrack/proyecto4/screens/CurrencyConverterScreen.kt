@@ -211,7 +211,6 @@ fun CurrencyConverterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Conversor de divisas", onBack = onBack)
 
@@ -305,9 +304,10 @@ private fun FieldErrorText(text: String, montserrat: FontFamily) {
 }
 
 /**
- * Chip para seleccionar una moneda; azul cuando está seleccionado, gris oscuro si no.
- * Bandera y código apilados verticalmente para que quepan 5 chips en una sola fila sin scroll,
- * repartiéndose el ancho disponible en partes iguales ([Modifier.weight]).
+ * Chip para seleccionar una moneda; verde (color oficial de botones) cuando está
+ * seleccionado, superficie secundaria si no. Bandera y código apilados verticalmente
+ * para que quepan 5 chips en una sola fila sin scroll, repartiéndose el ancho
+ * disponible en partes iguales ([Modifier.weight]).
  */
 @Composable
 fun CurrencyChip(
@@ -321,7 +321,7 @@ fun CurrencyChip(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) FinTrackColors.BlueMeta else colors.surfaceSecondary)
+            .background(if (selected) FinTrackColors.GreenDark else colors.surfaceSecondary)
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -404,7 +404,7 @@ private fun AmountField(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             ),
-            cursorBrush = SolidColor(FinTrackColors.BlueMeta),
+            cursorBrush = SolidColor(FinTrackColors.GreenPrimary),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -412,7 +412,7 @@ private fun AmountField(
                 if (value.isEmpty()) {
                     Text(
                         text = "0",
-                        color = FinTrackColors.WhiteAlpha40,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium
@@ -424,7 +424,7 @@ private fun AmountField(
     }
 }
 
-/** Tarjeta azul grande y centrada con el resultado de la conversión. */
+/** Tarjeta grande y centrada (gradiente verde de marca) con el resultado de la conversión. */
 @Composable
 fun ConversionResultCard(
     amount: Double,
@@ -439,7 +439,7 @@ fun ConversionResultCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(FinTrackColors.GradientMeta)
+            .background(FinTrackColors.GradientGreen)
             .padding(vertical = 24.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

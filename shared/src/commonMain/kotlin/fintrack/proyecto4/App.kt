@@ -16,6 +16,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import fintrack.proyecto4.theme.FinTrackTypography
 import androidx.compose.runtime.*
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,7 +43,9 @@ import fintrack.proyecto4.screens.AjustesScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
+import fintrack.proyecto4.screens.EditarPerfilScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
+import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
@@ -53,29 +58,69 @@ import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
+import fintrack.proyecto4.screens.VacacionesCalculatorScreen
 import fintrack.proyecto4.theme.DarkAppColors
+import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors
+import fintrack.proyecto4.theme.LocalHazeState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.transaction.CustomCategoryRepository
+import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
 
+// Se mapean todos los roles usados por componentes Material3 sin color explicito
+// (labels de campos, iconos deshabilitados, outlines, etc.) para que nada quede
+// heredando el gris por defecto de Material3 en vez de la paleta oficial.
 private val DarkColorScheme = darkColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
-    background   = DarkAppColors.bg,
-    surface      = DarkAppColors.surface,
-    onBackground = DarkAppColors.textPrimary,
-    onSurface    = DarkAppColors.textPrimary
+    primary             = DarkAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = DarkAppColors.primaryDark,
+    onPrimaryContainer  = Color.White,
+    secondary           = DarkAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = DarkAppColors.surfaceSecondary,
+    onSecondaryContainer = DarkAppColors.textPrimary,
+    tertiary            = DarkAppColors.primaryLight,
+    onTertiary          = DarkAppColors.bg,
+    background          = DarkAppColors.bg,
+    onBackground        = DarkAppColors.textPrimary,
+    surface             = DarkAppColors.surface,
+    onSurface           = DarkAppColors.textPrimary,
+    surfaceVariant      = DarkAppColors.surfaceSecondary,
+    onSurfaceVariant    = DarkAppColors.textSecondary,
+    outline             = DarkAppColors.border,
+    outlineVariant      = DarkAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary      = FinTrackColors.GreenPrimary,
-    background   = LightAppColors.bg,
-    surface      = LightAppColors.surface,
-    onBackground = LightAppColors.textPrimary,
-    onSurface    = LightAppColors.textPrimary
+    primary             = LightAppColors.primary,
+    onPrimary           = Color.White,
+    primaryContainer    = LightAppColors.primaryLight,
+    onPrimaryContainer  = LightAppColors.textPrimary,
+    secondary           = LightAppColors.primary,
+    onSecondary         = Color.White,
+    secondaryContainer  = LightAppColors.surfaceSecondary,
+    onSecondaryContainer = LightAppColors.textPrimary,
+    tertiary            = LightAppColors.primaryDark,
+    onTertiary          = Color.White,
+    background          = LightAppColors.bg,
+    onBackground        = LightAppColors.textPrimary,
+    surface             = LightAppColors.surface,
+    onSurface           = LightAppColors.textPrimary,
+    surfaceVariant      = LightAppColors.surfaceSecondary,
+    onSurfaceVariant    = LightAppColors.textSecondary,
+    outline             = LightAppColors.border,
+    outlineVariant      = LightAppColors.divider,
+    error               = FinTrackColors.ErrorColor,
+    onError             = Color.White
 )
 
 /**
@@ -94,14 +139,31 @@ fun App(
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     onPickProfilePhoto: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
-    onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" }
+    onRecognizeReceiptText: suspend (imagePath: String) -> String = { "" },
+    onShareText: (String) -> Unit = {},
+    onUploadProfilePhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de fotos no configurada"))
+    },
+    onUploadReceiptPhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
+    },
+    onGoogleSignInRequested: suspend () -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
+    }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
+
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory()) }
+            .build()
+    }
 
     LaunchedEffect(Unit) {
         val token = authRepository.getStoredToken()
@@ -136,20 +198,29 @@ fun App(
             val ocrAssistantViewModel = remember {
                 OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
             }
+            val hazeState = remember { HazeState() }
 
-            CompositionLocalProvider(LocalNavController provides navController) {
-                Scaffold(
-                    containerColor = appColors.bg,
-                    bottomBar = {
-                        FinTrackBottomBar(
-                            currentScreen = currentScreen,
-                            visible = showBottomBar,
-                            onTabSelected = { screen ->
-                                if (screen != currentScreen) navController.replace(screen)
-                            }
-                        )
-                    }
-                ) { innerPadding ->
+            CompositionLocalProvider(
+                LocalNavController provides navController,
+                LocalHazeState provides hazeState
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    FinTrackAppBackground(
+                        colors = appColors,
+                        modifier = Modifier.fillMaxSize().hazeSource(state = hazeState)
+                    )
+                    Scaffold(
+                        containerColor = Color.Transparent,
+                        bottomBar = {
+                            FinTrackBottomBar(
+                                currentScreen = currentScreen,
+                                visible = showBottomBar,
+                                onTabSelected = { screen ->
+                                    if (screen != currentScreen) navController.replace(screen)
+                                }
+                            )
+                        }
+                    ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         modifier = Modifier.padding(innerPadding)
@@ -157,6 +228,7 @@ fun App(
                         when (screen) {
                             is Screen.Login -> LoginScreen(
                                 authRepository = authRepository,
+                                onGoogleSignInClick = onGoogleSignInRequested,
                                 onLoginSuccess = {
                                     scope.launch {
                                         val uid = AuthClient.currentUserId()
@@ -167,6 +239,11 @@ fun App(
                                         else navController.replace(Screen.Onboarding)
                                     }
                                 }
+                            )
+
+                            is Screen.ForgotPassword -> ForgotPasswordScreen(
+                                authRepository = authRepository,
+                                onBack = { navController.goBack() }
                             )
 
                             is Screen.Onboarding -> {
@@ -188,23 +265,22 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
-                                onNavigateToIngreso = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
-                                },
-                                onNavigateToGasto = {
-                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                onNavigateToOcr = {
+                                    ocrAssistantViewModel.reset()
+                                    navController.navigate(Screen.OcrAssistant)
                                 },
                                 onNavigateToAjustes = { navController.navigate(Screen.Ajustes) },
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
-                                onNavigateToMetas = { navController.replace(Screen.Metas) },
-                                onNavigateToChat = { navController.navigate(Screen.AiChat) }
+                                onNavigateToMetas = { navController.navigate(Screen.Metas) },
+                                onShareText = onShareText
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(
                             initialType = screen.initialType,
                             editingTransaction = screen.editingTransaction,
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onBack = {
                                 navController.goBack()
                             },
@@ -214,7 +290,10 @@ fun App(
                             onOcrClick = {
                                 ocrAssistantViewModel.reset()
                                 navController.navigate(Screen.OcrAssistant)
-                            }
+                            },
+                            cameraContent = ocrCameraContent,
+                            onPickReceiptImage = onPickReceiptImage,
+                            uploadReceiptPhoto = onUploadReceiptPhoto
                         )
 
                         is Screen.TransactionDetail -> TransactionDetailScreen(
@@ -254,6 +333,7 @@ fun App(
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onCancel = {
                                 // Screen.OcrAssistant solo se alcanza desde el formulario manual
                                 // (ver onOcrClick más arriba), así que siempre queda justo debajo
@@ -267,6 +347,7 @@ fun App(
 
                         is Screen.Movimientos -> TransactionsScreen(
                             transactionRepository = transactionRepository,
+                            categoryRepository = categoryRepository,
                             onAddClick = {
                                 navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
                             },
@@ -276,6 +357,7 @@ fun App(
                         )
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
+                            transactionRepository = transactionRepository,
                             onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
                         )
                         is Screen.NuevoPresupuesto -> CreateBudgetScreen(
@@ -283,7 +365,9 @@ fun App(
                             onBack = { navController.goBack() },
                             onSaved = { navController.replace(Screen.Presupuestos) }
                         )
-                        is Screen.Metas -> MetasScreen()
+                        is Screen.Metas -> MetasScreen(
+                            onBack = { navController.goBack() }
+                        )
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
@@ -298,10 +382,28 @@ fun App(
                             onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onboardingRepository = onboardingRepository,
                             onBack = { navController.goBack() },
-                            onCerrarSesion = { navController.replace(Screen.Login) }
+                            onCerrarSesion = { navController.replace(Screen.Login) },
+                            onEditProfile = { navController.navigate(Screen.EditarPerfil) }
                         )
 
-                        is Screen.FinancialCenter -> FinancialCenterScreen(historyCount = 0)
+                        is Screen.EditarPerfil -> EditarPerfilScreen(
+                            uid = AuthClient.currentUserId() ?: "",
+                            onboardingRepository = onboardingRepository,
+                            onPickPhoto = onPickProfilePhoto,
+                            uploadPhoto = onUploadProfilePhoto,
+                            onBack = { navController.goBack() },
+                            onSaved = { navController.goBack() }
+                        )
+
+                        is Screen.FinancialCenter -> FinancialCenterScreen(
+                            historyCount = 0,
+                            transactionRepository = transactionRepository,
+                            budgetRepository = budgetRepository
+                        )
+                        is Screen.Reportes -> CalculatorPlaceholderScreen(
+                            title = "Reportes",
+                            description = "Aqui van los reportes financieros."
+                        )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }
                         )
@@ -320,9 +422,8 @@ fun App(
                             title = "Cesantia",
                             description = "Aqui va la calculadora de cesantia."
                         )
-                        is Screen.VacacionesCalculator -> CalculatorPlaceholderScreen(
-                            title = "Vacaciones",
-                            description = "Aqui va la calculadora de vacaciones."
+                        is Screen.VacacionesCalculator -> VacacionesCalculatorScreen(
+                            onBack = { navController.goBack() }
                         )
                         is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
                             title = "Preaviso",
@@ -333,6 +434,7 @@ fun App(
                             description = "Aqui va el historial de calculos guardados."
                         )
                         }
+                    }
                     }
                 }
             }

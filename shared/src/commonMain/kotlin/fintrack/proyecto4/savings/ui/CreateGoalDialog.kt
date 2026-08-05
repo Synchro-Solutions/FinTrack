@@ -264,7 +264,7 @@ fun CreateGoalDialog(
                 enabled = name.isNotBlank() &&
                         targetAmount.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinTrackColors.GreenPrimary,
+                    containerColor = FinTrackColors.GreenDark,
                     contentColor = FinTrackColors.White,
                     disabledContainerColor =
                         colors.surfaceSecondary,
@@ -343,7 +343,7 @@ private fun CategorySelector(
                     labelColor =
                         colors.textSecondary,
                     selectedContainerColor =
-                        FinTrackColors.GreenPrimary,
+                        FinTrackColors.GreenDark,
                     selectedLabelColor =
                         FinTrackColors.White
                 ),
@@ -353,7 +353,7 @@ private fun CategorySelector(
                     borderColor =
                         colors.border,
                     selectedBorderColor =
-                        FinTrackColors.GreenPrimary
+                        FinTrackColors.GreenDark
                 )
             )
         }
@@ -388,7 +388,7 @@ private fun PrioritySelector(
                     labelColor =
                         colors.textSecondary,
                     selectedContainerColor =
-                        FinTrackColors.GreenPrimary,
+                        FinTrackColors.GreenDark,
                     selectedLabelColor =
                         FinTrackColors.White
                 ),
@@ -398,7 +398,7 @@ private fun PrioritySelector(
                     borderColor =
                         colors.border,
                     selectedBorderColor =
-                        FinTrackColors.GreenPrimary
+                        FinTrackColors.GreenDark
                 )
             )
         }
@@ -485,6 +485,7 @@ private fun priorityLabel(
     }
 }
 
+@Composable
 private fun goalColorValue(
     color: GoalColor
 ): Color {

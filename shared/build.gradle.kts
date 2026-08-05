@@ -74,10 +74,15 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(compose.materialIconsExtended)
             implementation(libs.gitlive.firebase.firestore)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.haze)
+            implementation(libs.haze.materials)
+            implementation(libs.confettikit)
         }
         iosMain.dependencies {
             implementation(libs.gitlive.firebase.common)
@@ -90,6 +95,8 @@ kotlin {
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
             implementation(libs.ktor.client.js)
+            implementation(libs.gitlive.firebase.common)
+            implementation(libs.gitlive.firebase.auth)
         }
     }
 }

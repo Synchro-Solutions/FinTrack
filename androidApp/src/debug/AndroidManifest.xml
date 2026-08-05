@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Solo se fusiona en builds debug. Permite tráfico HTTP en cleartext para poder
+        conectar con el Firebase Local Emulator Suite (10.0.2.2) cuando
+        FirebaseEmulatorConfig.USE_EMULATOR = true. Los builds release no incluyen esto.
+    -->
+    <application android:usesCleartextTraffic="true" />
+
+</manifest>

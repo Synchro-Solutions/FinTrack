@@ -25,8 +25,16 @@ mlkitTextRecognition = "16.0.1"
 firebase-bom = "34.4.0"
 google-services = "4.4.4"
 gitlive-firebase = "2.3.0"
+coil = "3.2.0"
+androidx-credentials = "1.6.0"
+googleid = "1.1.1"
+haze = "1.7.2"
+confettikit = "0.8.0"
 
 [libraries]
+confettikit = { module = "io.github.vinceglb:confettikit", version.ref = "confettikit" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -55,6 +63,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 gitlive-firebase-firestore = { module = "dev.gitlive:firebase-firestore", version.ref = "gitlive-firebase" }
+gitlive-firebase-app = { module = "dev.gitlive:firebase-app", version.ref = "gitlive-firebase" }
 camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
 camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
@@ -66,6 +75,11 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "androidx-credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "androidx-credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

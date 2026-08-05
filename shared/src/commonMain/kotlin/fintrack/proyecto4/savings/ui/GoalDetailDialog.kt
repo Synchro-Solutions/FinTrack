@@ -25,6 +25,7 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.ai.ProjectionStatus
 import fintrack.proyecto4.ai.SavingsProjection
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun GoalDetailDialog(
@@ -129,6 +130,7 @@ fun GoalDetailDialog(
                         trackColor =
                             colors.surfaceSecondary
                     )
+
                 }
 
                 GoalAmountsSummary(
@@ -264,7 +266,7 @@ fun GoalDetailDialog(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(
                         containerColor =
-                            FinTrackColors.GreenPrimary,
+                            FinTrackColors.GreenDark,
                         contentColor =
                             FinTrackColors.White
                     ),
@@ -613,7 +615,7 @@ private fun DetailInformationCard(
     valueColor: Color? = null
 ) {
     val colors = LocalAppColors.current
-
+    val resolvedValueColor = valueColor ?: colors.textPrimary
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -627,7 +629,7 @@ private fun DetailInformationCard(
 
         Text(
             text = value,
-            color = valueColor ?: colors.textPrimary,
+            color = resolvedValueColor,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1164,17 +1166,4 @@ private fun ProjectionAmountCard(
     }
 }
 
-private fun formatDetailMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
-
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
-
-    return "₡$formatted"
-}
+private fun formatDetailMoney(amount: Double): String = formatColones(amount)

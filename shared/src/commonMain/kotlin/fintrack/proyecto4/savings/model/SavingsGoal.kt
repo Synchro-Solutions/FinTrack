@@ -237,8 +237,8 @@ data class SavingsGoal(
         return if (parts.size == 3) {
             LocalDate(
                 year = parts[2].toInt(),
-                monthNumber = parts[1].toInt(),
-                dayOfMonth = parts[0].toInt()
+                month = parts[1].toInt(),
+                day = parts[0].toInt()
             )
         } else {
             LocalDate.parse(value)

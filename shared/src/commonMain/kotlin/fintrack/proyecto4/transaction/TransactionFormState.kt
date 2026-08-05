@@ -82,7 +82,9 @@ data class TransactionFormState(
     val description: String = "",
     val selectedCategory: String? = null,
     val paymentMethod: PaymentMethod? = null,
-    val date: String = todayAsFormFieldDate()
+    val date: String = todayAsFormFieldDate(),
+    val receiptUrl: String? = null,
+    val isUploadingReceipt: Boolean = false
 ) {
     val categories: List<String>
         get() = when (type) {

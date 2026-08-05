@@ -22,6 +22,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -190,6 +191,7 @@ class DashboardViewModel(
             state.copy(
                 isLoading = false,
                 userName = profile?.name ?: "Usuario",
+                fotoUrl = profile?.photoPath,
                 mesActual = currentMonthLabel(),
 
                 kpis = KpiData(

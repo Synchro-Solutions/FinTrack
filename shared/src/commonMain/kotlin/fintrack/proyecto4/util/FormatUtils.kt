@@ -1,19 +1,22 @@
 package fintrack.proyecto4.util
 
 /**
- * Formatea un monto en colones costarricenses con separador de miles (espacio).
- * Ejemplo: 781000 → "₡781 000", -5000 → "-₡5 000"
+ * Formatea un monto en colones costarricenses con separador de miles (punto).
+ * Ejemplo: 781000 → "₡781.000", -5000 → "-₡5.000"
  */
 fun formatColones(amount: Long): String {
     val abs = if (amount < 0) -amount else amount
     val str = abs.toString()
     val result = StringBuilder()
     str.reversed().forEachIndexed { i, c ->
-        if (i > 0 && i % 3 == 0) result.append(' ')
+        if (i > 0 && i % 3 == 0) result.append('.')
         result.append(c)
     }
     return "${if (amount < 0) "-" else ""}₡${result.reverse()}"
 }
+
+/** Formatea un monto en colones a partir de un Double, truncando a entero. */
+fun formatColones(amount: Double): String = formatColones(amount.toLong())
 
 /**
  * Formatea un monto en colones de forma compacta.

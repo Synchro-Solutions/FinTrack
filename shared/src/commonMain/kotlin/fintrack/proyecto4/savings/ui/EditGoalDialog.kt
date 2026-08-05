@@ -265,7 +265,7 @@ fun EditGoalDialog(
                 },
                 enabled = name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinTrackColors.GreenPrimary,
+                    containerColor = FinTrackColors.GreenDark,
                     contentColor = FinTrackColors.White,
                     disabledContainerColor =
                         colors.surfaceSecondary,
@@ -344,7 +344,7 @@ private fun EditCategorySelector(
                     labelColor =
                         colors.textSecondary,
                     selectedContainerColor =
-                        FinTrackColors.GreenPrimary,
+                        FinTrackColors.GreenDark,
                     selectedLabelColor =
                         FinTrackColors.White
                 ),
@@ -354,7 +354,7 @@ private fun EditCategorySelector(
                     borderColor =
                         colors.border,
                     selectedBorderColor =
-                        FinTrackColors.GreenPrimary
+                        FinTrackColors.GreenDark
                 )
             )
         }
@@ -389,7 +389,7 @@ private fun EditPrioritySelector(
                     labelColor =
                         colors.textSecondary,
                     selectedContainerColor =
-                        FinTrackColors.GreenPrimary,
+                        FinTrackColors.GreenDark,
                     selectedLabelColor =
                         FinTrackColors.White
                 ),
@@ -399,7 +399,7 @@ private fun EditPrioritySelector(
                     borderColor =
                         colors.border,
                     selectedBorderColor =
-                        FinTrackColors.GreenPrimary
+                        FinTrackColors.GreenDark
                 )
             )
         }
@@ -487,6 +487,7 @@ private fun editPriorityLabel(
     }
 }
 
+@Composable
 private fun editGoalColorValue(
     color: GoalColor
 ): Color {

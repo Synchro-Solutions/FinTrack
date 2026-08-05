@@ -7,18 +7,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 data class OnboardingState(
-    val step: Int = 1,
-    val prevStep: Int = 1,
     val name: String = "",
     val photoPath: String? = null,
     val income: String = "",
     val currency: String = "CRC",
     val privacyAccepted: Boolean = false,
     val termsAccepted: Boolean = false,
+    val submitAttempted: Boolean = false,
     val isSaving: Boolean = false,
     val savedOk: Boolean = false,
     val error: String? = null
-)
+) {
+    val nameError: String?
+        get() = if (submitAttempted && name.isBlank()) "Completa este campo para continuar." else null
+
+    val consentsError: String?
+        get() = if (submitAttempted && !(privacyAccepted && termsAccepted))
+            "Debes aceptar ambos documentos para continuar."
+        else null
+
+    val isValid: Boolean
+        get() = name.isNotBlank() && privacyAccepted && termsAccepted
+}
 
 data class CurrencyOption(val code: String, val label: String, val symbol: String)
 
@@ -46,23 +56,17 @@ class OnboardingViewModel(
     fun setPrivacy(accepted: Boolean) { _state.value = _state.value.copy(privacyAccepted = accepted) }
     fun setTerms(accepted: Boolean) { _state.value = _state.value.copy(termsAccepted = accepted) }
 
-    fun canProceedStep1(): Boolean = _state.value.name.isNotBlank()
-    fun canFinish(): Boolean = _state.value.privacyAccepted && _state.value.termsAccepted
-
-    fun goNext() {
+    fun submit() {
         val s = _state.value
-        if (s.step < 3) _state.value = s.copy(prevStep = s.step, step = s.step + 1)
-    }
+        if (s.isSaving) return
 
-    fun goBack() {
-        val s = _state.value
-        if (s.step > 1) _state.value = s.copy(prevStep = s.step, step = s.step - 1)
-    }
+        if (!s.isValid) {
+            _state.value = s.copy(submitAttempted = true)
+            return
+        }
 
-    fun saveAndFinish(onDone: () -> Unit) {
-        val s = _state.value
         viewModelScope.launch {
-            _state.value = s.copy(isSaving = true, error = null)
+            _state.value = s.copy(submitAttempted = true, isSaving = true, error = null)
             try {
                 repository.saveProfile(
                     uid = uid,
@@ -76,11 +80,10 @@ class OnboardingViewModel(
                     )
                 )
                 _state.value = _state.value.copy(isSaving = false, savedOk = true)
-                onDone()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isSaving = false,
-                    error = "Error al guardar el perfil. Intenta de nuevo."
+                    error = "No pudimos guardar tu información. Revisa tu conexión e inténtalo nuevamente."
                 )
             }
         }

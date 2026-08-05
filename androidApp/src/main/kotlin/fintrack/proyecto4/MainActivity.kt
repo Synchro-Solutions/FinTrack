@@ -1,6 +1,7 @@
 package fintrack.proyecto4
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
@@ -9,13 +10,25 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.credentials.CredentialManager
+import androidx.credentials.CredentialOption
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
+import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
+import fintrack.proyecto4.profile.CloudinaryUploader
+import fintrack.proyecto4.transaction.FirestoreCustomCategoryRepository
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -67,11 +80,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        FirebaseEmulatorConfig.connectIfEnabled()
+
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
+        val categoryRepository = FirestoreCustomCategoryRepository()
 
         setContent {
             App(
@@ -79,6 +95,7 @@ class MainActivity : ComponentActivity() {
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
+                categoryRepository = categoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },
@@ -96,8 +113,78 @@ class MainActivity : ComponentActivity() {
                 },
                 onRecognizeReceiptText = { imagePath ->
                     recognizeReceiptText(applicationContext, imagePath)
-                }
+                },
+                onShareText = { text -> shareText(text) },
+                onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) },
+                onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
+                onGoogleSignInRequested = { requestGoogleIdToken() }
             )
+        }
+    }
+
+    private fun shareText(text: String) {
+        if (text.isBlank()) return
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(sendIntent, "Compartir resumen"))
+    }
+
+    /**
+     * Pide un ID token de Google vía Credential Manager (reemplaza al deprecado
+     * GoogleSignInClient) y lo entrega para intercambiarlo por credenciales de Firebase.
+     * Requiere que R.string.google_web_client_id tenga el Web client ID real de Firebase
+     * (Authentication > Sign-in method > Google), no el placeholder por defecto.
+     *
+     * GetGoogleIdOption (One Tap) solo puede ofrecer cuentas ya guardadas por Credential
+     * Manager en el dispositivo; si no hay ninguna (dispositivo nuevo, o ninguna cuenta
+     * Google agregada) falla con "Cannot find a matching credential" en vez de mostrar un
+     * selector. Por eso, si falla, se reintenta con GetSignInWithGoogleOption, que sí abre
+     * el flujo completo de elegir/agregar cuenta.
+     */
+    private suspend fun requestGoogleIdToken(): Result<String> {
+        val webClientId = getString(R.string.google_web_client_id)
+        val credentialManager = CredentialManager.create(this)
+
+        val oneTapOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(webClientId)
+            .build()
+
+        return try {
+            requestCredential(credentialManager, oneTapOption)
+        } catch (e: GetCredentialException) {
+            val fallbackOption = GetSignInWithGoogleOption.Builder(webClientId).build()
+            try {
+                requestCredential(credentialManager, fallbackOption)
+            } catch (fallbackError: GetCredentialException) {
+                Result.failure(fallbackError)
+            } catch (fallbackError: GoogleIdTokenParsingException) {
+                Result.failure(fallbackError)
+            }
+        } catch (e: GoogleIdTokenParsingException) {
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun requestCredential(
+        credentialManager: CredentialManager,
+        option: CredentialOption
+    ): Result<String> {
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(option)
+            .build()
+
+        val response = credentialManager.getCredential(this, request)
+        val credential = response.credential
+        return if (credential is CustomCredential &&
+            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
+            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            Result.success(googleIdTokenCredential.idToken)
+        } else {
+            Result.failure(IllegalStateException("Credencial inesperada de Google"))
         }
     }
 

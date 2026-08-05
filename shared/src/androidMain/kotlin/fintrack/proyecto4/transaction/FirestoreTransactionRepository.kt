@@ -33,7 +33,8 @@ class FirestoreTransactionRepository : TransactionRepository {
                         paymentMethod = doc.get<String?>("paymentMethod")
                             ?.let { runCatching { PaymentMethod.valueOf(it) }.getOrNull() },
                         date = doc.get<String?>("date") ?: "",
-                        createdAt = doc.get<Long?>("createdAt") ?: 0L
+                        createdAt = doc.get<Long?>("createdAt") ?: 0L,
+                        receiptUrl = doc.get<String?>("receiptUrl")
                     )
                 }.getOrNull()
             }
@@ -62,6 +63,7 @@ class FirestoreTransactionRepository : TransactionRepository {
         "category" to transaction.category,
         "paymentMethod" to transaction.paymentMethod?.name,
         "date" to transaction.date,
-        "createdAt" to transaction.createdAt
+        "createdAt" to transaction.createdAt,
+        "receiptUrl" to transaction.receiptUrl
     )
 }

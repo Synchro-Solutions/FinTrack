@@ -26,7 +26,10 @@ class TransactionFormViewModel(
     initialType: TransactionType = TransactionType.EXPENSE,
     private val editingTransaction: Transaction? = null,
     private val anomalyDetector: AnomalyDetector = AnomalyDetector(),
-    private val categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository()
+    private val categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
+    private val uploadReceipt: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
+    }
 ) : ViewModel() {
 
     val isEditing: Boolean get() = editingTransaction != null
@@ -188,6 +191,19 @@ class TransactionFormViewModel(
         _uiState.value = TransactionFormState(type = initialType)
     }
 
+    fun onReceiptPicked(localPath: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploadingReceipt = true) }
+            uploadReceipt(localPath).fold(
+                onSuccess = { url -> _uiState.update { it.copy(isUploadingReceipt = false, receiptUrl = url) } },
+                onFailure = {
+                    _uiState.update { it.copy(isUploadingReceipt = false) }
+                    _saveError.value = "No se pudo subir el comprobante. Intenta de nuevo."
+                }
+            )
+        }
+    }
+
     /**
      * Precarga el formulario con datos detectados por el asistente OCR.
      * El comercio detectado se mapea al campo de descripción (no existe, ni debe crearse,
@@ -237,7 +253,8 @@ class TransactionFormViewModel(
                     category = state.selectedCategory.orEmpty(),
                     paymentMethod = state.paymentMethod,
                     date = state.date,
-                    createdAt = editingTransaction?.createdAt ?: currentEpochMillis()
+                    createdAt = editingTransaction?.createdAt ?: currentEpochMillis(),
+                    receiptUrl = state.receiptUrl
                 )
 
                 if (isEditing) {
@@ -279,6 +296,7 @@ class TransactionFormViewModel(
         description = description,
         selectedCategory = category,
         paymentMethod = paymentMethod,
-        date = date
+        date = date,
+        receiptUrl = receiptUrl
     )
 }

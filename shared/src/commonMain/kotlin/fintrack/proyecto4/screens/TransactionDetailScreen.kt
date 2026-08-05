@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
@@ -148,6 +150,28 @@ fun TransactionDetailScreen(
                 DetailRow(
                     label = "Tipo",
                     value = if (transaction.type == TransactionType.INCOME) "Ingreso" else "Gasto"
+                )
+            }
+
+            transaction.receiptUrl?.let { receiptUrl ->
+                Spacer(Modifier.height(28.dp))
+                Text(
+                    text = "Comprobante",
+                    color = colors.textPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily()
+                )
+                Spacer(Modifier.height(10.dp))
+                AsyncImage(
+                    model = receiptUrl,
+                    contentDescription = "Comprobante de la transacción",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .glassCard()
                 )
             }
 

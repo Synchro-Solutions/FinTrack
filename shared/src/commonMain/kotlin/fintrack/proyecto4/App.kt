@@ -51,7 +51,6 @@ import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.EditarPerfilScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
-import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.screens.LiquidacionCalculatorScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
@@ -68,6 +67,7 @@ import fintrack.proyecto4.screens.ReportesScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
+import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors

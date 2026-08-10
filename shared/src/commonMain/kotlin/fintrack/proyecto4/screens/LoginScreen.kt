@@ -260,7 +260,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Recordarme + Olvidé mi contraseña
+                    // Recordarme / Olvidé mi contraseña
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,15 +283,17 @@ fun LoginScreen(
                                 fontSize = 14.sp
                             )
                         }
+
                         TextButton(
                             onClick = { navController.navigate(Screen.ForgotPassword) },
-                            contentPadding = PaddingValues(0.dp)
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             Text(
                                 text = "¿Olvidaste tu contraseña?",
                                 color = GreenLight,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = montserrat
                             )
                         }
                     }

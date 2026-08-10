@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Fintrack</string>
+    <!-- Web Client ID de OAuth generado al habilitar Google como proveedor en Firebase
+         Console (Authentication > Sign-in method > Google > Web client ID). Reemplazar
+         este placeholder antes de probar el botón "Continuar con Google". -->
+    <string name="google_web_client_id" translatable="false">852790158784-7coc339v1fn4kfi0ddulj0g1i2m0gcvj.apps.googleusercontent.com</string>
 </resources>

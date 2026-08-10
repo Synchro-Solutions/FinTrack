@@ -18,6 +18,12 @@ class FakeAuthRepository : AuthRepository {
     var lastPassword: String? = null
     var lastRememberMe: Boolean? = null
     var signOutCalled = false
+    var lastGoogleIdToken: String? = null
+
+    // Resultado que devolverá el próximo sendPasswordResetEmail — configurable por cada test
+    var nextPasswordResetResult: PasswordResetResult = PasswordResetResult.Success
+    var passwordResetCallCount = 0
+    var lastPasswordResetEmail: String? = null
 
     override suspend fun signIn(email: String, password: String, rememberMe: Boolean): LoginResult {
         signInCallCount++
@@ -25,6 +31,17 @@ class FakeAuthRepository : AuthRepository {
         lastPassword = password
         lastRememberMe = rememberMe
         return nextSignInResult
+    }
+
+    override suspend fun signInWithGoogleIdToken(idToken: String): LoginResult {
+        lastGoogleIdToken = idToken
+        return nextSignInResult
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String): PasswordResetResult {
+        passwordResetCallCount++
+        lastPasswordResetEmail = email
+        return nextPasswordResetResult
     }
 
     override suspend fun getStoredToken(): String? = storedToken
@@ -42,5 +59,8 @@ class FakeAuthRepository : AuthRepository {
         lastPassword = null
         lastRememberMe = null
         signOutCalled = false
+        nextPasswordResetResult = PasswordResetResult.Success
+        passwordResetCallCount = 0
+        lastPasswordResetEmail = null
     }
 }

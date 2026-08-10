@@ -52,10 +52,13 @@ import fintrack.proyecto4.budget.BudgetListViewModel
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.BudgetStatus
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.ai.SpendingForecastViewModel
 import fintrack.proyecto4.budget.budgetTransactions
 import fintrack.proyecto4.budget.periodLabelFromKey
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -76,17 +79,22 @@ fun PresupuestosScreen(
     var showEdit by remember { mutableStateOf(false) }
     var showDeactivate by remember { mutableStateOf(false) }
 
+    val forecastViewModel = viewModel(key = "forecast_$uid") {
+        SpendingForecastViewModel(transactionRepository, budgetRepository, uid)
+    }
+    val forecastState by forecastViewModel.state.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
         viewModel.loadBudgets()
     }
 
     Scaffold(
-        containerColor = colors.bg,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNuevoPresupuesto,
-                containerColor = FinTrackColors.GreenPrimary,
+                containerColor = FinTrackColors.GreenDark,
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
@@ -104,9 +112,10 @@ fun PresupuestosScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-            Text(
+            ShimmerText(
                 text = "Presupuestos",
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 22.dp)
@@ -124,16 +133,29 @@ fun PresupuestosScreen(
             }
 
             if (!state.isLoading) {
-                if (state.budgets.isEmpty()) {
-                    EmptyBudgetState(modifier = Modifier.weight(1f))
-                } else {
-                    SummaryRow(state)
-                    Spacer(Modifier.height(20.dp))
-                    BudgetList(
-                        budgets = state.budgets,
-                        onBudgetClick = { selectedBudget = it },
-                        modifier = Modifier.weight(1f)
-                    )
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item {
+                        SpendingForecastSection(
+                            state = forecastState,
+                            onGenerate = { forecastViewModel.generateForecast() },
+                            onRegenerate = { forecastViewModel.generateForecast(force = true) }
+                        )
+                    }
+
+                    if (state.budgets.isEmpty()) {
+                        item {
+                            EmptyBudgetState(modifier = Modifier.fillParentMaxWidth().padding(top = 40.dp))
+                        }
+                    } else {
+                        item { SummaryRow(state) }
+                        items(state.budgets, key = { it.id }) { budget ->
+                            BudgetCard(budget, onClick = { selectedBudget = budget })
+                        }
+                    }
+                    item { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
@@ -269,7 +291,7 @@ private fun SummaryCard(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 12.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -286,25 +308,6 @@ private fun SummaryCard(
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-// ── Lista de tarjetas ──────────────────────────────────────────────────────
-
-@Composable
-private fun BudgetList(
-    budgets: List<BudgetItem>,
-    onBudgetClick: (BudgetItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(budgets, key = { it.id }) { budget ->
-            BudgetCard(budget, onClick = { onBudgetClick(budget) })
-        }
-        item { Spacer(Modifier.height(80.dp)) }
     }
 }
 
@@ -336,7 +339,7 @@ private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {

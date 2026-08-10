@@ -1,5 +1,6 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,9 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,11 +26,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
@@ -33,9 +40,13 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
 import fintrack.proyecto4.theme.LightAppColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.CustomCategory
+import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.MaxDescriptionLength
+import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.Transaction
@@ -52,6 +63,7 @@ import kotlin.time.Clock
 
 /** Rojo para Gasto, verde para Ingreso — mismo acento que ya usan TransactionsScreen/
  *  TransactionDetailScreen/DashboardScreen para distinguir movimientos por tipo. */
+@Composable
 private fun typeAccentColor(type: TransactionType): Color =
     if (type == TransactionType.EXPENSE) FinTrackColors.ErrorColor else FinTrackColors.GreenPrimary
 
@@ -65,9 +77,16 @@ fun TransactionFormScreen(
     editingTransaction: Transaction? = null,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     budgetAlertService: BudgetAlertService? = null,
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
-    onOcrClick: () -> Unit = {}
+    onOcrClick: () -> Unit = {},
+    cameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
+        { _, onCancel -> onCancel() },
+    onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
+    uploadReceiptPhoto: suspend (String) -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
+    }
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     // remember (no viewModel(key=...)) a propósito: cada visita a esta pantalla debe partir
@@ -76,15 +95,32 @@ fun TransactionFormScreen(
     // entre visitas consecutivas de "nueva transacción" (misma key), dejando los campos de
     // la transacción anterior visibles al crear una nueva.
     val viewModel = remember(uid, editingTransaction?.id, initialType) {
-        TransactionFormViewModel(transactionRepository, uid, initialType, editingTransaction, budgetAlertService)
+        TransactionFormViewModel(
+            repository = transactionRepository,
+            uid = uid,
+            initialType = initialType,
+            editingTransaction = editingTransaction,
+            budgetAlertService = budgetAlertService,
+            categoryRepository = categoryRepository,
+            uploadReceipt = uploadReceiptPhoto
+        )
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
+    val customCategories by viewModel.customCategories.collectAsStateWithLifecycle()
+    val categoryFormError by viewModel.categoryFormError.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    var showReceiptCamera by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf<CustomCategory?>(null) }
+    var showManageCategories by remember { mutableStateOf(false) }
+    var categoryPendingDelete by remember { mutableStateOf<CustomCategory?>(null) }
     val colors = LocalAppColors.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val categoriesForType = customCategories.filter { it.type == state.type }
 
     val accentColor = typeAccentColor(state.type)
 
@@ -92,7 +128,6 @@ fun TransactionFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionHeader(
             title = if (viewModel.isEditing) "Editar movimiento" else "Nuevo movimiento",
@@ -153,12 +188,34 @@ fun TransactionFormScreen(
             }
 
             FormCard {
-                FormSectionTitle("Categoría")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FormSectionTitle("Categoría")
+                    if (categoriesForType.isNotEmpty()) {
+                        Text(
+                            text = "Gestionar categorías",
+                            color = FinTrackColors.GreenPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = montserratFamily(),
+                            modifier = Modifier.clickable { showManageCategories = true }
+                        )
+                    }
+                }
                 Spacer(Modifier.height(10.dp))
                 CategorySection(
                     categories = state.categories,
+                    customCategories = categoriesForType,
                     selectedCategory = state.selectedCategory,
-                    onCategorySelected = viewModel::selectCategory
+                    onCategorySelected = viewModel::selectCategory,
+                    onAddCategory = {
+                        editingCategory = null
+                        viewModel.clearCategoryFormError()
+                        showCategoryDialog = true
+                    }
                 )
             }
 
@@ -168,6 +225,19 @@ fun TransactionFormScreen(
                 PaymentMethodSection(
                     selectedPaymentMethod = state.paymentMethod,
                     onPaymentMethodSelected = viewModel::selectPaymentMethod
+                )
+            }
+
+            FormCard {
+                FormSectionTitle("Comprobante")
+                Spacer(Modifier.height(10.dp))
+                ReceiptSection(
+                    receiptUrl = state.receiptUrl,
+                    isUploading = state.isUploadingReceipt,
+                    onTakePhotoClick = { showReceiptCamera = true },
+                    onPickImageClick = {
+                        onPickReceiptImage { path -> if (path != null) viewModel.onReceiptPicked(path) }
+                    }
                 )
             }
 
@@ -183,7 +253,7 @@ fun TransactionFormScreen(
             SaveTransactionButton(
                 type = state.type,
                 editing = viewModel.isEditing,
-                enabled = state.isValid && !isSaving,
+                enabled = state.isValid && !isSaving && !state.isUploadingReceipt,
                 isSaving = isSaving,
                 onClick = {
                     val editing = viewModel.isEditing
@@ -214,6 +284,13 @@ fun TransactionFormScreen(
             .align(Alignment.BottomCenter)
             .padding(16.dp)
     )
+
+    if (showReceiptCamera) {
+        cameraContent(
+            { path -> showReceiptCamera = false; viewModel.onReceiptPicked(path) },
+            { showReceiptCamera = false }
+        )
+    }
     }
 
     if (showDatePicker) {
@@ -221,6 +298,53 @@ fun TransactionFormScreen(
             initialDateMillis = parseDateToEpochMillis(state.date),
             onDismissRequest = { showDatePicker = false },
             onDateSelected = { millis -> viewModel.updateDate(formatEpochMillisToDate(millis)) }
+        )
+    }
+
+    if (showCategoryDialog) {
+        CategoryFormDialog(
+            existing = editingCategory,
+            errorMessage = categoryFormError,
+            onDismiss = {
+                showCategoryDialog = false
+                viewModel.clearCategoryFormError()
+            },
+            onConfirm = { name, icon ->
+                val current = editingCategory
+                val onSuccess = { showCategoryDialog = false }
+                if (current == null) {
+                    viewModel.createCategory(name, icon, onSuccess = onSuccess)
+                } else {
+                    viewModel.updateCategory(current, name, icon, onSuccess = onSuccess)
+                }
+            }
+        )
+    }
+
+    if (showManageCategories) {
+        ManageCategoriesSheet(
+            categories = categoriesForType,
+            onDismiss = { showManageCategories = false },
+            onEdit = { category ->
+                editingCategory = category
+                viewModel.clearCategoryFormError()
+                showManageCategories = false
+                showCategoryDialog = true
+            },
+            onDeleteRequest = { category ->
+                categoryPendingDelete = category
+            }
+        )
+    }
+
+    categoryPendingDelete?.let { category ->
+        DeleteCategoryConfirmDialog(
+            category = category,
+            onDismiss = { categoryPendingDelete = null },
+            onConfirm = {
+                viewModel.deleteCategory(category)
+                categoryPendingDelete = null
+            }
         )
     }
 }
@@ -261,7 +385,7 @@ internal fun fintrackDatePickerColors() = DatePickerDefaults.colors(
  * salía gris casi ilegible sobre la tarjeta blanca forzada del picker.
  */
 private val LightDatePickerColorScheme = lightColorScheme(
-    primary = FinTrackColors.GreenPrimary,
+    primary = LightAppColors.primary,
     onPrimary = Color.White,
     background = Color.White,
     surface = Color.White,
@@ -373,7 +497,7 @@ private fun TransactionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.ArrowBack,
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Volver",
             tint = colors.textPrimary,
             modifier = Modifier
@@ -510,7 +634,7 @@ private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(16.dp),
         content = content
     )
@@ -606,10 +730,12 @@ private fun DescriptionField(
 }
 
 @Composable
-private fun CategorySection(
+internal fun CategorySection(
     categories: List<String>,
+    customCategories: List<CustomCategory>,
     selectedCategory: String?,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    onAddCategory: () -> Unit
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
@@ -621,6 +747,51 @@ private fun CategorySection(
                 text = category,
                 selected = selectedCategory == category,
                 onClick = { onCategorySelected(category) }
+            )
+        }
+        customCategories.forEach { category ->
+            SelectableChip(
+                text = category.name,
+                icon = category.icon,
+                selected = selectedCategory == category.name,
+                onClick = { onCategorySelected(category.name) }
+            )
+        }
+        AddCategoryChip(onClick = onAddCategory)
+    }
+}
+
+/** Chip con borde punteado-estilo (outline verde, sin relleno) para diferenciarlo de las
+ *  opciones seleccionables — no es una categoría, es la acción de crear una nueva. */
+@Composable
+internal fun AddCategoryChip(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .border(
+                width = 1.dp,
+                color = FinTrackColors.GreenPrimary,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "+ ",
+                color = FinTrackColors.GreenPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily()
+            )
+            Text(
+                text = "Nueva categoría",
+                color = FinTrackColors.GreenPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily()
             )
         }
     }
@@ -657,10 +828,123 @@ internal fun PaymentMethodSection(
 }
 
 @Composable
+private fun ReceiptSection(
+    receiptUrl: String?,
+    isUploading: Boolean,
+    onTakePhotoClick: () -> Unit,
+    onPickImageClick: () -> Unit
+) {
+    val colors = LocalAppColors.current
+
+    when {
+        isUploading -> Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = FinTrackColors.GreenPrimary,
+                strokeWidth = 2.dp
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = "Subiendo comprobante...",
+                color = colors.textSecondary,
+                fontSize = 13.sp,
+                fontFamily = montserratFamily()
+            )
+        }
+
+        receiptUrl != null -> Column {
+            AsyncImage(
+                model = receiptUrl,
+                contentDescription = "Comprobante adjunto",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+            Spacer(Modifier.height(12.dp))
+            ReceiptPickerButtons(
+                takePhotoLabel = "Reemplazar",
+                onTakePhotoClick = onTakePhotoClick,
+                onPickImageClick = onPickImageClick
+            )
+        }
+
+        else -> ReceiptPickerButtons(
+            takePhotoLabel = "Tomar foto",
+            onTakePhotoClick = onTakePhotoClick,
+            onPickImageClick = onPickImageClick
+        )
+    }
+}
+
+@Composable
+private fun ReceiptPickerButtons(
+    takePhotoLabel: String,
+    onTakePhotoClick: () -> Unit,
+    onPickImageClick: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(
+            onClick = onTakePhotoClick,
+            modifier = Modifier.weight(1f).height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = takePhotoLabel,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
+
+        OutlinedButton(
+            onClick = onPickImageClick,
+            modifier = Modifier.weight(1f).height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, colors.border),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Description,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Elegir de galería",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
+    }
+}
+
+@Composable
 internal fun SelectableChip(
     text: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    icon: String? = null,
     onClick: () -> Unit
 ) {
     val montserrat = montserratFamily()
@@ -682,13 +966,22 @@ internal fun SelectableChip(
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            color = if (selected) Color.White else Color(0xFF60748F),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = montserrat
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Text(
+                    text = icon,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+            }
+            Text(
+                text = text,
+                color = if (selected) Color.White else Color(0xFF60748F),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
     }
 }
 
@@ -773,16 +1066,17 @@ private fun SaveTransactionButton(
         else -> "Guardar ingreso"
     }
 
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .fillMaxWidth()
+            .defaultMinSize(minWidth = 200.dp)
             .height(54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = FinTrackColors.GreenPrimary,
-            disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.45f)
+            containerColor = FinTrackColors.GreenDark,
+            disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.45f)
         )
     ) {
         if (isSaving) {
@@ -801,6 +1095,7 @@ private fun SaveTransactionButton(
             fontFamily = montserratFamily()
         )
     }
+    }
 }
 
 @Composable
@@ -816,5 +1111,359 @@ internal fun formTextFieldColors(): TextFieldColors {
         cursorColor = FinTrackColors.GreenPrimary,
         focusedTextColor = colors.textPrimary,
         unfocusedTextColor = colors.textPrimary
+    )
+}
+
+// ── US-06: categorías personalizadas ────────────────────────────────────────
+
+/** Emojis sugeridos para categorías, mismo criterio de "íconos predefinidos" que pedía la
+ *  historia (US-06: "Lista de íconos predefinidos"), sin forzar un catálogo cerrado — el
+ *  usuario igual puede escribir cualquier otro emoji a mano. */
+private val SuggestedCategoryIcons = listOf(
+    "🛒", "🍔", "🚌", "🏠", "💡", "🎮",
+    "👕", "📚", "💊", "✈️", "🎁", "💰",
+    "📱", "🐾", "⚽", "🎵", "☕", "🔧"
+)
+
+/** Único diálogo para crear o editar una categoría personalizada — [existing] null significa
+ *  modo creación. Sin color a propósito (fuera de alcance); el ícono es un emoji opcional,
+ *  elegible desde una grilla de sugerencias o escrito a mano (máx. 2 caracteres). */
+@Composable
+internal fun CategoryFormDialog(
+    existing: CustomCategory?,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, icon: String?) -> Unit
+) {
+    val colors = LocalAppColors.current
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var icon by remember { mutableStateOf(existing?.icon ?: "") }
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = FinTrackColors.GreenPrimary,
+        unfocusedBorderColor = colors.border,
+        cursorColor = FinTrackColors.GreenPrimary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
+        focusedLabelColor = FinTrackColors.GreenPrimary,
+        unfocusedLabelColor = colors.textSecondary
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                text = if (existing == null) "Nueva categoría" else "Editar categoría",
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily()
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                // Vista previa: refleja en vivo el ícono elegido (o las iniciales del
+                // nombre si todavía no hay ícono) sobre un círculo verde, mismo lenguaje
+                // visual que el avatar del onboarding.
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(FinTrackColors.GreenPrimary.copy(alpha = 0.15f))
+                            .border(1.5.dp, FinTrackColors.GreenPrimary.copy(alpha = 0.4f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = icon.ifBlank { name.take(2).uppercase().ifBlank { "🏷️" } },
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FinTrackColors.GreenPrimary
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre") },
+                    placeholder = { Text("Ej: Mascotas", color = colors.textSecondary) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = fieldColors
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FieldLabel("ÍCONO (OPCIONAL)")
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SuggestedCategoryIcons.forEach { suggestion ->
+                            val selected = icon == suggestion
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selected) FinTrackColors.GreenPrimary
+                                        else colors.subtleSurface
+                                    )
+                                    .border(
+                                        width = if (selected) 0.dp else 1.dp,
+                                        color = colors.border,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { icon = if (selected) "" else suggestion },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = suggestion, fontSize = 18.sp)
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = icon,
+                        onValueChange = { if (it.length <= 2) icon = it },
+                        label = { Text("Otro emoji") },
+                        placeholder = { Text("Ej: 🎯", color = colors.textSecondary) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors
+                    )
+                }
+
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        color = FinTrackColors.ErrorColor,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name, icon) },
+                enabled = name.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FinTrackColors.GreenPrimary,
+                    contentColor = Color.White,
+                    disabledContainerColor = colors.surfaceSecondary,
+                    disabledContentColor = colors.textSecondary
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = if (existing == null) "Crear" else "Guardar",
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = colors.textSecondary)
+            }
+        }
+    )
+}
+
+/** Panel para editar/eliminar las categorías personalizadas del tipo actual (Gasto/Ingreso).
+ *  Las predefinidas no aparecen aquí porque no tienen affordance de edición — ya se seleccionan
+ *  directo desde los chips de CategorySection. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ManageCategoriesSheet(
+    categories: List<CustomCategory>,
+    onDismiss: () -> Unit,
+    onEdit: (CustomCategory) -> Unit,
+    onDeleteRequest: (CustomCategory) -> Unit
+) {
+    val colors = LocalAppColors.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = colors.surface,
+        contentColor = colors.textPrimary
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Gestionar categorías",
+                    color = colors.textPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily()
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = colors.textSecondary)
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (categories.isEmpty()) {
+                Text(
+                    text = "Aún no tienes categorías personalizadas. Créalas desde el chip \"+ Nueva categoría\".",
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(vertical = 24.dp)
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    categories.forEach { category ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(colors.subtleSurface)
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (category.icon != null) {
+                                Text(text = category.icon, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
+                            }
+                            Text(
+                                text = category.name,
+                                color = colors.textPrimary,
+                                fontSize = 14.sp,
+                                fontFamily = montserratFamily(),
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { onEdit(category) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar categoría",
+                                    tint = colors.textSecondary
+                                )
+                            }
+                            IconButton(onClick = { onDeleteRequest(category) }) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteOutline,
+                                    contentDescription = "Eliminar categoría",
+                                    tint = FinTrackColors.ErrorColor
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/** Confirmación de borrado de una categoría personalizada — ícono de advertencia, vista
+ *  previa de la categoría a borrar y botón "Eliminar" relleno en rojo (acción destructiva,
+ *  mismo peso visual que el botón principal verde de CategoryFormDialog). */
+@Composable
+internal fun DeleteCategoryConfirmDialog(
+    category: CustomCategory,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(24.dp),
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(FinTrackColors.ErrorColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = null,
+                    tint = FinTrackColors.ErrorColor,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        },
+        title = {
+            Text(
+                text = "Eliminar categoría",
+                color = colors.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFamily(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(colors.subtleSurface)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (category.icon != null) {
+                        Text(text = category.icon, fontSize = 16.sp, modifier = Modifier.padding(end = 6.dp))
+                    }
+                    Text(
+                        text = category.name,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = montserratFamily()
+                    )
+                }
+                Text(
+                    text = "Esta acción no se puede deshacer. Las transacciones que ya usaban esta " +
+                        "categoría se reasignarán automáticamente a \"Otro\".",
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    fontFamily = montserratFamily(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FinTrackColors.ErrorColor,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(text = "Eliminar", fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = colors.textSecondary)
+            }
+        }
     )
 }

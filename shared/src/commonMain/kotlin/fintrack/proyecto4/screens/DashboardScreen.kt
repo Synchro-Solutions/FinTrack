@@ -1,6 +1,14 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,12 +16,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -31,8 +44,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
+import fintrack.proyecto4.ai.AnomalyAlert
+import fintrack.proyecto4.ai.AnomalyAlertBus
+import fintrack.proyecto4.ai.MonthlySummaryState
+import fintrack.proyecto4.ai.MonthlySummaryViewModel
+import fintrack.proyecto4.ai.WeeklyAnomalyViewModel
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
@@ -47,11 +67,16 @@ import fintrack.proyecto4.dashboard.MovimientoItem
 import fintrack.proyecto4.dashboard.PresupuestoItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.shimmerBorderBrush
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.util.formatColonesCompacto
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,13 +88,13 @@ fun DashboardScreen(
     onNavigateToIngreso: () -> Unit = {},
     onNavigateToGasto: () -> Unit = {},
     onNavigateToOcr: () -> Unit = {},
-    onNavigateToReportes: () -> Unit = {},
     onNavigateToAjustes: () -> Unit = {},
     onNavigateToMovimientos: () -> Unit = {},
     onNavigateToPresupuestos: () -> Unit = {},
     onNavigateToMetas: () -> Unit = {},
     onNavigateToChat: () -> Unit = {},
-    onNavigateToNotifications: () -> Unit = {}
+    onNavigateToNotifications: () -> Unit = {},
+    onShareText: (String) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) {
@@ -77,8 +102,30 @@ fun DashboardScreen(
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val summaryViewModel = viewModel(key = "summary_$uid") {
+        MonthlySummaryViewModel(transactionRepository, uid)
+    }
+    val summaryState by summaryViewModel.state.collectAsStateWithLifecycle()
+    var showAiSummarySheet by remember { mutableStateOf(false) }
+
+    val anomalyAlert by AnomalyAlertBus.current.collectAsStateWithLifecycle()
+    val weeklyViewModel = viewModel(key = "weekly_$uid") {
+        WeeklyAnomalyViewModel(transactionRepository, uid)
+    }
+    val weeklyState by weeklyViewModel.state.collectAsStateWithLifecycle()
+
+    // Recarga al volver de otra pantalla (ej. Editar Perfil) para no mostrar
+    // nombre/foto/saldos obsoletos: el ViewModel queda cacheado por uid mientras
+    // vive la app, y su carga inicial solo corre una vez. Usa loadDashboard() (no
+    // refresh()) a proposito: refresh() prende isRefreshing, que dispara el spinner
+    // visible de pull-to-refresh en CADA entrada a la pantalla, aunque los datos
+    // viejos ya cacheados sigan mostrandose debajo — se siente como que "vuelve a
+    // cargar todo" cuando en realidad los datos casi nunca cambiaron. loadDashboard()
+    // hace la misma revalidacion en silencio, sin spinner; isRefreshing/el spinner
+    // queda reservado para cuando el usuario arrastra a proposito para refrescar.
+    LaunchedEffect(Unit) { viewModel.loadDashboard() }
+
     val colors = LocalAppColors.current
-    Box(modifier = Modifier.fillMaxSize().background(colors.bg)) {
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = { viewModel.refresh() },
@@ -91,12 +138,31 @@ fun DashboardScreen(
             item {
                 DashboardHeader(
                     userName = state.userName,
+                    fotoUrl = state.fotoUrl,
                     notificationCount = state.notificationCount,
                     onBellClick = onNavigateToNotifications,
-                    onAvatarClick = onNavigateToAjustes
+                    onCameraClick = onNavigateToOcr,
+                    onAvatarClick = onNavigateToAjustes,
+                    onAiSummaryClick = { showAiSummarySheet = true }
                 )
             }
             item { Spacer(Modifier.height(4.dp)) }
+
+            anomalyAlert?.let { alert ->
+                item {
+                    AnomalyBanner(
+                        alert = alert,
+                        onDismiss = { AnomalyAlertBus.dismiss() },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
+
+            if (weeklyState.anomalies.isNotEmpty()) {
+                item { WeeklyAnomalyCard(anomalies = weeklyState.anomalies) }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
             item {
                 BalanceCard(
                     mesActual    = state.mesActual,
@@ -108,16 +174,19 @@ fun DashboardScreen(
                     onToggle     = { viewModel.toggleSaldoVisible() }
                 )
             }
-            item { Spacer(Modifier.height(20.dp)) }
+            item { Spacer(Modifier.height(24.dp)) }
             item {
-                QuickActionsRow(
-                    onIngreso = onNavigateToIngreso,
-                    onGasto = onNavigateToGasto,
-                    onOcr = onNavigateToOcr,
-                    onReportes = onNavigateToReportes
+                ShimmerText(
+                    "Ingresos vs Gastos",
+                    baseColor = colors.textPrimary,
+                    accentColor = colors.primary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserratFamily(),
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            item { Spacer(Modifier.height(24.dp)) }
+            item { Spacer(Modifier.height(12.dp)) }
             item { ChartSection(data = state.chartData) }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
@@ -160,13 +229,188 @@ fun DashboardScreen(
         }
     }
 
-    // FAB flotante del asistente IA
-    AiFloatingButton(
-        onClick = onNavigateToChat,
+    if (showAiSummarySheet) {
+        ModalBottomSheet(onDismissRequest = { showAiSummarySheet = false }) {
+            MonthlySummarySection(
+                state = summaryState,
+                onGenerate = { summaryViewModel.generateSummary() },
+                onRegenerate = { summaryViewModel.generateSummary(force = true) },
+                onShare = onShareText,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeeklyAnomalyCard(anomalies: List<AnomalyAlert>) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    Column(
         modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(end = 20.dp, bottom = 20.dp)
-    )
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .glassCard()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("🔎", fontSize = 16.sp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Resumen semanal de gastos inusuales",
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserrat
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Detectamos ${anomalies.size} gasto${if (anomalies.size == 1) "" else "s"} " +
+                "por encima de tu patrón esta semana:",
+            color = colors.textSecondary,
+            fontSize = 12.sp,
+            fontFamily = montserrat
+        )
+        Spacer(Modifier.height(8.dp))
+        anomalies.take(5).forEach { a ->
+            Text(
+                text = "• ${a.category} — ${a.message}",
+                color = colors.textPrimary,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                fontFamily = montserrat,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthlySummarySection(
+    state: MonthlySummaryState,
+    onGenerate: () -> Unit,
+    onRegenerate: () -> Unit,
+    onShare: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    var collapsed by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier.padding(horizontal = 16.dp)) {
+        if (!state.hasRequested) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier.height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
+                ) {
+                    Text(
+                        "✨  Resumen IA del mes",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = montserrat
+                    )
+                }
+            }
+            return
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .glassCard()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { collapsed = !collapsed },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("✨", fontSize = 16.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Resumen IA del mes",
+                    color = colors.textPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = montserrat,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (collapsed) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                    contentDescription = if (collapsed) "Expandir" else "Colapsar",
+                    tint = colors.textSecondary
+                )
+            }
+
+            if (collapsed) return@Column
+
+            Spacer(Modifier.height(12.dp))
+
+            when {
+                state.isLoading -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = FinTrackColors.GreenPrimary
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        ShimmerText(
+                            text = "Generando tu resumen…",
+                            baseColor = colors.textSecondary,
+                            accentColor = colors.primary,
+                            fontSize = 13.sp,
+                            fontFamily = montserrat
+                        )
+                    }
+                }
+
+                state.error != null -> {
+                    Text(
+                        state.error,
+                        color = FinTrackColors.ErrorColor,
+                        fontSize = 13.sp,
+                        fontFamily = montserrat
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    TextButton(onClick = onRegenerate) {
+                        Text("Reintentar", color = FinTrackColors.GreenPrimary, fontFamily = montserrat)
+                    }
+                }
+
+                else -> {
+                    Text(
+                        state.summary,
+                        color = colors.textPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                        fontFamily = montserrat
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { onShare(state.summary) }) {
+                            Icon(Icons.Default.Share, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Compartir", color = FinTrackColors.GreenPrimary, fontFamily = montserrat)
+                        }
+                        TextButton(onClick = onRegenerate) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Regenerar", color = colors.textSecondary, fontFamily = montserrat)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -175,9 +419,12 @@ fun DashboardScreen(
 @Composable
 private fun DashboardHeader(
     userName: String,
+    fotoUrl: String? = null,
     notificationCount: Int,
     onBellClick: () -> Unit,
-    onAvatarClick: () -> Unit = {}
+    onCameraClick: () -> Unit = {},
+    onAvatarClick: () -> Unit = {},
+    onAiSummaryClick: () -> Unit = {}
 ) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
@@ -189,18 +436,43 @@ private fun DashboardHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text("Hola,", color = colors.textSecondary, fontSize = 13.sp, fontFamily = montserrat)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    userName, color = colors.textPrimary, fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold, fontFamily = montserrat
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("👋", fontSize = 20.sp)
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Hola,", color = colors.textSecondary, fontSize = 15.sp, fontFamily = montserrat)
+            Spacer(Modifier.width(5.dp))
+            ShimmerText(
+                userName, baseColor = colors.textPrimary, accentColor = colors.primary,
+                fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat
+            )
+            Spacer(Modifier.width(6.dp))
+            Text("👋", fontSize = 18.sp)
         }
+        // Los 3 botones de accion (camara, IA, campana) van del mismo tamano entre si
+        // (antes la campana era 40dp y los otros dos 34dp, se notaba disparejo) y con
+        // un anillo animado (mismo shimmer que el borde de Centro Financiero) para
+        // que tengan la misma "vida" que el resto de la app. El avatar se mantiene
+        // mas grande que los 3: es la jerarquia visual (el usuario, no una accion).
+        val actionButtonSize = 36.dp
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(actionButtonSize)
+                    .background(colors.surfaceSecondary, CircleShape)
+                    .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
+                    .clickable(onClick = onCameraClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = "Escanear recibo", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+            }
+            Box(
+                modifier = Modifier
+                    .size(actionButtonSize)
+                    .background(colors.surfaceSecondary, CircleShape)
+                    .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
+                    .clickable(onClick = onAiSummaryClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = "Resumen IA del mes", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+            }
             BadgedBox(badge = {
                 if (notificationCount > 0) Badge(containerColor = FinTrackColors.ErrorColor) {
                     Text(if (notificationCount > 9) "9+" else "$notificationCount", fontSize = 9.sp, color = Color.White)
@@ -208,17 +480,18 @@ private fun DashboardHeader(
             }) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(actionButtonSize)
                         .background(colors.surfaceSecondary, CircleShape)
+                        .border(1.dp, shimmerBorderBrush(baseColor = colors.border, accentColor = colors.primary), CircleShape)
                         .clickable(onClick = onBellClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(18.dp))
                 }
             }
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .background(
                         Brush.linearGradient(listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)),
                         CircleShape
@@ -226,10 +499,19 @@ private fun DashboardHeader(
                     .clickable(onClick = onAvatarClick),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
-                    color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = montserratFamily()
-                )
+                if (fotoUrl != null) {
+                    AsyncImage(
+                        model = fotoUrl,
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
+                        color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = montserratFamily()
+                    )
+                }
             }
         }
     }
@@ -243,6 +525,16 @@ private fun BalanceCard(
     gastos: Long, ahorro: Int, saldoVisible: Boolean, onToggle: () -> Unit
 ) {
     val montserrat = montserratFamily()
+    // Los dos circulos decorativos ya existian (fijos); ahora ondean lento, como el
+    // fondo del tema oscuro. Es el "movimiento" pedido sin mover la tarjeta ni su
+    // contenido de lugar — solo la textura de fondo respira.
+    val infiniteTransition = rememberInfiniteTransition(label = "balanceCardDrift")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * kotlin.math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 14_000, easing = LinearEasing)),
+        label = "balanceCardPhase"
+    )
     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
         Box(
             modifier = Modifier
@@ -251,11 +543,13 @@ private fun BalanceCard(
                 .background(FinTrackColors.GradientBalance)
         ) {
             Box(
-                Modifier.size(200.dp).offset(x = 140.dp, y = (-60).dp)
+                Modifier.size(200.dp)
+                    .offset(x = 140.dp + 14.dp * sin(phase), y = -60.dp + 10.dp * cos(phase))
                     .background(Color.White.copy(alpha = 0.04f), CircleShape)
             )
             Box(
-                Modifier.size(140.dp).offset(x = 160.dp, y = 60.dp)
+                Modifier.size(140.dp)
+                    .offset(x = 160.dp + 10.dp * sin(phase + kotlin.math.PI.toFloat()), y = 60.dp + 14.dp * cos(phase + kotlin.math.PI.toFloat() / 2f))
                     .background(Color.White.copy(alpha = 0.03f), CircleShape)
             )
 
@@ -305,13 +599,13 @@ private fun BalanceCard(
                     KpiPill(
                         label = "Ingresos",
                         value = if (saldoVisible) formatColonesCompacto(ingresos) else "₡•••",
-                        icon = Icons.Default.TrendingUp,
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
                         iconColor = FinTrackColors.GreenLight
                     )
                     KpiPill(
                         label = "Gastos",
                         value = if (saldoVisible) formatColonesCompacto(gastos) else "₡•••",
-                        icon = Icons.Default.TrendingDown,
+                        icon = Icons.AutoMirrored.Filled.TrendingDown,
                         iconColor = FinTrackColors.RedLight
                     )
                     Column(horizontalAlignment = Alignment.End) {
@@ -345,47 +639,6 @@ private fun KpiPill(label: String, value: String, icon: ImageVector, iconColor: 
     }
 }
 
-/* Accesos rápidos */
-
-@Composable
-private fun QuickActionsRow(
-    onIngreso: () -> Unit, onGasto: () -> Unit,
-    onOcr: () -> Unit, onReportes: () -> Unit
-) {
-    val colors = LocalAppColors.current
-    val montserrat = montserratFamily()
-    val actions = listOf(
-        Triple("Ingreso",   Icons.Default.TrendingUp,  FinTrackColors.GradientGreen),
-        Triple("Gasto",     Icons.Default.TrendingDown, FinTrackColors.GradientRed),
-        Triple("OCR",       Icons.Default.CameraAlt,    FinTrackColors.GradientIndigo),
-        Triple("Reportes",  Icons.Default.TrendingUp,   FinTrackColors.GradientViolet)
-    )
-    val callbacks = listOf(onIngreso, onGasto, onOcr, onReportes)
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        actions.zip(callbacks).forEach { (action, cb) ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable(onClick = cb)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(action.third),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(action.second, contentDescription = action.first, tint = Color.White, modifier = Modifier.size(26.dp))
-                }
-                Spacer(Modifier.height(7.dp))
-                Text(action.first, color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
-            }
-        }
-    }
-}
 
 /* Gráfica */
 
@@ -394,14 +647,7 @@ private fun ChartSection(data: List<MonthlyChartData>) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Ingresos vs Gastos", color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
-            Text("Últimos 6 meses", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
-        }
+        Text("Últimos 6 meses", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendDot(FinTrackColors.GreenPrimary, "Ingresos")
@@ -434,15 +680,19 @@ private fun BarChart(data: List<MonthlyChartData>) {
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Bottom
     ) {
-        data.forEach { item ->
+        data.forEachIndexed { index, item ->
+            // Stagger por mes: cada columna arranca un poco despues que la anterior,
+            // para que el crecimiento se lea de izquierda a derecha en vez de todas
+            // las barras subiendo a la vez.
+            val barDelay = index * 70
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.Bottom,
                     modifier = Modifier.height(maxH)
                 ) {
-                    GradientBar(fraction = item.ingresos / maxVal, width = 11.dp, brush = FinTrackColors.GradientGreenV)
-                    GradientBar(fraction = item.gastos / maxVal, width = 11.dp, brush = FinTrackColors.GradientRedV)
+                    GradientBar(fraction = item.ingresos / maxVal, width = 11.dp, brush = FinTrackColors.GradientGreenV, delayMillis = barDelay)
+                    GradientBar(fraction = item.gastos / maxVal, width = 11.dp, brush = FinTrackColors.GradientRedV, delayMillis = barDelay + 60)
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(item.mes, color = colors.textSecondary, fontSize = 10.sp, fontFamily = montserrat)
@@ -452,11 +702,19 @@ private fun BarChart(data: List<MonthlyChartData>) {
 }
 
 @Composable
-private fun GradientBar(fraction: Float, width: Dp, brush: Brush) {
+private fun GradientBar(fraction: Float, width: Dp, brush: Brush, delayMillis: Int = 0) {
+    val targetFraction = fraction.coerceIn(0.03f, 1f)
+    val animatedFraction = remember { Animatable(0f) }
+    LaunchedEffect(targetFraction) {
+        animatedFraction.animateTo(
+            targetValue = targetFraction,
+            animationSpec = tween(durationMillis = 650, delayMillis = delayMillis, easing = FastOutSlowInEasing)
+        )
+    }
     Box(
         modifier = Modifier
             .width(width)
-            .fillMaxHeight(fraction.coerceIn(0.03f, 1f))
+            .fillMaxHeight(animatedFraction.value.coerceIn(0.001f, 1f))
             .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
             .background(brush)
     )
@@ -474,13 +732,21 @@ private fun PresupuestoCard(item: PresupuestoItem) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
     val emoji = presupuestoEmojis[item.nombre] ?: "💰"
+    // Color semantico oficial (no el color arbitrario de la categoria) para el
+    // porcentaje y la barra: verde si va bien, ambar en alerta, rojo en critico.
+    val pct = item.porcentaje / 100f
+    val statusColor = when {
+        pct >= 0.90f -> FinTrackColors.ErrorColor
+        pct >= 0.8f  -> FinTrackColors.WarningColor
+        else         -> FinTrackColors.GreenPrimary
+    }
     Box(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .padding(bottom = 10.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(16.dp)
     ) {
         Column {
@@ -506,7 +772,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                 }
                 Text(
                     "${item.porcentaje}%",
-                    color = item.color, fontSize = 15.sp,
+                    color = statusColor, fontSize = 15.sp,
                     fontWeight = FontWeight.Bold, fontFamily = montserrat
                 )
             }
@@ -516,7 +782,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(CircleShape)
-                    .background(item.color.copy(alpha = 0.12f))
+                    .background(statusColor.copy(alpha = 0.12f))
             ) {
                 Box(
                     modifier = Modifier
@@ -524,7 +790,7 @@ private fun PresupuestoCard(item: PresupuestoItem) {
                         .fillMaxHeight()
                         .clip(CircleShape)
                         .background(
-                            Brush.horizontalGradient(listOf(item.color.copy(alpha = 0.7f), item.color))
+                            Brush.horizontalGradient(listOf(statusColor.copy(alpha = 0.7f), statusColor))
                         )
                 )
             }
@@ -552,7 +818,7 @@ private fun MetaCard(item: MetaItem) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(19.dp))
-                .background(colors.surface)
+                .glassCard()
                 .padding(18.dp)
         ) {
             Column {
@@ -566,7 +832,7 @@ private fun MetaCard(item: MetaItem) {
                             modifier = Modifier
                                 .size(44.dp)
                                 .background(
-                                    FinTrackColors.GradientMeta,
+                                    FinTrackColors.GradientGreen,
                                     RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -656,7 +922,7 @@ private fun EmptyPresupuestosState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -700,7 +966,7 @@ private fun EmptyMetaState(onNavigate: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(20.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -721,7 +987,7 @@ private fun EmptyMetaState(onNavigate: () -> Unit) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(FinTrackColors.GradientMeta)
+                    .background(FinTrackColors.GradientGreen)
                     .clickable(onClick = onNavigate)
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
@@ -790,7 +1056,7 @@ private fun MovimientoRow(item: MovimientoItem) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (item.esIngreso) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                imageVector = if (item.esIngreso) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)
@@ -826,43 +1092,6 @@ private fun MovimientoRow(item: MovimientoItem) {
 /* Componentes base */
 
 @Composable
-private fun AiFloatingButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        // Halo exterior pulsante
-        Box(
-            modifier = Modifier
-                .size(68.dp)
-                .align(Alignment.Center)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            FinTrackColors.GreenPrimary.copy(alpha = 0.35f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = CircleShape
-                )
-        )
-        // Botón principal
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .align(Alignment.Center)
-                .background(
-                    brush = Brush.linearGradient(
-                        listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                    ),
-                    shape = CircleShape
-                )
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("✦", color = Color.White, fontSize = 24.sp)
-        }
-    }
-}
-
-@Composable
 private fun SectionHeader(title: String, actionText: String, onAction: () -> Unit) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
@@ -871,7 +1100,7 @@ private fun SectionHeader(title: String, actionText: String, onAction: () -> Uni
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
+        ShimmerText(title, baseColor = colors.textPrimary, accentColor = colors.primary, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = montserrat)
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -880,7 +1109,7 @@ private fun SectionHeader(title: String, actionText: String, onAction: () -> Uni
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(actionText, color = FinTrackColors.GreenPrimary, fontSize = 12.sp, fontFamily = montserrat, fontWeight = FontWeight.Medium)
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(16.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = FinTrackColors.GreenPrimary, modifier = Modifier.size(16.dp))
         }
     }
 }
@@ -892,7 +1121,7 @@ private fun DarkCard(modifier: Modifier = Modifier, content: @Composable ColumnS
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(18.dp)
     ) {
         Column(content = content)

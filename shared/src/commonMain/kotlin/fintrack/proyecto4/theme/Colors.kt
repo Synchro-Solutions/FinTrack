@@ -1,14 +1,15 @@
 package fintrack.proyecto4.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 object FinTrackColors {
 
-    /* Verdes */
-    val GreenPrimary = Color(0xFF22C55E)
-    val GreenDark    = Color(0xFF15803D)
-    val GreenLight   = Color(0xFF4ADE80)
+    /* Verdes: dependen del tema activo (ver AppColors.primary/primaryDark/primaryLight) */
+    val GreenPrimary: Color @Composable get() = LocalAppColors.current.primary
+    val GreenDark: Color    @Composable get() = LocalAppColors.current.primaryDark
+    val GreenLight: Color   @Composable get() = LocalAppColors.current.primaryLight
 
     /* Blancos */
     val White        = Color(0xFFFFFFFF)
@@ -34,14 +35,14 @@ object FinTrackColors {
 
     /* Estados */
     val ErrorColor   = Color(0xFFFF6B6B)
-    val SuccessColor = GreenPrimary
+    val SuccessColor: Color @Composable get() = GreenPrimary
     val WarningColor = Color(0xFFF59E0B)
     val WarningLight = Color(0xFFFBBF24)
     val WarningText  = Color(0xFFFDE68A)
 
     /* Bordes / divisores */
     val BorderDefault = Color(0x33FFFFFF)      // blanco 20%
-    val BorderFocused = GreenPrimary
+    val BorderFocused: Color @Composable get() = GreenPrimary
     val DividerColor  = Color(0xFF1E293B)
 
     /* Categorías (acciones rápidas / gráficas) */
@@ -58,8 +59,8 @@ object FinTrackColors {
     val AmberMid  = Color(0xFF92400E)
 
     /* Degradados reutilizables */
-    val GradientGreen  get() = Brush.linearGradient(listOf(GreenDark, GreenPrimary))
-    val GradientGreenV get() = Brush.verticalGradient(listOf(GreenLight, GreenPrimary))
+    val GradientGreen: Brush  @Composable get() = Brush.linearGradient(listOf(GreenDark, GreenPrimary))
+    val GradientGreenV: Brush @Composable get() = Brush.verticalGradient(listOf(GreenLight, GreenPrimary))
     val GradientRed    get() = Brush.linearGradient(listOf(Color(0xFFDC2626), ErrorColor))
     val GradientRedV   get() = Brush.verticalGradient(listOf(RedLight, ErrorColor))
     val GradientIndigo get() = Brush.linearGradient(listOf(IndigoDark, IndigoLight))

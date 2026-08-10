@@ -23,6 +23,10 @@ internal val NavTransitionEasing = FastOutSlowInEasing
  */
 sealed interface Screen {
     data object Login : Screen
+
+    /** "¿Olvidaste tu contraseña?" — enlace de recuperación por email (US-04). */
+    data object ForgotPassword : Screen
+
     data object Onboarding : Screen
     data object Dashboard : Screen
     data object Movimientos : Screen
@@ -30,6 +34,9 @@ sealed interface Screen {
     data object Metas : Screen
     data object Mas : Screen
     data object Ajustes : Screen
+
+    /** Editar nombre, foto, ingreso y moneda del perfil (US-09). */
+    data object EditarPerfil : Screen
 
     data class TransactionForm(
         val initialType: TransactionType,
@@ -57,6 +64,7 @@ sealed interface Screen {
     data object Notifications : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
+    data object Reportes : Screen
     data object AguinaldoCalculator : Screen
     data object CurrencyConverter : Screen
     data object NetSalaryCalculator : Screen
@@ -70,8 +78,8 @@ sealed interface Screen {
 val mainScreens = setOf(
     Screen.Dashboard,
     Screen.Movimientos,
+    Screen.AiChat,
     Screen.Presupuestos,
-    Screen.Metas,
     Screen.FinancialCenter
 )
 

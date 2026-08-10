@@ -41,16 +41,19 @@ data class BudgetCategory(
     val colorHex: String
 )
 
+// Todas las categorías usan tonos de la familia verde oficial de la marca (no colores
+// arbitrarios sin relación con la paleta), aunque eso signifique que se distingan menos
+// entre sí sobre el fondo degradado.
 val BUDGET_CATEGORIES = listOf(
-    BudgetCategory("Alimentación",    "🛒", "#818CF8"),
-    BudgetCategory("Transporte",      "🚌", "#3B82F6"),
-    BudgetCategory("Vivienda",        "🏠", "#FF6B6B"),
-    BudgetCategory("Servicios",       "⚡", "#F59E0B"),
-    BudgetCategory("Salud",           "🍎", "#22C55E"),
-    BudgetCategory("Entretenimiento", "🎮", "#A78BFA"),
-    BudgetCategory("Ropa",            "👕", "#F472B6"),
-    BudgetCategory("Educación",       "📚", "#06B6D4"),
-    BudgetCategory("Otro",            "📦", "#94A3B8")
+    BudgetCategory("Alimentación",    "🛒", "#1F6B54"),
+    BudgetCategory("Transporte",      "🚌", "#26705B"),
+    BudgetCategory("Vivienda",        "🏠", "#2F7D65"),
+    BudgetCategory("Servicios",       "⚡", "#3B8F74"),
+    BudgetCategory("Salud",           "🍎", "#4FA184"),
+    BudgetCategory("Entretenimiento", "🎮", "#5FAF93"),
+    BudgetCategory("Ropa",            "👕", "#62C9A7"),
+    BudgetCategory("Educación",       "📚", "#7DD4B7"),
+    BudgetCategory("Otro",            "📦", "#5A9683")
 )
 
 data class BudgetItem(

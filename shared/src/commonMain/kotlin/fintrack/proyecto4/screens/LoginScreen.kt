@@ -1,5 +1,7 @@
 package fintrack.proyecto4.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,13 +48,20 @@ import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha40
 import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha70
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.shared.generated.resources.Res
+import fintrack.shared.generated.resources.ic_google_logo
 import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
+
+private val GoogleTextColor = Color(0xFF3C4043)
+private val GoogleBorderColor = Color(0xFFDADCE0)
 
 @Composable
 fun LoginScreen(
     authRepository: AuthRepository,
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    onGoogleSignInClick: suspend () -> Result<String> = {
+        Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
+    }
 ) {
     val navController = LocalNavController.current
     val viewModel = viewModel { LoginViewModel(authRepository) }
@@ -251,26 +260,40 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Recordarme
+                    // Recordarme + Olvidé mi contraseña
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Checkbox(
-                            checked = rememberMe,
-                            onCheckedChange = { rememberMe = it },
-                            enabled = !isLoading,
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = GreenPrimary,
-                                uncheckedColor = WhiteAlpha40,
-                                checkmarkColor = White
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = rememberMe,
+                                onCheckedChange = { rememberMe = it },
+                                enabled = !isLoading,
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = GreenPrimary,
+                                    uncheckedColor = WhiteAlpha40,
+                                    checkmarkColor = White
+                                )
                             )
-                        )
-                        Text(
-                            text = "Recordarme",
-                            color = WhiteAlpha70,
-                            fontSize = 14.sp
-                        )
+                            Text(
+                                text = "Recordarme",
+                                color = WhiteAlpha70,
+                                fontSize = 14.sp
+                            )
+                        }
+                        TextButton(
+                            onClick = { navController.navigate(Screen.ForgotPassword) },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text(
+                                text = "¿Olvidaste tu contraseña?",
+                                color = GreenLight,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     // Error / Bloqueo
@@ -359,6 +382,59 @@ fun LoginScreen(
                                     letterSpacing = 0.5.sp
                                 )
                             }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = WhiteAlpha40)
+                        Text(
+                            text = "  o  ",
+                            color = WhiteAlpha40,
+                            fontSize = 12.sp
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = WhiteAlpha40)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.signInWithGoogle(onGoogleSignInClick)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = White,
+                            contentColor = GoogleTextColor,
+                            disabledContainerColor = White.copy(alpha = 0.6f),
+                            disabledContentColor = GoogleTextColor.copy(alpha = 0.6f)
+                        ),
+                        border = BorderStroke(1.dp, GoogleBorderColor),
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Image(
+                                painter = painterResource(Res.drawable.ic_google_logo),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Continuar con Google",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = montserrat
+                            )
                         }
                     }
                 }

@@ -19,8 +19,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,12 +38,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.DateScope
+import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
 import fintrack.proyecto4.transaction.Transaction
@@ -68,15 +72,18 @@ private const val VisibleCategoriesCount = 5
 @Composable
 fun TransactionsScreen(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     onAddClick: () -> Unit = {},
     onTransactionClick: (Transaction) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
-    val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid) }
+    val viewModel = viewModel(key = uid) { TransactionsViewModel(transactionRepository, uid, categoryRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
     var showFilters by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+
+    val anomalyAlert by AnomalyAlertBus.current.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -95,9 +102,16 @@ fun TransactionsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         TransactionsHeader(onAddClick = onAddClick)
+
+        anomalyAlert?.let { alert ->
+            AnomalyBanner(
+                alert = alert,
+                onDismiss = { AnomalyAlertBus.dismiss() },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+        }
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -175,9 +189,10 @@ private fun TransactionsHeader(onAddClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        ShimmerText(
             text = "Movimientos",
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat
@@ -476,7 +491,7 @@ private fun FiltersSheet(
                         .weight(1.3f)
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
                 ) {
                     Text(
                         text = "Aplicar filtros",
@@ -646,7 +661,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isIncome) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                imageVector = if (isIncome) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                 contentDescription = null,
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)
@@ -703,6 +718,7 @@ private fun TransactionRow(transaction: Transaction, searchQuery: String, onClic
 }
 
 /** US-50: resalta la subcadena de [text] que coincide con [query] (búsqueda por texto). */
+@Composable
 private fun highlightedText(text: String, query: String): AnnotatedString {
     val trimmed = query.trim()
     if (trimmed.isBlank()) return AnnotatedString(text)

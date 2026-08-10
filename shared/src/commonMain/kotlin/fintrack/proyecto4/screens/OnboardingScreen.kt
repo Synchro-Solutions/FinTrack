@@ -1,18 +1,11 @@
 package fintrack.proyecto4.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,9 +31,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,11 +52,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fintrack.proyecto4.onboarding.CURRENCIES
-import fintrack.proyecto4.onboarding.CurrencyOption
 import fintrack.proyecto4.onboarding.OnboardingState
 import fintrack.proyecto4.onboarding.OnboardingViewModel
+import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
+import kotlinx.coroutines.delay
 
 @Composable
 fun OnboardingScreen(
@@ -73,232 +68,157 @@ fun OnboardingScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = LocalAppColors.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.savedOk) {
-        if (state.savedOk) onFinished()
+        if (state.savedOk) {
+            snackbarHostState.showSnackbar(
+                message = "¡Todo listo! Tu configuración inicial se guardó correctamente.",
+                duration = SnackbarDuration.Short
+            )
+            delay(900)
+            onFinished()
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .padding(top = 56.dp, bottom = 32.dp)
-        ) {
-            StepIndicator(currentStep = state.step)
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 48.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    text = "Configura tu cuenta",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
+                Text(
+                    text = "Cuéntanos un poco de ti para personalizar FinTrack. Solo toma un minuto.",
+                    color = colors.textSecondary,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
 
-            Spacer(Modifier.height(40.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+            ) {
+                Spacer(Modifier.height(16.dp))
 
-            AnimatedContent(
-                targetState = state.step,
-                transitionSpec = {
-                    val forward = targetState > initialState
-                    val enter = slideInHorizontally(tween(280)) { if (forward) it else -it } +
-                            fadeIn(tween(280))
-                    val exit = slideOutHorizontally(tween(280)) { if (forward) -it else it } +
-                            fadeOut(tween(280))
-                    enter.togetherWith(exit)
-                },
-                modifier = Modifier.weight(1f),
-                label = "OnboardingStep"
-            ) { step ->
-                when (step) {
-                    1 -> Step1Content(
+                FormCard {
+                    AboutYouSection(
                         state = state,
                         onNameChange = viewModel::setName,
                         onPickPhoto = { onPickPhoto { path -> viewModel.setPhoto(path) } }
                     )
-                    2 -> Step2Content(
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                FormCard {
+                    FinancesSection(
                         state = state,
                         onIncomeChange = viewModel::setIncome,
                         onCurrencyChange = viewModel::setCurrency
                     )
-                    else -> Step3Content(
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                FormCard {
+                    ConsentsSection(
                         state = state,
                         onPrivacyChange = viewModel::setPrivacy,
                         onTermsChange = viewModel::setTerms
                     )
                 }
-            }
 
-            if (state.error != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = state.error!!,
-                    color = FinTrackColors.ErrorColor,
-                    fontSize = 13.sp
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (state.step > 1) {
-                    OutlinedButton(
-                        onClick = viewModel::goBack,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = colors.textPrimary
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, colors.border
-                        )
-                    ) {
-                        Text("Anterior", fontWeight = FontWeight.Medium)
-                    }
+                if (state.error != null) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = state.error!!,
+                        color = FinTrackColors.ErrorColor,
+                        fontSize = 13.sp
+                    )
                 }
 
+                Spacer(Modifier.height(24.dp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Button(
-                    onClick = {
-                        if (state.step == 3) viewModel.saveAndFinish(onFinished)
-                        else viewModel.goNext()
-                    },
+                    onClick = viewModel::submit,
+                    enabled = !state.isSaving,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
+                        .defaultMinSize(minWidth = 220.dp)
+                        .height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = FinTrackColors.GreenPrimary,
-                        disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
-                    ),
-                    enabled = when (state.step) {
-                        1 -> viewModel.canProceedStep1()
-                        3 -> viewModel.canFinish() && !state.isSaving
-                        else -> true
-                    }
+                        containerColor = FinTrackColors.GreenDark,
+                        disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.4f)
+                    )
                 ) {
                     if (state.isSaving) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(22.dp),
                             color = Color.White,
                             strokeWidth = 2.dp
                         )
                     } else {
                         Text(
-                            text = if (state.step == 3) "Empezar" else "Siguiente",
+                            text = "Finalizar configuración",
                             fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
                             color = Color.White
                         )
                     }
                 }
             }
         }
+
+        SuccessSnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
     }
 }
 
-@Composable
-private fun StepIndicator(currentStep: Int) {
-    val colors = LocalAppColors.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        repeat(3) { index ->
-            val stepNum = index + 1
-            val isDone = stepNum < currentStep
-            val isActive = stepNum == currentStep
-
-            StepCircle(number = stepNum, isDone = isDone, isActive = isActive)
-
-            if (index < 2) {
-                Box(
-                    modifier = Modifier
-                        .width(56.dp)
-                        .height(2.dp)
-                        .background(
-                            if (stepNum < currentStep) FinTrackColors.GreenPrimary
-                            else colors.divider
-                        )
-                )
-            }
-        }
-    }
-}
+// ── Tarjeta: Sobre ti (nombre + foto) ──────────────────────────────────────
 
 @Composable
-private fun StepCircle(number: Int, isDone: Boolean, isActive: Boolean) {
-    val colors = LocalAppColors.current
-    val bg = when {
-        isDone -> FinTrackColors.GreenPrimary
-        isActive -> FinTrackColors.GreenPrimary
-        else -> colors.surfaceSecondary
-    }
-    val border = when {
-        isDone || isActive -> FinTrackColors.GreenPrimary
-        else -> colors.divider
-    }
-
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(bg)
-            .border(2.dp, border, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isDone) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-        } else {
-            Text(
-                text = "$number",
-                color = if (isActive) Color.White else colors.textSecondary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-// ── Step 1: Nombre y foto ──────────────────────────────────────────────────
-
-@Composable
-private fun Step1Content(
+private fun AboutYouSection(
     state: OnboardingState,
     onNameChange: (String) -> Unit,
     onPickPhoto: () -> Unit
 ) {
     val colors = LocalAppColors.current
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+    FormSectionTitle("Sobre ti")
+
+    Spacer(Modifier.height(16.dp))
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Cuéntanos de ti",
-            color = colors.textPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
-        Text(
-            text = "Así personalizamos tu experiencia",
-            color = colors.textSecondary,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // Avatar
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(88.dp)
                 .clip(CircleShape)
                 .background(colors.surfaceSecondary)
                 .border(2.dp, colors.border, CircleShape)
@@ -310,7 +230,7 @@ private fun Step1Content(
                     text = state.name.take(2).uppercase().ifEmpty { "?" },
                     color = FinTrackColors.GreenPrimary,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
+                    fontSize = 28.sp
                 )
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -318,7 +238,7 @@ private fun Step1Content(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = colors.textSecondary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                     Text(
                         text = "Foto",
@@ -329,25 +249,36 @@ private fun Step1Content(
                 }
             }
         }
+    }
 
-        Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = state.name,
-            onValueChange = onNameChange,
-            label = { Text("Nombre visible") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = onboardingFieldColors()
+    FieldLabel("Nombre visible *")
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = state.name,
+        onValueChange = onNameChange,
+        placeholder = { Text("¿Cómo quieres que te llamemos?") },
+        singleLine = true,
+        isError = state.nameError != null,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = onboardingFieldColors()
+    )
+    if (state.nameError != null) {
+        Text(
+            text = state.nameError!!,
+            color = FinTrackColors.ErrorColor,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 4.dp, start = 4.dp)
         )
     }
 }
 
-// ── Step 2: Ingreso mensual y moneda ──────────────────────────────────────
+// ── Tarjeta: Tu situación financiera (ingreso + moneda) ────────────────────
 
 @Composable
-private fun Step2Content(
+private fun FinancesSection(
     state: OnboardingState,
     onIncomeChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit
@@ -357,136 +288,125 @@ private fun Step2Content(
     val selectedCurrency = CURRENCIES.firstOrNull { it.code == state.currency } ?: CURRENCIES.first()
     val selectedCurrencyLabel = "${selectedCurrency.symbol} ${selectedCurrency.code} — ${selectedCurrency.label}"
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text(
-            text = "Tu situación financiera",
-            color = colors.textPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
-        Text(
-            text = "Úsalo como referencia para tus metas",
-            color = colors.textSecondary,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(top = 6.dp)
-        )
+    FormSectionTitle("Tu situación financiera")
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = "Úsalo como referencia para tus metas. Puedes ajustarlo después.",
+        color = colors.textSecondary,
+        fontSize = 12.sp
+    )
 
-        Spacer(Modifier.height(32.dp))
+    Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = state.income,
-            onValueChange = { value ->
-                if (value.all { it.isDigit() || it == '.' }) onIncomeChange(value)
-            },
-            label = { Text("Ingreso mensual estimado") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = onboardingFieldColors(),
-            prefix = {
-                Text(
-                    text = "${selectedCurrency.symbol} ",
-                    color = colors.textSecondary
-                )
-            }
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        Box {
-            OutlinedTextField(
-                value = selectedCurrencyLabel,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Moneda principal") },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = colors.textSecondary
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { currencyExpanded = true },
-                shape = RoundedCornerShape(12.dp),
-                colors = onboardingFieldColors()
+    FieldLabel("Ingreso mensual estimado")
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = state.income,
+        onValueChange = { value ->
+            if (value.all { it.isDigit() || it == '.' }) onIncomeChange(value)
+        },
+        placeholder = { Text("0.00", color = colors.textSecondary) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = onboardingFieldColors(),
+        prefix = {
+            Text(
+                text = "${selectedCurrency.symbol} ",
+                color = colors.textSecondary
             )
+        }
+    )
 
-            DropdownMenu(
-                expanded = currencyExpanded,
-                onDismissRequest = { currencyExpanded = false },
-                modifier = Modifier.background(colors.surface)
-            ) {
-                CURRENCIES.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                "${option.symbol} ${option.code} — ${option.label}",
-                                color = colors.textPrimary,
-                                fontSize = 14.sp
-                            )
-                        },
-                        onClick = {
-                            onCurrencyChange(option.code)
-                            currencyExpanded = false
-                        },
-                        colors = MenuDefaults.itemColors(
-                            textColor = colors.textPrimary
+    Spacer(Modifier.height(16.dp))
+
+    FieldLabel("Moneda principal")
+    Spacer(Modifier.height(8.dp))
+    Box {
+        OutlinedTextField(
+            value = selectedCurrencyLabel,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = colors.textSecondary
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { currencyExpanded = true },
+            shape = RoundedCornerShape(12.dp),
+            colors = onboardingFieldColors()
+        )
+
+        DropdownMenu(
+            expanded = currencyExpanded,
+            onDismissRequest = { currencyExpanded = false },
+            modifier = Modifier.background(colors.surface)
+        ) {
+            CURRENCIES.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "${option.symbol} ${option.code} — ${option.label}",
+                            color = colors.textPrimary,
+                            fontSize = 14.sp
                         )
+                    },
+                    onClick = {
+                        onCurrencyChange(option.code)
+                        currencyExpanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = colors.textPrimary
                     )
-                }
+                )
             }
         }
     }
 }
 
-// ── Step 3: Consentimientos ────────────────────────────────────────────────
+// ── Tarjeta: Antes de empezar (consentimientos) ─────────────────────────────
 
 @Composable
-private fun Step3Content(
+private fun ConsentsSection(
     state: OnboardingState,
     onPrivacyChange: (Boolean) -> Unit,
     onTermsChange: (Boolean) -> Unit
 ) {
-    val colors = LocalAppColors.current
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
+    FormSectionTitle("Antes de empezar")
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = "Lee y acepta los siguientes documentos para continuar.",
+        color = LocalAppColors.current.textSecondary,
+        fontSize = 12.sp
+    )
+
+    Spacer(Modifier.height(16.dp))
+
+    ConsentRow(
+        checked = state.privacyAccepted,
+        onCheckedChange = onPrivacyChange,
+        label = "He leído y acepto la Política de Privacidad"
+    )
+
+    Spacer(Modifier.height(12.dp))
+
+    ConsentRow(
+        checked = state.termsAccepted,
+        onCheckedChange = onTermsChange,
+        label = "He leído y acepto los Términos y Condiciones"
+    )
+
+    if (state.consentsError != null) {
+        Spacer(Modifier.height(8.dp))
         Text(
-            text = "Antes de empezar",
-            color = colors.textPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
-        Text(
-            text = "Lee y acepta los siguientes documentos",
-            color = colors.textSecondary,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        ConsentRow(
-            checked = state.privacyAccepted,
-            onCheckedChange = onPrivacyChange,
-            label = "He leído y acepto la Política de Privacidad"
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        ConsentRow(
-            checked = state.termsAccepted,
-            onCheckedChange = onTermsChange,
-            label = "He leído y acepto los Términos y Condiciones"
+            text = state.consentsError!!,
+            color = FinTrackColors.ErrorColor,
+            fontSize = 12.sp
         )
     }
 }
@@ -502,7 +422,7 @@ private fun ConsentRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(colors.surface)
+            .background(colors.surfaceSecondary)
             .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -526,15 +446,54 @@ private fun ConsentRow(
     }
 }
 
+// ── Helpers visuales compartidos por las tres tarjetas ──────────────────────
+
+@Composable
+private fun FormSectionTitle(text: String) {
+    val colors = LocalAppColors.current
+    Text(
+        text = text,
+        color = colors.textPrimary,
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Bold
+    )
+}
+
+@Composable
+private fun FieldLabel(text: String) {
+    val colors = LocalAppColors.current
+    Text(
+        text = text,
+        color = colors.textSecondary,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+@Composable
+private fun FormCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    val colors = LocalAppColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .glassCard()
+            .padding(16.dp),
+        content = content
+    )
+}
+
 @Composable
 private fun onboardingFieldColors() = run {
     val colors = LocalAppColors.current
     OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = FinTrackColors.GreenPrimary,
-    unfocusedBorderColor = colors.border,
-    focusedLabelColor = FinTrackColors.GreenPrimary,
-    unfocusedLabelColor = colors.textSecondary,
-    cursorColor = FinTrackColors.GreenPrimary,
-    focusedTextColor = colors.textPrimary,
-    unfocusedTextColor = colors.textPrimary
-)}
+        focusedBorderColor = FinTrackColors.GreenPrimary,
+        unfocusedBorderColor = colors.border,
+        errorBorderColor = FinTrackColors.ErrorColor,
+        focusedLabelColor = FinTrackColors.GreenPrimary,
+        unfocusedLabelColor = colors.textSecondary,
+        cursorColor = FinTrackColors.GreenPrimary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary
+    )
+}

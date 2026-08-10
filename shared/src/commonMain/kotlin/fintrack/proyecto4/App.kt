@@ -27,6 +27,8 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
 import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationRepository
@@ -43,6 +45,7 @@ import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.AiChatScreen
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.AjustesScreen
+import fintrack.proyecto4.screens.CalculationHistoryScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
@@ -148,6 +151,7 @@ fun App(
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     notificationRepository: NotificationRepository = NoOpNotificationRepository(),
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -426,7 +430,6 @@ fun App(
                         )
 
                         is Screen.FinancialCenter -> FinancialCenterScreen(
-                            historyCount = 0,
                             transactionRepository = transactionRepository,
                             budgetRepository = budgetRepository
                         )
@@ -441,16 +444,19 @@ fun App(
                             }
                         )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() }
                         )
                         is Screen.CurrencyConverter -> CurrencyConverterScreen(
                             onBack = { navController.goBack() }
                         )
                         is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() },
                             onSaved = { navController.goBack() }
                         )
                         is Screen.LiquidacionCalculator -> LiquidacionCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() }
                         )
                         is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
@@ -458,15 +464,16 @@ fun App(
                             description = "Aqui va la calculadora de cesantia."
                         )
                         is Screen.VacacionesCalculator -> VacacionesCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() }
                         )
                         is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
                             title = "Preaviso",
                             description = "Aqui va la calculadora de preaviso."
                         )
-                        is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
-                            title = "Historial",
-                            description = "Aqui va el historial de calculos guardados."
+                        is Screen.CalculationHistory -> CalculationHistoryScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
+                            onBack = { navController.goBack() }
                         )
                         }
                     }

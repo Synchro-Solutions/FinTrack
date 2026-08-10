@@ -45,6 +45,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.CalculationType
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.history.SavedCalculation
 import fintrack.proyecto4.liquidacion.LiquidacionCalculationInput
 import fintrack.proyecto4.liquidacion.LiquidacionCalculationOutcome
 import fintrack.proyecto4.liquidacion.LiquidacionCalculationResult
@@ -58,20 +67,30 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 private enum class LiquidacionDateFieldTarget { INGRESO, SALIDA }
 
+@OptIn(ExperimentalTime::class)
 @Composable
-fun LiquidacionCalculatorScreen(onBack: () -> Unit = {}) {
+fun LiquidacionCalculatorScreen(
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
+    onBack: () -> Unit = {}
+) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    val uid = AuthClient.currentUserId() ?: ""
+    val scope = rememberCoroutineScope()
 
     var fechaIngreso by remember { mutableStateOf<LocalDate?>(null) }
     var fechaSalida by remember { mutableStateOf<LocalDate?>(null) }
     var motivoSalida by remember { mutableStateOf(MotivoSalida.DESPIDO_SIN_JUSTA_CAUSA) }
     var salaryText by remember { mutableStateOf("") }
     var datePickerTarget by remember { mutableStateOf<LiquidacionDateFieldTarget?>(null) }
+    var saved by remember(fechaIngreso, fechaSalida, motivoSalida, salaryText) { mutableStateOf(false) }
 
     val salarioPromedioMensual = salaryText.toDoubleOrNull() ?: 0.0
     val outcome = LiquidacionCalculator.calculate(
@@ -186,7 +205,29 @@ fun LiquidacionCalculatorScreen(onBack: () -> Unit = {}) {
                 is LiquidacionCalculationOutcome.Success -> ResultSection(
                     result = outcome.result,
                     motivoSalida = motivoSalida,
-                    montserrat = montserrat
+                    montserrat = montserrat,
+                    saved = saved,
+                    onGuardar = {
+                        scope.launch {
+                            calculationHistoryRepository.saveCalculation(
+                                uid,
+                                SavedCalculation(
+                                    tipo = CalculationType.LIQUIDACION,
+                                    fechaCalculo = Clock.System.now().toEpochMilliseconds(),
+                                    resumen = "Liquidación estimada (${motivoSalida.label}): ${formatColones(kotlin.math.round(outcome.result.montoTotal).toLong())}",
+                                    montoPrincipal = kotlin.math.round(outcome.result.montoTotal).toLong(),
+                                    detalle = mapOf(
+                                        "Motivo de salida" to motivoSalida.label,
+                                        "Días trabajados" to outcome.result.totalDiasTrabajados.toString(),
+                                        "Años reconocidos (cesantía)" to "${outcome.result.aniosReconocidosCesantia} de 8",
+                                        "Preaviso" to formatColones(kotlin.math.round(outcome.result.montoPreaviso).toLong()),
+                                        "Cesantía" to formatColones(kotlin.math.round(outcome.result.montoCesantia).toLong())
+                                    )
+                                )
+                            )
+                            saved = true
+                        }
+                    }
                 )
                 else -> Box(
                     modifier = Modifier
@@ -457,7 +498,13 @@ private fun groupThousands(rawDigits: String): String {
 }
 
 @Composable
-private fun ResultSection(result: LiquidacionCalculationResult, motivoSalida: MotivoSalida, montserrat: FontFamily) {
+private fun ResultSection(
+    result: LiquidacionCalculationResult,
+    motivoSalida: MotivoSalida,
+    montserrat: FontFamily,
+    saved: Boolean,
+    onGuardar: () -> Unit
+) {
     val colors = LocalAppColors.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ResultTile(
@@ -505,6 +552,25 @@ private fun ResultSection(result: LiquidacionCalculationResult, motivoSalida: Mo
                 fontWeight = FontWeight.Medium,
                 lineHeight = 13.sp
             )
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onGuardar, enabled = !saved) {
+                Icon(
+                    imageVector = if (saved) Icons.Default.Check else Icons.Default.Save,
+                    contentDescription = null,
+                    tint = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = if (saved) "Guardado" else "Guardar en historial",
+                    color = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                    fontFamily = montserrat,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }

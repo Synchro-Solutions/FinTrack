@@ -630,6 +630,7 @@ private fun PresupuestosResumenSection(presupuestos: List<BudgetItem>) {
 private fun PresupuestoResumenRow(budget: BudgetItem) {
     val colors = LocalAppColors.current
     val statusColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING -> FinTrackColors.WarningColor
         BudgetStatus.OK -> FinTrackColors.GreenPrimary

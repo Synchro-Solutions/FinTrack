@@ -48,6 +48,7 @@ import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha40
 import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha70
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.shared.generated.resources.Res
+import fintrack.shared.generated.resources.ic_fintrack_logo
 import fintrack.shared.generated.resources.ic_google_logo
 import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
@@ -130,15 +131,14 @@ fun LoginScreen(
                             brush = Brush.radialGradient(
                                 colors = listOf(GreenLight, GreenDark)
                             ),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = androidx.compose.foundation.shape.CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "$",
-                        color = White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Black
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(Res.drawable.ic_fintrack_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(56.dp)
                     )
                 }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -38,7 +39,7 @@ class MonthlySummaryViewModel(
         if (_state.value.isLoading) return
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val dayKey = "$uid|${today.year}-${pad(today.monthNumber)}-${pad(today.dayOfMonth)}"
+        val dayKey = "$uid|${today.year}-${pad(today.month.number)}-${pad(today.day)}"
 
         if (!force) {
             dailyCache[dayKey]?.let { cached ->
@@ -72,9 +73,9 @@ class MonthlySummaryViewModel(
 
     private fun buildContextJson(transactions: List<Transaction>): String {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val currentKey = "${today.year}-${pad(today.monthNumber)}"
+        val currentKey = "${today.year}-${pad(today.month.number)}"
 
-        var prevMonth = today.monthNumber - 1
+        var prevMonth = today.month.number - 1
         var prevYear = today.year
         if (prevMonth == 0) { prevMonth = 12; prevYear -= 1 }
         val prevKey = "$prevYear-${pad(prevMonth)}"
@@ -98,7 +99,7 @@ class MonthlySummaryViewModel(
 {
   "moneda": "CRC",
   "mesActual": {
-    "nombre": "${monthLabel(today.monthNumber)} ${today.year}",
+    "nombre": "${monthLabel(today.month.number)} ${today.year}",
     "totalGastado": $totalActual,
     "numTransacciones": ${gastosActual.size},
     "top3Categorias": [$top3]

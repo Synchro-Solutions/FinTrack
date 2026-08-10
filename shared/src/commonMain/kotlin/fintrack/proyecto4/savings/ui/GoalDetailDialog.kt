@@ -23,11 +23,18 @@ import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.ai.ProjectionStatus
+import fintrack.proyecto4.ai.SavingsProjection
+import fintrack.proyecto4.util.formatColones
 
 @Composable
 fun GoalDetailDialog(
     goal: SavingsGoal,
     contributions: List<SavingsContribution>,
+    projection: SavingsProjection?,
+    isGeneratingProjection: Boolean,
+    projectionError: String?,
+    onGenerateProjection: () -> Unit,
     onDismiss: () -> Unit,
     onCancelGoal: (SavingsGoal) -> Unit,
     onEditGoal: (SavingsGoal) -> Unit
@@ -173,6 +180,22 @@ fun GoalDetailDialog(
                     )
                 }
 
+                if (goal.hasAiPlan) {
+                    AiSavingsPlanSection(goal)
+                }
+
+                if (
+                    goal.status == GoalStatus.ACTIVE ||
+                    goal.status == GoalStatus.COMPLETED
+                ) {
+                    SavingsProjectionSection(
+                        projection = projection,
+                        isGenerating = isGeneratingProjection,
+                        errorMessage = projectionError,
+                        onGenerateProjection = onGenerateProjection
+                    )
+                }
+
                 if (goal.notes.isNotBlank()) {
                     HorizontalDivider(
                         color = colors.divider
@@ -243,7 +266,7 @@ fun GoalDetailDialog(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(
                         containerColor =
-                            FinTrackColors.GreenPrimary,
+                            FinTrackColors.GreenDark,
                         contentColor =
                             FinTrackColors.White
                     ),
@@ -595,10 +618,8 @@ private fun DetailInformationCard(
     val resolvedValueColor = valueColor ?: colors.textPrimary
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.SpaceBetween,
-        verticalAlignment =
-            Alignment.CenterVertically
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
@@ -698,17 +719,451 @@ private fun DetailPriorityBadge(
     }
 }
 
-private fun formatDetailMoney(
-    amount: Double
-): String {
-    val cleanAmount = amount.toLong()
+@Composable
+private fun AiSavingsPlanSection(
+    goal: SavingsGoal
+) {
+    val colors = LocalAppColors.current
 
-    val formatted = cleanAmount
-        .toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(" ")
-        .reversed()
+    HorizontalDivider(
+        color = colors.divider
+    )
 
-    return "₡$formatted"
+    Column(
+        verticalArrangement =
+            Arrangement.spacedBy(12.dp)
+    ) {
+
+        Text(
+            text = "🤖 Plan generado por IA",
+            color = colors.textPrimary,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        goal.aiMonthlySaving?.let {
+
+            Surface(
+                color = FinTrackColors.GreenPrimary
+                    .copy(alpha = 0.10f),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(
+                    modifier =
+                        Modifier.padding(14.dp)
+                ) {
+
+                    Text(
+                        text = "Ahorro mensual recomendado",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(6.dp)
+                    )
+
+                    Text(
+                        text =
+                            formatDetailMoney(it),
+                        color =
+                            FinTrackColors.GreenPrimary,
+                        fontSize = 18.sp,
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        if (
+            goal.aiCategoriesToReduce.isNotEmpty()
+        ) {
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(6.dp)
+            ) {
+
+                Text(
+                    text = "Categorías donde podrías ahorrar",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                goal.aiCategoriesToReduce.forEach {
+
+                    Surface(
+                        color =
+                            colors.surfaceSecondary,
+                        shape =
+                            RoundedCornerShape(10.dp)
+                    ) {
+
+                        Text(
+                            text = "• $it",
+                            modifier =
+                                Modifier.padding(10.dp),
+                            color =
+                                colors.textSecondary
+                        )
+                    }
+                }
+            }
+        }
+
+        if (
+            goal.aiExplanation.isNotBlank()
+        ) {
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+
+                Text(
+                    text = "Explicación",
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Surface(
+                    color =
+                        colors.surfaceSecondary,
+                    shape =
+                        RoundedCornerShape(14.dp)
+                ) {
+
+                    Text(
+                        text =
+                            goal.aiExplanation,
+                        modifier =
+                            Modifier.padding(14.dp),
+                        color =
+                            colors.textSecondary,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
+    }
 }
+
+
+@Composable
+private fun SavingsProjectionSection(
+    projection: SavingsProjection?,
+    isGenerating: Boolean,
+    errorMessage: String?,
+    onGenerateProjection: () -> Unit
+) {
+    val colors = LocalAppColors.current
+
+    HorizontalDivider(
+        color = colors.divider
+    )
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "✨ Proyección inteligente",
+            color = colors.textPrimary,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "Analiza tu ritmo de ahorro y estima cuándo podrías completar esta meta.",
+            color = colors.textSecondary,
+            fontSize = 12.sp,
+            lineHeight = 18.sp
+        )
+
+        if (projection == null) {
+            Button(
+                onClick = onGenerateProjection,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isGenerating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FinTrackColors.GreenPrimary,
+                    contentColor = FinTrackColors.White
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                if (isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = FinTrackColors.White,
+                        strokeWidth = 2.dp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
+                    Text("Analizando...")
+                } else {
+                    Text("Generar proyección con IA")
+                }
+            }
+        }
+
+        errorMessage?.let { error ->
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = FinTrackColors.ErrorColor.copy(
+                    alpha = 0.10f
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(14.dp),
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        projection?.let { result ->
+            ProjectionStatusCard(
+                status = result.status
+            )
+
+            if (
+                result.status != ProjectionStatus.COMPLETED &&
+                result.status != ProjectionStatus.NO_DATA
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(10.dp)
+                ) {
+                    ProjectionAmountCard(
+                        label = "Promedio mensual",
+                        amount = result.averageMonthlySaving,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    ProjectionAmountCard(
+                        label = "Necesario por mes",
+                        amount = result.requiredMonthlySaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                result.projectedCompletionDate?.let { date ->
+                    DetailInformationCard(
+                        label = "Finalización estimada",
+                        value = date,
+                        valueColor =
+                            FinTrackColors.GreenPrimary
+                    )
+                }
+
+                if (result.monthsRemaining > 0) {
+                    DetailInformationCard(
+                        label = "Meses disponibles",
+                        value = result.monthsRemaining.toString()
+                    )
+                }
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = colors.surfaceSecondary,
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = result.explanation,
+                    modifier = Modifier.padding(14.dp),
+                    color = colors.textSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp
+                )
+            }
+
+            TextButton(
+                onClick = onGenerateProjection,
+                modifier = Modifier.align(
+                    Alignment.End
+                ),
+                enabled = !isGenerating
+            ) {
+                if (isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = FinTrackColors.GreenPrimary,
+                        strokeWidth = 2.dp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+                }
+
+                Text(
+                    text = if (isGenerating) {
+                        "Actualizando..."
+                    } else {
+                        "Actualizar proyección"
+                    },
+                    color = FinTrackColors.GreenPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectionStatusCard(
+    status: ProjectionStatus
+) {
+    val colors = LocalAppColors.current
+
+    val title: String
+    val description: String
+    val statusColor: Color
+
+    when (status) {
+        ProjectionStatus.AHEAD -> {
+            title = "Vas adelantado"
+            description =
+                "Tu ritmo de ahorro supera el necesario."
+            statusColor =
+                FinTrackColors.GreenPrimary
+        }
+
+        ProjectionStatus.ON_TRACK -> {
+            title = "Vas por buen camino"
+            description =
+                "Tu ritmo actual es suficiente para cumplir la meta."
+            statusColor =
+                FinTrackColors.GreenPrimary
+        }
+
+        ProjectionStatus.BEHIND -> {
+            title = "Necesitas mejorar el ritmo"
+            description =
+                "Tu ahorro mensual está por debajo de lo necesario."
+            statusColor =
+                FinTrackColors.WarningColor
+        }
+
+        ProjectionStatus.COMPLETED -> {
+            title = "Meta completada"
+            description =
+                "Ya alcanzaste el monto definido."
+            statusColor =
+                FinTrackColors.GreenPrimary
+        }
+
+        ProjectionStatus.NO_DATA -> {
+            title = "Datos insuficientes"
+            description =
+                "Registra más abonos para obtener una proyección precisa."
+            statusColor =
+                colors.textSecondary
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = statusColor.copy(alpha = 0.10f),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = statusColor.copy(
+                            alpha = 0.15f
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (status) {
+                        ProjectionStatus.AHEAD -> "↗"
+                        ProjectionStatus.ON_TRACK -> "✓"
+                        ProjectionStatus.BEHIND -> "!"
+                        ProjectionStatus.COMPLETED -> "★"
+                        ProjectionStatus.NO_DATA -> "?"
+                    },
+                    color = statusColor,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.width(12.dp)
+            )
+
+            Column {
+                Text(
+                    text = title,
+                    color = statusColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
+
+                Text(
+                    text = description,
+                    color = colors.textSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectionAmountCard(
+    label: String,
+    amount: Double,
+    modifier: Modifier = Modifier
+) {
+    val colors = LocalAppColors.current
+
+    Surface(
+        modifier = modifier,
+        color = colors.surfaceSecondary,
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = label,
+                color = colors.textSecondary,
+                fontSize = 11.sp
+            )
+
+            Spacer(
+                modifier = Modifier.height(5.dp)
+            )
+
+            Text(
+                text = formatDetailMoney(amount),
+                color = FinTrackColors.GreenPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+private fun formatDetailMoney(amount: Double): String = formatColones(amount)

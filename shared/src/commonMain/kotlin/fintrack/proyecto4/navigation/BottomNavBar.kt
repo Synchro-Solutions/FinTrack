@@ -9,9 +9,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerIcon
+import fintrack.proyecto4.theme.glassNav
 
 private data class NavItem(
     val label: String,
@@ -39,8 +41,8 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem("Inicio", Icons.Default.Home, Screen.Dashboard),
     NavItem("Movimientos", Icons.Default.SwapHoriz, Screen.Movimientos),
+    NavItem("Asistente IA", Icons.Default.AutoAwesome, Screen.AiChat),
     NavItem("Presupuestos", Icons.Default.AccountBalance, Screen.Presupuestos),
-    NavItem("Metas", Icons.Default.Star, Screen.Metas),
     NavItem("Más", Icons.Default.MoreHoriz, Screen.FinancialCenter)
 )
 
@@ -62,9 +64,27 @@ fun FinTrackBottomBar(
         ) { it } + fadeOut(tween(NavTransitionDurationMillis, easing = NavTransitionEasing))
     ) {
         val colors = LocalAppColors.current
+        // En claro, el fondo decorativo del app shell (FinTrackAppBackground) ya llega
+        // saturado en primary a esta altura de la pantalla, así que el nav queda
+        // transparente para fundirse con ese verde en vez de tapar con su propia
+        // superficie clara. En oscuro el glow es solo un halo arriba, no llega abajo,
+        // así que ahí sigue con su superficie opaca normal.
+        val navContainerColor = if (colors.isDark) colors.navBar else Color.Transparent
+        val navContentColor = if (colors.isDark) colors.textSecondary else Color.White.copy(alpha = 0.7f)
+        val navSelectedColor = if (colors.isDark) FinTrackColors.GreenPrimary else Color.White
+        // Verde mas oscuro/fuerte para la pildora indicadora, igual al containerColor
+        // del boton "+ Nueva meta" en Metas (colors.primaryDark), en vez del alpha
+        // bajo sobre navSelectedColor que quedaba demasiado tenue.
+        val navIndicatorColor = colors.primaryDark
+        // Solo en claro: ahí el fondo decorativo detras del nav es el degradado saturado
+        // en primary (contenido real que vale la pena esmerilar). En oscuro el glow no
+        // llega hasta esta altura, esmerilarlo no aportaria nada visible, asi que se
+        // mantiene con su superficie opaca normal.
+        val navModifier = if (colors.isDark) Modifier else Modifier.glassNav()
         NavigationBar(
-            containerColor = colors.navBar,
-            tonalElevation = 0.dp
+            containerColor = navContainerColor,
+            tonalElevation = 0.dp,
+            modifier = navModifier
         ) {
             navItems.forEach { item ->
                 val selected = currentScreen == item.screen
@@ -94,11 +114,24 @@ fun FinTrackBottomBar(
                                 }
                             }
                         ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            if (selected && !colors.isDark) {
+                                // En claro el icono seleccionado es blanco solido (para
+                                // resaltar contra el fondo verde); el shimmer le agrega
+                                // el mismo brillo animado que ya tienen los titulos.
+                                ShimmerIcon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label,
+                                    baseColor = navSelectedColor,
+                                    accentColor = colors.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                     },
                     label = {
@@ -109,11 +142,11 @@ fun FinTrackBottomBar(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = FinTrackColors.GreenPrimary,
-                        selectedTextColor = FinTrackColors.GreenPrimary,
-                        unselectedIconColor = colors.textSecondary,
-                        unselectedTextColor = colors.textSecondary,
-                        indicatorColor = FinTrackColors.GreenPrimary.copy(alpha = 0.15f)
+                        selectedIconColor = navSelectedColor,
+                        selectedTextColor = navSelectedColor,
+                        unselectedIconColor = navContentColor,
+                        unselectedTextColor = navContentColor,
+                        indicatorColor = navIndicatorColor.copy(alpha = 0.35f)
                     )
                 )
             }

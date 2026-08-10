@@ -25,10 +25,16 @@ class FirestoreBudgetRepository : BudgetRepository {
                         spent = doc.get<Double>("spent"),
                         limit = doc.get<Double>("limit"),
                         period = doc.get("period"),
-                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f }
+                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f },
+                        periodKey = try { doc.get<String>("periodKey") } catch (_: Exception) { "" },
+                        isActive = try { doc.get<Boolean>("isActive") } catch (_: Exception) { true },
+                        updatedAt = try { doc.get<Long>("updatedAt") } catch (_: Exception) { 0L },
+                        alertSent = try { doc.get<Boolean>("alertSent") } catch (_: Exception) { false },
+                        exceededSent = try { doc.get<Boolean>("exceededSent") } catch (_: Exception) { false }
                     )
                 }.getOrNull()
             }
+            .filter { it.isActive }
         } catch (e: Exception) {
             emptyList()
         }
@@ -44,7 +50,8 @@ class FirestoreBudgetRepository : BudgetRepository {
                 "spent" to item.spent,
                 "limit" to item.limit,
                 "period" to item.period,
-                "alertThreshold" to item.alertThreshold.toDouble()
+                "alertThreshold" to item.alertThreshold.toDouble(),
+                "periodKey" to item.periodKey
             )
         )
     }
@@ -55,5 +62,27 @@ class FirestoreBudgetRepository : BudgetRepository {
 
     override suspend fun deleteBudget(uid: String, budgetId: String) {
         col(uid).document(budgetId).delete()
+    }
+
+    override suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float) {
+        col(uid).document(budgetId).update(
+            "limit" to newLimit,
+            "alertThreshold" to newThreshold.toDouble(),
+            "updatedAt" to System.currentTimeMillis()
+        )
+    }
+
+    override suspend fun deactivateBudget(uid: String, budgetId: String) {
+        col(uid).document(budgetId).update(
+            "isActive" to false,
+            "updatedAt" to System.currentTimeMillis()
+        )
+    }
+
+    override suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean) {
+        col(uid).document(budgetId).update(
+            "alertSent" to alertSent,
+            "exceededSent" to exceededSent
+        )
     }
 }

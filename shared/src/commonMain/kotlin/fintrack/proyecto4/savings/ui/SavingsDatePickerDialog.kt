@@ -10,6 +10,7 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -37,7 +38,7 @@ fun SavingsDatePickerDialog(
     }
 
     val todayMillis = remember(today) {
-        today.toEpochDays().toLong() * MILLIS_PER_DAY
+        today.toEpochDays() * MILLIS_PER_DAY
     }
 
     val selectableDates = remember(todayMillis) {
@@ -194,11 +195,11 @@ private fun formatEpochMillisToDate(
         (millis / MILLIS_PER_DAY).toInt()
     )
 
-    val day = date.dayOfMonth
+    val day = date.day
         .toString()
         .padStart(2, '0')
 
-    val month = date.monthNumber
+    val month = date.month.number
         .toString()
         .padStart(2, '0')
 

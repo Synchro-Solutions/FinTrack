@@ -43,7 +43,7 @@ class AjustesViewModel(
                     isLoading = false,
                     nombre = profile?.name ?: "",
                     email = email,
-                    moneda = if (profile?.currency.isNullOrEmpty()) "CRC (₡)" else "${profile!!.currency} (₡)",
+                    moneda = if (profile?.currency.isNullOrEmpty()) "CRC (₡)" else "${profile.currency} (₡)",
                     ingresoMensual = profile?.income ?: 0.0,
                     fotoUrl = profile?.photoPath
                 )

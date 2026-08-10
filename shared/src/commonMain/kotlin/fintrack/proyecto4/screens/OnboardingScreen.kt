@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +57,7 @@ import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import kotlinx.coroutines.delay
 
 @Composable
@@ -82,7 +84,6 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -153,17 +154,22 @@ fun OnboardingScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Button(
                     onClick = viewModel::submit,
                     enabled = !state.isSaving,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .defaultMinSize(minWidth = 220.dp)
                         .height(54.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = FinTrackColors.GreenPrimary,
-                        disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                        containerColor = FinTrackColors.GreenDark,
+                        disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.4f)
                     )
                 ) {
                     if (state.isSaving) {
@@ -471,7 +477,7 @@ private fun FormCard(content: @Composable androidx.compose.foundation.layout.Col
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(16.dp),
         content = content
     )

@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,13 +50,23 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.CalculationType
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.history.SavedCalculation
 import fintrack.proyecto4.screens.common.AppDatePickerDialog
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 import fintrack.proyecto4.vacation.VacationCalculationInput
+import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import fintrack.proyecto4.vacation.VacationCalculationOutcome
 import fintrack.proyecto4.vacation.VacationCalculationResult
 import fintrack.proyecto4.vacation.VacationCalculator
@@ -63,21 +75,28 @@ import fintrack.proyecto4.vacation.VacationPaymentModality
 import fintrack.proyecto4.vacation.formatVacationDays
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 private enum class DateFieldTarget { START, CUTOFF }
 
+@OptIn(ExperimentalTime::class)
 @Composable
-fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
+fun VacacionesCalculatorScreen(
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
+    onBack: () -> Unit = {}
+) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    val uid = AuthClient.currentUserId() ?: ""
+    val scope = rememberCoroutineScope()
 
     var employmentStartDate by remember { mutableStateOf<LocalDate?>(null) }
     var cutoffDate by remember { mutableStateOf<LocalDate?>(Clock.System.todayIn(TimeZone.currentSystemDefault())) }
     var paymentModality by remember { mutableStateOf(VacationPaymentModality.MONTHLY_OR_BIWEEKLY) }
     var salaryText by remember { mutableStateOf("") }
     var datePickerTarget by remember { mutableStateOf<DateFieldTarget?>(null) }
+    var saved by remember(employmentStartDate, cutoffDate, paymentModality, salaryText) { mutableStateOf(false) }
 
     val grossMonthlySalary = salaryText.toDoubleOrNull() ?: 0.0
     val outcome = if (employmentStartDate != null && cutoffDate != null) {
@@ -96,7 +115,6 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(title = "Calculadora de Vacaciones", onBack = onBack)
 
@@ -207,12 +225,36 @@ fun VacacionesCalculatorScreen(onBack: () -> Unit = {}) {
             }
 
             when (outcome) {
-                is VacationCalculationOutcome.Success -> ResultSection(result = outcome.result, montserrat = montserrat)
+                is VacationCalculationOutcome.Success -> ResultSection(
+                    result = outcome.result,
+                    montserrat = montserrat,
+                    saved = saved,
+                    onGuardar = {
+                        scope.launch {
+                            calculationHistoryRepository.saveCalculation(
+                                uid,
+                                SavedCalculation(
+                                    tipo = CalculationType.VACACIONES,
+                                    fechaCalculo = Clock.System.now().toEpochMilliseconds(),
+                                    resumen = "Vacaciones: ${formatVacationDays(outcome.result.totalDays)} (${formatColones(kotlin.math.round(outcome.result.amountToPay).toLong())})",
+                                    montoPrincipal = kotlin.math.round(outcome.result.amountToPay).toLong(),
+                                    detalle = mapOf(
+                                        "Días totales" to formatVacationDays(outcome.result.totalDays),
+                                        "Días consolidados" to formatVacationDays(outcome.result.consolidatedDays),
+                                        "Días proporcionales" to formatVacationDays(outcome.result.proportionalDays),
+                                        "Salario diario" to formatColones(kotlin.math.round(outcome.result.dailyWage).toLong())
+                                    )
+                                )
+                            )
+                            saved = true
+                        }
+                    }
+                )
                 else -> Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(colors.surface)
+                        .glassCard()
                         .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -278,7 +320,7 @@ private fun SectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         if (title != null) {
@@ -484,7 +526,12 @@ private object SalaryThousandsVisualTransformation : VisualTransformation {
 }
 
 @Composable
-private fun ResultSection(result: VacationCalculationResult, montserrat: FontFamily) {
+private fun ResultSection(
+    result: VacationCalculationResult,
+    montserrat: FontFamily,
+    saved: Boolean,
+    onGuardar: () -> Unit
+) {
     val colors = LocalAppColors.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -523,6 +570,25 @@ private fun ResultSection(result: VacationCalculationResult, montserrat: FontFam
                 lineHeight = 13.sp
             )
         }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onGuardar, enabled = !saved) {
+                Icon(
+                    imageVector = if (saved) Icons.Default.Check else Icons.Default.Save,
+                    contentDescription = null,
+                    tint = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = if (saved) "Guardado" else "Guardar en historial",
+                    color = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                    fontFamily = montserrat,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
     }
 }
 
@@ -538,7 +604,7 @@ private fun ResultTile(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface)
+            .glassCard()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -589,8 +655,8 @@ private fun BreakdownRow(label: String, value: String, montserrat: FontFamily) {
 }
 
 private fun formatLocalDateUs(date: LocalDate): String {
-    val month = date.monthNumber.toString().padStart(2, '0')
-    val day = date.dayOfMonth.toString().padStart(2, '0')
+    val month = date.month.number.toString().padStart(2, '0')
+    val day = date.day.toString().padStart(2, '0')
     return "$month/$day/${date.year}"
 }
 

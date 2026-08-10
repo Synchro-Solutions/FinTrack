@@ -9,5 +9,6 @@ package fintrack.proyecto4.profile
 object CloudinaryConfig {
     const val CLOUD_NAME = "cvami8c2"
     const val UPLOAD_PRESET = "fintrack_profile_photos"
+    const val RECEIPT_UPLOAD_PRESET = "fintrack_receipts"
     const val UPLOAD_URL = "https://api.cloudinary.com/v1_1/$CLOUD_NAME/image/upload"
 }

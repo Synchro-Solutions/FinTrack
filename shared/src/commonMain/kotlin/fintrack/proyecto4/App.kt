@@ -58,6 +58,7 @@ import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
+import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LightAppColors
@@ -186,6 +187,11 @@ fun App(
                                         else navController.replace(Screen.Onboarding)
                                     }
                                 }
+                            )
+
+                            is Screen.ForgotPassword -> ForgotPasswordScreen(
+                                authRepository = authRepository,
+                                onBack = { navController.goBack() }
                             )
 
                             is Screen.Onboarding -> {

@@ -23,6 +23,7 @@ internal val NavTransitionEasing = FastOutSlowInEasing
  */
 sealed interface Screen {
     data object Login : Screen
+    data object ForgotPassword : Screen
     data object Onboarding : Screen
     data object Dashboard : Screen
     data object Movimientos : Screen

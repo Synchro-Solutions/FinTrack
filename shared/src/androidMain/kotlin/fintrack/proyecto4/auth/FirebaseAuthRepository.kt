@@ -51,6 +51,17 @@ class FirebaseAuthRepository(private val sessionStore: SessionStore) : AuthRepos
         }
     }
 
+    override suspend fun sendPasswordResetEmail(email: String): PasswordResetResult {
+        return try {
+            auth.sendPasswordResetEmail(email)
+            PasswordResetResult.Success
+        } catch (e: FirebaseAuthException) {
+            PasswordResetResult.Success
+        } catch (e: Exception) {
+            PasswordResetResult.NetworkError("Error de conexión. Intente de nuevo.")
+        }
+    }
+
     override suspend fun getStoredToken(): String? {
         if (!sessionStore.getRememberMe()) {
             auth.signOut()

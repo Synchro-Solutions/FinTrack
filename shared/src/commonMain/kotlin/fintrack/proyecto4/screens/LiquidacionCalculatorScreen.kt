@@ -36,14 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -321,7 +319,13 @@ private fun LiquidacionDateField(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalAppColors.current
-    var text by remember(value) { mutableStateOf(value?.let { formatLocalDateUs(it) } ?: "") }
+    // TextFieldValue con cursor fijado al final: reformatear el String en cada tecla (insertando
+    // "/") sin controlar la seleccion hace que Compose no sepa donde quedo el cursor y lo salte
+    // a una posicion incorrecta, insertando los siguientes caracteres en el lugar equivocado.
+    var fieldValue by remember(value) {
+        val initialText = value?.let { formatLocalDateUs(it) } ?: ""
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(initialText.length)))
+    }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(text = label, color = colors.textPrimary, fontFamily = montserrat, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
@@ -335,10 +339,10 @@ private fun LiquidacionDateField(
             verticalAlignment = Alignment.CenterVertically
         ) {
             BasicTextField(
-                value = text,
-                onValueChange = { input ->
-                    val formatted = formatUsDateDigits(input)
-                    text = formatted
+                value = fieldValue,
+                onValueChange = { newValue ->
+                    val formatted = formatUsDateDigits(newValue.text)
+                    fieldValue = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
                     onValueChange(parseUsInputDate(formatted))
                 },
                 singleLine = true,
@@ -352,7 +356,7 @@ private fun LiquidacionDateField(
                 cursorBrush = SolidColor(FinTrackColors.GreenPrimary),
                 modifier = Modifier.weight(1f),
                 decorationBox = { innerTextField ->
-                    if (text.isEmpty()) {
+                    if (fieldValue.text.isEmpty()) {
                         Text(
                             text = "mm/dd/yyyy",
                             color = colors.textSecondary,
@@ -383,6 +387,16 @@ private fun SalaryField(
     montserrat: FontFamily
 ) {
     val colors = LocalAppColors.current
+    // Igual que LiquidacionDateField: se muestra el texto ya agrupado por miles (con TextFieldValue
+    // y cursor al final) en vez de usar VisualTransformation. El offsetMapping de una
+    // VisualTransformation para agrupar por miles necesita calcular la posicion desde el final del
+    // numero (no desde el inicio), y calcularlo tomando un prefijo del string crudo — como se hacia
+    // antes — da una posicion de cursor incorrecta en cuanto el numero pasa de 3 digitos.
+    val displayText = groupThousands(value)
+    var fieldValue by remember(displayText) {
+        mutableStateOf(TextFieldValue(text = displayText, selection = TextRange(displayText.length)))
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -404,11 +418,15 @@ private fun SalaryField(
             )
             Spacer(Modifier.width(6.dp))
             BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = fieldValue,
+                onValueChange = { newValue ->
+                    val rawDigits = newValue.text.filter { it.isDigit() }
+                    val formatted = groupThousands(rawDigits)
+                    fieldValue = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+                    onValueChange(rawDigits)
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = LiquidacionThousandsVisualTransformation,
                 textStyle = TextStyle(
                     color = colors.textPrimary,
                     fontFamily = montserrat,
@@ -418,7 +436,7 @@ private fun SalaryField(
                 cursorBrush = SolidColor(FinTrackColors.GreenPrimary),
                 modifier = Modifier.weight(1f),
                 decorationBox = { innerTextField ->
-                    if (value.isEmpty()) {
+                    if (fieldValue.text.isEmpty()) {
                         Text(
                             text = "0",
                             color = colors.textSecondary,
@@ -434,25 +452,8 @@ private fun SalaryField(
     }
 }
 
-private object LiquidacionThousandsVisualTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val raw = text.text.filter { it.isDigit() }
-        val formatted = raw.reversed().chunked(3).joinToString(".").reversed()
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                val safe = offset.coerceIn(0, raw.length)
-                return raw.take(safe).reversed().chunked(3).joinToString(".").reversed().length
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                val safe = offset.coerceIn(0, formatted.length)
-                return formatted.take(safe).count { it.isDigit() }
-            }
-        }
-
-        return TransformedText(AnnotatedString(formatted), offsetMapping)
-    }
+private fun groupThousands(rawDigits: String): String {
+    return rawDigits.reversed().chunked(3).joinToString(".").reversed()
 }
 
 @Composable

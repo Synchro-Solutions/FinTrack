@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.ai.FinancialAdviceService
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
 import fintrack.proyecto4.savings.model.GoalStatus
@@ -45,6 +47,9 @@ class DashboardViewModel(
 
     private val savingsRepository: SavingsRepository =
         SavingsRepository(),
+
+    private val notificationRepository: NotificationRepository =
+        NoOpNotificationRepository(),
 
     private val financialAdviceService: FinancialAdviceService =
         FinancialAdviceService()
@@ -177,8 +182,10 @@ class DashboardViewModel(
             )
         }
 
-        val notificationCount = budgets.count {
-            it.usagePct >= it.alertThreshold
+        val notificationCount = try {
+            notificationRepository.unreadCount(uid)
+        } catch (_: Exception) {
+            0
         }
 
         val fallbackAdvice = buildConsejo(

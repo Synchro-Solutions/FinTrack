@@ -35,6 +35,7 @@ import fintrack.proyecto4.transaction.CustomCategory
 import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.transaction.TransactionFormViewModel
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
@@ -51,6 +52,7 @@ fun OcrConfirmScreen(
     onCancel: () -> Unit,
     onSaved: () -> Unit,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetAlertService: BudgetAlertService? = null,
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository()
 ) {
     val uid = AuthClient.currentUserId() ?: ""
@@ -61,6 +63,7 @@ fun OcrConfirmScreen(
             transactionRepository,
             uid,
             TransactionType.EXPENSE,
+            budgetAlertService = budgetAlertService,
             categoryRepository = categoryRepository
         )
     }

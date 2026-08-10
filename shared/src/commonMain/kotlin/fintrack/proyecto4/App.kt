@@ -27,6 +27,9 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.notifications.BudgetAlertService
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
@@ -52,6 +55,7 @@ import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.TransactionsScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
+import fintrack.proyecto4.screens.NotificationsScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
@@ -139,6 +143,7 @@ fun App(
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    notificationRepository: NotificationRepository = NoOpNotificationRepository(),
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
@@ -199,6 +204,10 @@ fun App(
                 OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
             }
             val hazeState = remember { HazeState() }
+
+            val budgetAlertService = remember {
+                BudgetAlertService(budgetRepository, notificationRepository, onboardingRepository)
+            }
 
             CompositionLocalProvider(
                 LocalNavController provides navController,
@@ -265,6 +274,14 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
+                                notificationRepository = notificationRepository,
+                                onNavigateToNotifications = { navController.navigate(Screen.Notifications) },
+                                onNavigateToIngreso = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
+                                },
+                                onNavigateToGasto = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                },
                                 onNavigateToOcr = {
                                     ocrAssistantViewModel.reset()
                                     navController.navigate(Screen.OcrAssistant)
@@ -280,6 +297,7 @@ fun App(
                             initialType = screen.initialType,
                             editingTransaction = screen.editingTransaction,
                             transactionRepository = transactionRepository,
+                            budgetAlertService = budgetAlertService,
                             categoryRepository = categoryRepository,
                             onBack = {
                                 navController.goBack()
@@ -333,6 +351,7 @@ fun App(
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
                             transactionRepository = transactionRepository,
+                            budgetAlertService = budgetAlertService,
                             categoryRepository = categoryRepository,
                             onCancel = {
                                 // Screen.OcrAssistant solo se alcanza desde el formulario manual
@@ -358,7 +377,10 @@ fun App(
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
                             transactionRepository = transactionRepository,
-                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
+                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) },
+                            onTransactionClick = { transaction ->
+                                navController.navigate(Screen.TransactionDetail(transaction))
+                            }
                         )
                         is Screen.NuevoPresupuesto -> CreateBudgetScreen(
                             budgetRepository = budgetRepository,
@@ -371,6 +393,11 @@ fun App(
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
+                            onBack = { navController.goBack() }
+                        )
+
+                        is Screen.Notifications -> NotificationsScreen(
+                            notificationRepository = notificationRepository,
                             onBack = { navController.goBack() }
                         )
 

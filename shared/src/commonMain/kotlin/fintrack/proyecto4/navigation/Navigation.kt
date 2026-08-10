@@ -61,6 +61,7 @@ sealed interface Screen {
     ) : Screen
 
     data object AiChat : Screen
+    data object Notifications : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object Reportes : Screen

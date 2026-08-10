@@ -260,40 +260,26 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Recordarme + Olvidé mi contraseña
+                    // Recordarme
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = rememberMe,
-                                onCheckedChange = { rememberMe = it },
-                                enabled = !isLoading,
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = GreenPrimary,
-                                    uncheckedColor = WhiteAlpha40,
-                                    checkmarkColor = White
-                                )
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            enabled = !isLoading,
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = GreenPrimary,
+                                uncheckedColor = WhiteAlpha40,
+                                checkmarkColor = White
                             )
-                            Text(
-                                text = "Recordarme",
-                                color = WhiteAlpha70,
-                                fontSize = 14.sp
-                            )
-                        }
-                        TextButton(
-                            onClick = { navController.navigate(Screen.ForgotPassword) },
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                text = "¿Olvidaste tu contraseña?",
-                                color = GreenLight,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        )
+                        Text(
+                            text = "Recordarme",
+                            color = WhiteAlpha70,
+                            fontSize = 14.sp
+                        )
                     }
 
                     // Error / Bloqueo

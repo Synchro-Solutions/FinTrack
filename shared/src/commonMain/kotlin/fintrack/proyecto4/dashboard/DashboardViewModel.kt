@@ -22,11 +22,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
+import fintrack.proyecto4.util.buildMonthlyChartData
+import fintrack.proyecto4.util.toSpanishLabel
 
 private const val UltimosMovimientosCount = 4
 
@@ -170,7 +171,7 @@ class DashboardViewModel(
             }
 
         val chartData =
-            buildChartData(transactions)
+            buildMonthlyChartData(transactions, monthsBack = 6)
 
         val presupuestos = budgets.map { budget ->
             PresupuestoItem(
@@ -409,84 +410,6 @@ class DashboardViewModel(
         )
 
         return "${today.month.toSpanishLabel()} ${today.year}"
-    }
-
-    private fun Month.toSpanishLabel(): String {
-        return when (this) {
-            Month.JANUARY -> "Enero"
-            Month.FEBRUARY -> "Febrero"
-            Month.MARCH -> "Marzo"
-            Month.APRIL -> "Abril"
-            Month.MAY -> "Mayo"
-            Month.JUNE -> "Junio"
-            Month.JULY -> "Julio"
-            Month.AUGUST -> "Agosto"
-            Month.SEPTEMBER -> "Septiembre"
-            Month.OCTOBER -> "Octubre"
-            Month.NOVEMBER -> "Noviembre"
-            Month.DECEMBER -> "Diciembre"
-        }
-    }
-
-    private fun buildChartData(
-        transactions: List<Transaction>
-    ): List<MonthlyChartData> {
-        val today = Clock.System.todayIn(
-            TimeZone.currentSystemDefault()
-        )
-
-        val result =
-            mutableListOf<MonthlyChartData>()
-
-        for (offset in 5 downTo 0) {
-            var monthNum =
-                today.monthNumber - offset
-
-            var year =
-                today.year
-
-            if (monthNum <= 0) {
-                monthNum += 12
-                year--
-            }
-
-            val label = Month(monthNum)
-                .toSpanishLabel()
-                .take(3)
-
-            val monthTransactions = transactions.filter { transaction ->
-                val dateParts =
-                    transaction.date.split("/")
-
-                dateParts.size == 3 &&
-                        dateParts[1].toIntOrNull() == monthNum &&
-                        dateParts[2].toIntOrNull() == year
-            }
-
-            result.add(
-                MonthlyChartData(
-                    mes = label,
-
-                    ingresos = monthTransactions
-                        .filter {
-                            it.type == TransactionType.INCOME
-                        }
-                        .sumOf {
-                            it.amount
-                        },
-
-                    gastos = monthTransactions
-                        .filter {
-                            it.type == TransactionType.EXPENSE
-                        }
-                        .sumOf {
-                            it.amount
-                        }
-                )
-            )
-        }
-
-        return result
     }
 
     /**

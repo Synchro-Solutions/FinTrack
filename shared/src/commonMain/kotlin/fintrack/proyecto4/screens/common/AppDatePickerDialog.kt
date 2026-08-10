@@ -34,15 +34,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -98,11 +99,15 @@ fun AppDatePickerDialog(
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val startDate = initialDate ?: today
 
-    var selectedDate by rememberSaveable { mutableStateOf(startDate) }
-    var displayedYearMonth by rememberSaveable { mutableStateOf(YearMonth(startDate.year, startDate.month.number)) }
-    var mode by rememberSaveable { mutableStateOf(PickerMode.CALENDAR) }
-    var showYearPicker by rememberSaveable { mutableStateOf(false) }
-    var textInput by rememberSaveable { mutableStateOf(formatForInput(selectedDate)) }
+    // remember (no rememberSaveable): YearMonth es una data class privada sin Parcelable/
+    // Serializable, y rememberSaveable con un tipo no guardable tira una excepcion en tiempo
+    // real al abrir el dialogo. Es un dialogo modal de corta duracion, perder el estado en un
+    // cambio de configuracion es aceptable a cambio de no crashear.
+    var selectedDate by remember { mutableStateOf(startDate) }
+    var displayedYearMonth by remember { mutableStateOf(YearMonth(startDate.year, startDate.month.number)) }
+    var mode by remember { mutableStateOf(PickerMode.CALENDAR) }
+    var showYearPicker by remember { mutableStateOf(false) }
+    var textInput by remember { mutableStateOf(formatForInput(selectedDate)) }
     var textInputError by remember { mutableStateOf(false) }
 
     fun isOutOfRange(date: LocalDate): Boolean =
@@ -405,6 +410,12 @@ private fun ManualDateInput(
     onValueChange: (String) -> Unit
 ) {
     val colors = LocalAppColors.current
+    // TextFieldValue con cursor fijado al final: BasicTextField(String) reformateando el texto
+    // en cada tecla (insertando "/") hace que Compose no sepa donde quedo el cursor y lo salte
+    // a una posicion incorrecta, insertando los siguientes caracteres en el lugar equivocado.
+    var fieldValue by remember(value) {
+        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
+    }
     Column {
         Box(
             modifier = Modifier
@@ -415,8 +426,12 @@ private fun ManualDateInput(
             contentAlignment = Alignment.CenterStart
         ) {
             BasicTextField(
-                value = value,
-                onValueChange = { input -> onValueChange(formatDateInputDigits(input)) },
+                value = fieldValue,
+                onValueChange = { newValue ->
+                    val formatted = formatDateInputDigits(newValue.text)
+                    fieldValue = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+                    onValueChange(formatted)
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 textStyle = TextStyle(

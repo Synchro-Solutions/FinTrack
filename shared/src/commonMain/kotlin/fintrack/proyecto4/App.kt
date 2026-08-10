@@ -49,6 +49,7 @@ import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.EditarPerfilScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
 import fintrack.proyecto4.screens.ForgotPasswordScreen
+import fintrack.proyecto4.screens.LiquidacionCalculatorScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
@@ -441,9 +442,8 @@ fun App(
                             onBack = { navController.goBack() },
                             onSaved = { navController.goBack() }
                         )
-                        is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
-                            title = "Liquidacion",
-                            description = "Aqui va la calculadora de liquidacion."
+                        is Screen.LiquidacionCalculator -> LiquidacionCalculatorScreen(
+                            onBack = { navController.goBack() }
                         )
                         is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
                             title = "Cesantia",

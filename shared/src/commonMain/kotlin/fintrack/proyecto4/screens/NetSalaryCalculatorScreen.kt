@@ -46,13 +46,22 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.CalculationType
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.history.SavedCalculation
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
+import kotlinx.coroutines.launch
 import kotlin.math.round
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /** Rebaja adicional opcional agregada manualmente por el usuario (ej. pensión, préstamo). */
 private data class Deduction(val name: String, val amount: Long)
@@ -135,13 +144,17 @@ private fun formatThousandsWithDots(digits: String): String {
     return digits.reversed().chunked(3).joinToString(".").reversed()
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun NetSalaryCalculatorScreen(
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    val uid = AuthClient.currentUserId() ?: ""
+    val scope = rememberCoroutineScope()
 
     var grossSalaryText by remember { mutableStateOf("") }
     var ccssRatePercent by remember { mutableStateOf(DEFAULT_CCSS_RATE_PERCENT) }
@@ -325,7 +338,26 @@ fun NetSalaryCalculatorScreen(
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Button(
-                onClick = { onSaved() },
+                onClick = {
+                    scope.launch {
+                        calculationHistoryRepository.saveCalculation(
+                            uid,
+                            SavedCalculation(
+                                tipo = CalculationType.SALARIO_NETO,
+                                fechaCalculo = Clock.System.now().toEpochMilliseconds(),
+                                resumen = "Salario neto estimado: ${formatColones(netSalary)}",
+                                montoPrincipal = netSalary,
+                                detalle = mapOf(
+                                    "Salario bruto" to formatColones(grossSalary),
+                                    "CCSS trabajador" to formatColones(ccssAmount),
+                                    "Renta estimada" to formatColones(incomeTax),
+                                    "Otras rebajas" to formatColones(otherDeductionsTotal)
+                                )
+                            )
+                        )
+                        onSaved()
+                    }
+                },
                 enabled = grossSalary > 0,
                 modifier = Modifier
                     .height(52.dp),

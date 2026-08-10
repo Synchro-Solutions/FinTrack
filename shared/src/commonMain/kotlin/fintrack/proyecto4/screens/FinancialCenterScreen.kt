@@ -71,7 +71,6 @@ internal fun financialMenuItems(): List<FinancialMenuItem> = listOf(
 
 @Composable
 fun FinancialCenterScreen(
-    historyCount: Int = 0,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository()
 ) {
@@ -146,7 +145,11 @@ fun FinancialCenterScreen(
                     FinancialCard(
                         item = item,
                         minHeight = cardMinHeight,
-                        badgeCount = if (item.route == Screen.CalculationHistory) historyCount else 0,
+                        // Ningun item de este menu usa badge por ahora (el de Historial se quito:
+                        // un historial no tiene "no leidos" como una notificacion). El parametro
+                        // badgeCount de FinancialCard se deja generico por si algun item futuro
+                        // lo necesita.
+                        badgeCount = 0,
                         onClick = { navController.navigate(item.route) }
                     )
                 }

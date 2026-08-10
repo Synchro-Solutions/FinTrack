@@ -24,6 +24,7 @@ import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
+import fintrack.proyecto4.history.FirestoreCalculationHistoryRepository
 import fintrack.proyecto4.notifications.AndroidNotifierContext
 import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
@@ -92,6 +93,7 @@ class MainActivity : ComponentActivity() {
         val transactionRepository = FirestoreTransactionRepository()
         val notificationRepository = FirestoreNotificationRepository()
         val categoryRepository = FirestoreCustomCategoryRepository()
+        val calculationHistoryRepository = FirestoreCalculationHistoryRepository()
 
         setContent {
             App(
@@ -101,6 +103,7 @@ class MainActivity : ComponentActivity() {
                 transactionRepository = transactionRepository,
                 notificationRepository = notificationRepository,
                 categoryRepository = categoryRepository,
+                calculationHistoryRepository = calculationHistoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },

@@ -61,6 +61,7 @@ import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.ReportesScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
@@ -75,6 +76,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.PendingCategoryFilter
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
@@ -428,9 +430,15 @@ fun App(
                             transactionRepository = transactionRepository,
                             budgetRepository = budgetRepository
                         )
-                        is Screen.Reportes -> CalculatorPlaceholderScreen(
-                            title = "Reportes",
-                            description = "Aqui van los reportes financieros."
+                        is Screen.Reportes -> ReportesScreen(
+                            transactionRepository = transactionRepository,
+                            budgetRepository = budgetRepository,
+                            onBack = { navController.goBack() },
+                            onShareText = onShareText,
+                            onVerCategoria = { categoria ->
+                                PendingCategoryFilter.post(categoria)
+                                navController.navigate(Screen.Movimientos)
+                            }
                         )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
                             onBack = { navController.goBack() }

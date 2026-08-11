@@ -3,7 +3,9 @@ package fintrack.proyecto4.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,16 +27,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.dashboard.MonthlyChartData
+import fintrack.proyecto4.reportes.CategoriaReporteItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.util.formatColonesCompacto
 
 /**
  * Contenedor tipo "vidrio esmerilado" usado por las secciones del Dashboard y Reportes.
@@ -112,4 +121,112 @@ internal fun GradientBar(fraction: Float, width: Dp, brush: Brush, delayMillis: 
             .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
             .background(brush)
     )
+}
+
+/**
+ * Paleta cíclica para segmentos de categoría (donut de Reportes y Dashboard): si hay más
+ * categorías que colores, se repite desde el inicio en vez de fallar o quedarse sin color.
+ */
+@Composable
+internal fun categoriaPalette(): List<Color> = listOf(
+    FinTrackColors.GreenPrimary,
+    FinTrackColors.IndigoLight,
+    FinTrackColors.VioletLight,
+    FinTrackColors.BlueMeta,
+    FinTrackColors.WarningLight,
+    FinTrackColors.RedLight,
+    FinTrackColors.GreenLight,
+    FinTrackColors.IndigoDark
+)
+
+/** Tarjeta con donut + leyenda para un desglose de categorías (gastos/ingresos). Tocar una
+ *  categoría de la leyenda navega a su historial filtrado (mismo patrón en toda la app, ver
+ *  PendingCategoryFilter), en vez de un tooltip flotante que no existe como componente aquí. */
+@Composable
+internal fun CategoriaDonutSection(
+    titulo: String,
+    items: List<CategoriaReporteItem>,
+    onCategoriaClick: (String) -> Unit,
+    /** Mensaje mostrado cuando [items] está vacío; null (default) omite la tarjeta entera,
+     *  como ya hacía Reportes. */
+    emptyMessage: String? = null
+) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+
+    if (items.isEmpty()) {
+        if (emptyMessage == null) return
+        DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(titulo, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
+            Spacer(Modifier.height(10.dp))
+            Text(emptyMessage, color = colors.textSecondary, fontSize = 12.sp, fontFamily = montserrat)
+        }
+        return
+    }
+
+    val palette = categoriaPalette()
+
+    DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(titulo, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
+        Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            DonutChart(
+                items = items,
+                colors = items.indices.map { palette[it % palette.size] },
+                modifier = Modifier.size(96.dp)
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items.take(5).forEachIndexed { index, item ->
+                    CategoriaLegendRow(
+                        item = item,
+                        color = palette[index % palette.size],
+                        onClick = { onCategoriaClick(item.categoria) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DonutChart(items: List<CategoriaReporteItem>, colors: List<Color>, modifier: Modifier = Modifier) {
+    val total = items.sumOf { it.monto }.coerceAtLeast(1L).toFloat()
+    Canvas(modifier = modifier) {
+        val strokeWidth = size.minDimension * 0.24f
+        var startAngle = -90f
+        items.forEachIndexed { index, item ->
+            val sweep = (item.monto / total) * 360f
+            drawArc(
+                color = colors[index],
+                startAngle = startAngle,
+                sweepAngle = sweep.coerceAtLeast(0f),
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
+                topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
+                size = Size(size.width - strokeWidth, size.height - strokeWidth)
+            )
+            startAngle += sweep
+        }
+    }
+}
+
+@Composable
+internal fun CategoriaLegendRow(item: CategoriaReporteItem, color: Color, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+    ) {
+        Box(Modifier.size(8.dp).background(color, CircleShape))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            item.categoria,
+            color = colors.textPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        Text("${formatColonesCompacto(item.monto)} · ${item.porcentaje}%", color = colors.textSecondary, fontSize = 11.sp)
+    }
 }

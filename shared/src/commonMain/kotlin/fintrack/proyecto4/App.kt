@@ -208,7 +208,11 @@ fun App(
             val scope = rememberCoroutineScope()
 
             val ocrAssistantViewModel = remember {
-                OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
+                OcrAssistantViewModel(
+                    recognizeText = onRecognizeReceiptText,
+                    categoryRepository = categoryRepository,
+                    uid = AuthClient.currentUserId() ?: ""
+                )
             }
             val hazeState = remember { HazeState() }
 
@@ -297,7 +301,11 @@ fun App(
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
                                 onNavigateToMetas = { navController.navigate(Screen.Metas) },
-                                onShareText = onShareText
+                                onShareText = onShareText,
+                                onVerCategoria = { categoria ->
+                                    PendingCategoryFilter.post(categoria)
+                                    navController.navigate(Screen.Movimientos)
+                                }
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(

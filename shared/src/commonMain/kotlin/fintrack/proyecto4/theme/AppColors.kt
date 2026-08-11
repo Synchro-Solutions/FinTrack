@@ -22,7 +22,7 @@ data class AppColors(
 )
 
 val DarkAppColors = AppColors(
-    bg               = Color(0xFF1C4038),
+    bg               = Color(0xFF021A15),
     surface          = Color(0xFF254F44),
     surfaceSecondary = Color(0xFF2F6153),
     primary          = Color(0xFF62C9A7),

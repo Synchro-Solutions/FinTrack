@@ -62,6 +62,7 @@ import fintrack.proyecto4.dashboard.MetaItem
 import fintrack.proyecto4.dashboard.MonthlyChartData
 import fintrack.proyecto4.dashboard.MovimientoItem
 import fintrack.proyecto4.dashboard.PresupuestoItem
+import fintrack.proyecto4.dashboard.TopCategoriaItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
@@ -95,7 +96,8 @@ fun DashboardScreen(
     onNavigateToMetas: () -> Unit = {},
     onNavigateToChat: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    onShareText: (String) -> Unit = {}
+    onShareText: (String) -> Unit = {},
+    onVerCategoria: (String) -> Unit = {}
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) {
@@ -189,6 +191,22 @@ fun DashboardScreen(
             }
             item { Spacer(Modifier.height(12.dp)) }
             item { ChartSection(data = state.chartData) }
+            item { Spacer(Modifier.height(24.dp)) }
+            item {
+                TopCategoriaCard(
+                    item = state.mayorGastoCategoria,
+                    onClick = { state.mayorGastoCategoria?.let { onVerCategoria(it.categoryName) } }
+                )
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+            item {
+                CategoriaDonutSection(
+                    titulo = "Gastos por categoría este mes",
+                    items = state.gastosPorCategoriaMes,
+                    onCategoriaClick = onVerCategoria,
+                    emptyMessage = "Sin gastos este mes"
+                )
+            }
             item { Spacer(Modifier.height(24.dp)) }
             item { SectionHeader("Presupuestos", "Ver todos") { onNavigateToPresupuestos() } }
             item { Spacer(Modifier.height(12.dp)) }
@@ -659,7 +677,60 @@ private fun ChartSection(data: List<MonthlyChartData>) {
     }
 }
 
-// DarkCard, BarChart, GradientBar y LegendDot viven en ChartComponents.kt (compartidos con Reportes).
+// DarkCard, BarChart, GradientBar, LegendDot y CategoriaDonutSection viven en ChartComponents.kt
+// (compartidos con Reportes).
+
+/* Mayor gasto del mes (US Sprint 7) */
+
+@Composable
+private fun TopCategoriaCard(item: TopCategoriaItem?, onClick: () -> Unit) {
+    val colors = LocalAppColors.current
+    val montserrat = montserratFamily()
+    DarkCard(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .clickable(enabled = item != null, onClick = onClick)
+    ) {
+        Text("Mayor gasto este mes", color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat)
+        Spacer(Modifier.height(10.dp))
+        if (item == null) {
+            Text(
+                "Sin gastos registrados",
+                color = colors.textPrimary, fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, fontFamily = montserrat
+            )
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(item.color.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(item.icon, fontSize = 20.sp)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        item.categoryName,
+                        color = colors.textPrimary, fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold, fontFamily = montserrat,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${item.porcentaje}% del gasto total",
+                        color = colors.textSecondary, fontSize = 11.sp, fontFamily = montserrat
+                    )
+                }
+                Text(
+                    formatColones(item.monto),
+                    color = item.color, fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold, fontFamily = montserrat
+                )
+            }
+        }
+    }
+}
 
 /* Presupuestos */
 

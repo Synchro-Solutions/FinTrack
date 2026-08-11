@@ -224,7 +224,8 @@ class TransactionFormViewModel(
             it.copy(
                 amount = result.amount ?: "",
                 description = result.merchantName ?: "",
-                date = result.date ?: ""
+                date = result.date ?: "",
+                selectedCategory = result.suggestedCategory ?: it.selectedCategory
             )
         }
     }

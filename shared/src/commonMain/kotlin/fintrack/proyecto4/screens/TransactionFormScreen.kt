@@ -993,7 +993,10 @@ internal fun DateField(
     /** US-17/US-18: el OCR no da un score de confianza por campo (solo detecta o no), así
      *  que se usa "sin detectar" (campo vacío) como equivalente práctico de "confianza baja"
      *  y se resalta con borde de advertencia para que el usuario lo revise/complete. */
-    isMissing: Boolean = false
+    isMissing: Boolean = false,
+    /** Rojo (default) cuando nada detectó el campo; OcrConfirmScreen pasa ámbar cuando la IA
+     *  sí corrió pero no pudo determinar la fecha (distinto de "nunca se intentó"). */
+    missingBorderColor: Color = FinTrackColors.ErrorColor
 ) {
     val colors = LocalAppColors.current
     Box(
@@ -1024,7 +1027,7 @@ internal fun DateField(
                 .height(56.dp)
                 .then(
                     if (isMissing) {
-                        Modifier.border(1.5.dp, FinTrackColors.ErrorColor, RoundedCornerShape(16.dp))
+                        Modifier.border(1.5.dp, missingBorderColor, RoundedCornerShape(16.dp))
                     } else {
                         Modifier
                     }

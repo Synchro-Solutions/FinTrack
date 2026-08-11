@@ -2,14 +2,17 @@ package fintrack.proyecto4
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialOption
 import androidx.credentials.CustomCredential
@@ -79,12 +82,17 @@ class MainActivity : ComponentActivity() {
         callback?.invoke(uri?.let { copyUriToOcrFile(it) })
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* si se niega, las notificaciones locales de alertas de presupuesto no se mostrarán */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         AndroidNotifierContext.appContext = applicationContext
         FirebaseEmulatorConfig.connectIfEnabled()
+        requestNotificationPermissionIfNeeded()
 
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
@@ -127,6 +135,15 @@ class MainActivity : ComponentActivity() {
                 onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
                 onGoogleSignInRequested = { requestGoogleIdToken() }
             )
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

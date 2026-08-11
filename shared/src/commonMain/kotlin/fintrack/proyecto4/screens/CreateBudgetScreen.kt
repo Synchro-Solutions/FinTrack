@@ -35,6 +35,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +73,14 @@ fun CreateBudgetScreen(
         CreateBudgetViewModel(budgetRepository, uid)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.selectedCategory, state.limitAmount, state.canSave, state.isSaving) {
+        println(
+            "DEBUG_BUDGET selectedCategory=${state.selectedCategory} " +
+                "limitAmount='${state.limitAmount}' parsed=${state.limitAmount.toDoubleOrNull()} " +
+                "canSave=${state.canSave} isSaving=${state.isSaving}"
+        )
+    }
 
     Column(
         modifier = Modifier

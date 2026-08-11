@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +33,8 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.ShimmerIcon
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.TransactionRepository
 
@@ -65,22 +67,7 @@ fun AiChatScreen(
     ) {
         ScreenHeader(
             title = "Asistente IA",
-            onBack = onBack,
-            trailingContent = {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                            ),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("✦", color = Color.White, fontSize = 14.sp)
-                }
-            }
+            onBack = onBack
         )
 
         // Lista de mensajes
@@ -122,7 +109,7 @@ private fun ChatBubble(message: AiChatMessage) {
         verticalAlignment = Alignment.Bottom
     ) {
         if (!isUser) {
-            // Avatar del asistente
+            // Avatar del asistente: mismo icono + shimmer que el item "Asistente IA" del nav.
             Box(
                 modifier = Modifier
                     .size(30.dp)
@@ -134,7 +121,13 @@ private fun ChatBubble(message: AiChatMessage) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✦", color = Color.White, fontSize = 13.sp)
+                ShimmerIcon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    baseColor = Color.White,
+                    accentColor = colors.primaryLight,
+                    modifier = Modifier.size(16.dp)
+                )
             }
             Spacer(Modifier.width(8.dp))
         }
@@ -197,7 +190,13 @@ private fun TypingIndicator() {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text("✦", color = Color.White, fontSize = 13.sp)
+            ShimmerIcon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                baseColor = Color.White,
+                accentColor = colors.primaryLight,
+                modifier = Modifier.size(16.dp)
+            )
         }
         Spacer(Modifier.width(8.dp))
         Box(
@@ -249,27 +248,33 @@ private fun ChatInputBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // En claro el campo flota transparente sobre el degradado (ver comentario
+            // arriba), pero eso hace que el shimmer del placeholder pierda contraste
+            // cuando el fondo detrás queda claro. Se le agrega un panel esmerilado
+            // (glassCard) para que siempre haya un fondo oscuro consistente debajo del
+            // texto, sin tapar el degradado como una superficie opaca lo haría.
+            val fieldModifier = if (isLight) {
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .glassCard()
+            } else {
+                Modifier.weight(1f)
+            }
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
+                modifier = fieldModifier,
                 placeholder = {
-                    if (isLight) {
-                        ShimmerText(
-                            text = "Pregúntame algo...",
-                            baseColor = Color.White,
-                            accentColor = colors.primaryLight,
-                            fontSize = 14.sp,
-                            fontFamily = montserrat
-                        )
-                    } else {
-                        Text(
-                            "Pregúntame algo...",
-                            color = colors.textSecondary,
-                            fontSize = 14.sp,
-                            fontFamily = montserrat
-                        )
-                    }
+                    // Color solido (sin shimmer): el brillo animado se perdia contra el
+                    // fondo variable y a veces quedaba casi ilegible. Solido siempre se
+                    // distingue igual, sea cual sea el fondo detras.
+                    Text(
+                        "Pregúntame algo...",
+                        color = if (isLight) Color.White else colors.textSecondary,
+                        fontSize = 14.sp,
+                        fontFamily = montserrat
+                    )
                 },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = if (isLight) Color.Transparent else colors.bg,

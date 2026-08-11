@@ -69,6 +69,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
@@ -629,10 +630,18 @@ private fun PresupuestosResumenSection(presupuestos: List<BudgetItem>) {
 @Composable
 private fun PresupuestoResumenRow(budget: BudgetItem) {
     val colors = LocalAppColors.current
-    val statusColor = when (budget.status) {
+    val barColor = when (budget.status) {
         BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING -> FinTrackColors.WarningColor
+        BudgetStatus.OK -> FinTrackColors.GreenPrimary
+    }
+    // El "%" se lee como texto: en WARNING el ambar plano de barColor no tiene contraste
+    // suficiente sobre fondo claro, así que el texto usa la variante fuerte del tema.
+    val textColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
+        BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
+        BudgetStatus.WARNING -> colors.warningTextStrong
         BudgetStatus.OK -> FinTrackColors.GreenPrimary
     }
     Column {
@@ -644,7 +653,7 @@ private fun PresupuestoResumenRow(budget: BudgetItem) {
             Text(budget.categoryName, color = colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Text(
                 "${(budget.usagePct * 100).toInt()}%",
-                color = statusColor,
+                color = textColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -656,7 +665,7 @@ private fun PresupuestoResumenRow(budget: BudgetItem) {
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp)),
-            color = statusColor,
+            color = barColor,
             trackColor = colors.surfaceSecondary,
             strokeCap = StrokeCap.Round
         )

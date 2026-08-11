@@ -18,9 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.ai.AnomalyAlert
-import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.warningBg
 
 @Composable
 fun AnomalyBanner(
@@ -34,7 +34,7 @@ fun AnomalyBanner(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(FinTrackColors.WarningColor.copy(alpha = 0.14f))
+            .background(colors.warningBg)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

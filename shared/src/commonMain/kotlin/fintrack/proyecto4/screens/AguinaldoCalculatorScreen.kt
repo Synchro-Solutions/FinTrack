@@ -58,6 +58,9 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningBorder
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.util.formatColones
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -129,15 +132,15 @@ fun AguinaldoCalculatorScreen(
                 Column(modifier = Modifier.fillMaxSize()) {
                     Text(
                         text = "Ingresa los salarios ordinarios de los ultimos 12 meses (dic-nov).",
-                        color = FinTrackColors.WarningText,
+                        color = colors.warningTextStrong,
                         fontFamily = montserrat,
                         fontSize = if (ultraCompactLayout) 11.sp else if (largeTextMode) 14.sp else 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(FinTrackColors.AmberDark.copy(alpha = 0.35f))
-                            .border(1.dp, FinTrackColors.WarningColor.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .background(colors.warningBg)
+                            .border(1.dp, colors.warningBorder, RoundedCornerShape(14.dp))
                             .padding(horizontal = 12.dp, vertical = if (ultraCompactLayout) 6.dp else if (compactLayout) 8.dp else 10.dp)
                     )
 
@@ -345,7 +348,7 @@ private fun AmountInput(
                 if (value.isEmpty()) {
                     Text(
                         text = "0",
-                        color = FinTrackColors.WhiteAlpha40,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = if (ultraCompactLayout) 13.sp else if (compactLayout) 15.sp else if (largeTextMode) 18.sp else 17.sp,
                         fontWeight = FontWeight.Medium
@@ -396,6 +399,7 @@ private fun ValidationSlot(
     compactLayout: Boolean,
     ultraCompactLayout: Boolean
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -405,7 +409,7 @@ private fun ValidationSlot(
         if (emptyMonths > 0) {
             Text(
                 text = "Faltan $emptyMonths meses por completar.",
-                color = FinTrackColors.WarningText,
+                color = colors.warningTextStrong,
                 fontFamily = montserrat,
                 fontSize = if (ultraCompactLayout) 11.sp else if (compactLayout) 12.sp else if (largeTextMode) 14.sp else 13.sp,
                 fontWeight = FontWeight.Medium
@@ -441,7 +445,7 @@ private fun SummaryCard(
             ) {
                 Text(
                     text = "Aguinaldo estimado",
-                    color = FinTrackColors.WarningText,
+                    color = colors.warningTextStrong,
                     fontFamily = montserrat,
                     fontSize = if (ultraCompactLayout) 12.sp else if (compactLayout) 13.sp else if (largeTextMode) 16.sp else 15.sp,
                     fontWeight = FontWeight.SemiBold

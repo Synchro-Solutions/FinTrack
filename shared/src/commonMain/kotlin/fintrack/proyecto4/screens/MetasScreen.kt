@@ -26,7 +26,6 @@ import fintrack.proyecto4.savings.ui.CreateGoalDialog
 import fintrack.proyecto4.savings.ui.EditGoalDialog
 import fintrack.proyecto4.savings.ui.GoalCard
 import fintrack.proyecto4.savings.ui.GoalCompletedDialog
-import fintrack.proyecto4.savings.ui.GoalConfetti
 import fintrack.proyecto4.savings.ui.GoalDetailDialog
 import fintrack.proyecto4.savings.viewmodel.GoalFilter
 import fintrack.proyecto4.savings.viewmodel.GoalSort
@@ -35,7 +34,6 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.util.formatColones
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import fintrack.proyecto4.ai.SavingsAiService
 import fintrack.proyecto4.ai.SavingsPlan
@@ -95,19 +93,6 @@ fun MetasScreen(
 
     var completedGoal by remember {
         mutableStateOf<SavingsGoal?>(null)
-    }
-
-    // Overlay de confeti independiente del dialogo de meta cumplida (ver GoalConfetti):
-    // se prende cuando se cierra el modal y se apaga sola 1.5s despues.
-    var showConfetti by remember {
-        mutableStateOf(false)
-    }
-
-    LaunchedEffect(showConfetti) {
-        if (showConfetti) {
-            delay(1500)
-            showConfetti = false
-        }
     }
 
     /*
@@ -387,12 +372,6 @@ fun MetasScreen(
                 }
             }
         }
-
-        // Encima del contenido normal, sin oscurecer nada: cae desde arriba y se apaga
-        // sola (ver LaunchedEffect(showConfetti) mas arriba).
-        if (showConfetti) {
-            GoalConfetti(modifier = Modifier.fillMaxSize())
-        }
     }
 
     /*
@@ -537,7 +516,6 @@ fun MetasScreen(
             goal = goal,
             onDismiss = {
                 completedGoal = null
-                showConfetti = true
             }
         )
     }

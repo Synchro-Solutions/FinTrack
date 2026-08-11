@@ -2,6 +2,7 @@ package fintrack.proyecto4.ai
 
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -37,9 +38,18 @@ class GroqClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Sin esto, un request colgado (red lenta, API sin responder) nunca falla: la
+    // corrutina que llama a chat() queda esperando para siempre. En SavingsAiDialogs los
+    // botones del modal de "generar plan" se deshabilitan mientras isLoading es true, asi
+    // que sin timeout el usuario quedaba sin forma de salir de ese dialogo.
     private val http = HttpClient {
         install(ContentNegotiation) {
             json(json)
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 20_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 20_000
         }
     }
 

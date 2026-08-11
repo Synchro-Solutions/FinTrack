@@ -298,20 +298,24 @@ private fun ChatInputBar(
                 )
             )
 
+            // En claro el boton se queda siempre en el verde oscuro solido (igual al
+            // fondo del avatar del chat), en vez de atenuarse al 40% de opacidad cuando
+            // esta deshabilitado: ese fondo casi blanco-verdoso se perdia contra el
+            // degradado claro. En oscuro se mantiene la atenuacion como estaba.
+            val sendButtonBrush = if (canSend || isLight) {
+                Brush.linearGradient(listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary))
+            } else {
+                Brush.linearGradient(
+                    listOf(
+                        FinTrackColors.GreenDark.copy(alpha = 0.4f),
+                        FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                    )
+                )
+            }
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .background(
-                        brush = if (canSend) Brush.linearGradient(
-                            listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                        ) else Brush.linearGradient(
-                            listOf(
-                                FinTrackColors.GreenDark.copy(alpha = 0.4f),
-                                FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
+                    .background(brush = sendButtonBrush, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 IconButton(

@@ -15,6 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,13 +31,18 @@ import androidx.compose.ui.window.DialogProperties
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.util.formatColones
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Dialogo propio (no AlertDialog) para que el confeti pueda dibujarse en la misma
  * ventana que la tarjeta: AlertDialog abre su propia Window de Android por encima
  * del contenido de la pantalla, asi que un GoalConfetti compuesto afuera del dialogo
- * queda tapado detras de esa ventana. Aqui el confeti vive dentro del Dialog, detras
- * de la tarjeta en el mismo Box.
+ * queda tapado detras de esa ventana.
+ *
+ * El confeti no arranca al abrir el dialogo: recien se dispara al presionar "Aceptar",
+ * como ultimo hijo del Box (encima de la tarjeta, no detras) para que se vea completo,
+ * y el dialogo se cierra 1 segundo despues para dar tiempo a verlo.
  */
 @Composable
 fun GoalCompletedDialog(
@@ -40,6 +50,8 @@ fun GoalCompletedDialog(
     onDismiss: () -> Unit
 ) {
     val colors = LocalAppColors.current
+    var showConfetti by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -49,8 +61,6 @@ fun GoalCompletedDialog(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            GoalConfetti(modifier = Modifier.fillMaxSize())
-
             Column(
                 modifier = Modifier
                     .widthIn(max = 400.dp)
@@ -92,10 +102,23 @@ fun GoalCompletedDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(
+                        onClick = {
+                            if (showConfetti) return@TextButton
+                            showConfetti = true
+                            scope.launch {
+                                delay(1000)
+                                onDismiss()
+                            }
+                        }
+                    ) {
                         Text("Aceptar", color = colors.primary)
                     }
                 }
+            }
+
+            if (showConfetti) {
+                GoalConfetti(modifier = Modifier.fillMaxSize())
             }
         }
     }

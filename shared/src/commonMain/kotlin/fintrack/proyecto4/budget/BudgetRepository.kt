@@ -5,14 +5,14 @@ import androidx.compose.ui.graphics.Color
 interface BudgetRepository {
     suspend fun getBudgets(uid: String): List<BudgetItem>
     suspend fun addBudget(uid: String, item: BudgetItem)
-    suspend fun updateSpent(uid: String, budgetId: String, spent: Double)
+    suspend fun updateSpentTracking(uid: String, budgetId: String, spent: Double, spentPeriodKey: String, alertSent: Boolean)
     suspend fun deleteBudget(uid: String, budgetId: String)
 }
 
 class NoOpBudgetRepository : BudgetRepository {
     override suspend fun getBudgets(uid: String): List<BudgetItem> = emptyList()
     override suspend fun addBudget(uid: String, item: BudgetItem) = Unit
-    override suspend fun updateSpent(uid: String, budgetId: String, spent: Double) = Unit
+    override suspend fun updateSpentTracking(uid: String, budgetId: String, spent: Double, spentPeriodKey: String, alertSent: Boolean) = Unit
     override suspend fun deleteBudget(uid: String, budgetId: String) = Unit
 }
 

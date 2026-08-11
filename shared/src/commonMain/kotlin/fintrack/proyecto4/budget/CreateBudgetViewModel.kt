@@ -56,7 +56,9 @@ class CreateBudgetViewModel(
                     spent = 0.0,
                     limit = limit,
                     period = "mensual",
-                    alertThreshold = s.alertThreshold
+                    alertThreshold = s.alertThreshold,
+                    spentPeriodKey = currentBudgetPeriodKey(),
+                    alertSent = false
                 )
                 repository.addBudget(uid, item)
                 _state.value = _state.value.copy(isSaving = false, savedOk = true)

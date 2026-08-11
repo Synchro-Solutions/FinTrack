@@ -1,6 +1,10 @@
 package fintrack.proyecto4.budget
 
 import androidx.compose.ui.graphics.Color
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 enum class BudgetStatus { OK, WARNING, CRITICAL }
 
@@ -33,7 +37,12 @@ data class BudgetItem(
     val spent: Double,
     val limit: Double,
     val period: String = "mensual",
-    val alertThreshold: Float = 0.8f
+    val alertThreshold: Float = 0.8f,
+    /** Mes ("yyyy-MM") al que corresponde el [spent] actual. Si no coincide con
+     *  [currentBudgetPeriodKey], el próximo recálculo lo trata como un período nuevo. */
+    val spentPeriodKey: String = "",
+    /** Ya se disparó la alerta de umbral para este presupuesto en [spentPeriodKey]. */
+    val alertSent: Boolean = false
 ) {
     val usagePct: Float get() = if (limit > 0) (spent / limit).toFloat().coerceAtMost(1f) else 0f
     val remaining: Double get() = limit - spent
@@ -42,6 +51,14 @@ data class BudgetItem(
         usagePct >= alertThreshold -> BudgetStatus.WARNING
         else -> BudgetStatus.OK
     }
+}
+
+/** Período mensual actual en formato "yyyy-MM", usado para saber a qué mes corresponde
+ *  el `spent` acumulado de un presupuesto. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+fun currentBudgetPeriodKey(): String {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    return "${today.year}-${today.month.number.toString().padStart(2, '0')}"
 }
 
 data class BudgetListState(

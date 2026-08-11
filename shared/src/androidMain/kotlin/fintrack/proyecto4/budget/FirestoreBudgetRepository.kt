@@ -25,7 +25,9 @@ class FirestoreBudgetRepository : BudgetRepository {
                         spent = doc.get<Double>("spent"),
                         limit = doc.get<Double>("limit"),
                         period = doc.get("period"),
-                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f }
+                        alertThreshold = try { doc.get<Double>("alertThreshold").toFloat() } catch (_: Exception) { 0.8f },
+                        spentPeriodKey = doc.get<String?>("spentPeriodKey") ?: "",
+                        alertSent = doc.get<Boolean?>("alertSent") ?: false
                     )
                 }.getOrNull()
             }
@@ -44,13 +46,25 @@ class FirestoreBudgetRepository : BudgetRepository {
                 "spent" to item.spent,
                 "limit" to item.limit,
                 "period" to item.period,
-                "alertThreshold" to item.alertThreshold.toDouble()
+                "alertThreshold" to item.alertThreshold.toDouble(),
+                "spentPeriodKey" to item.spentPeriodKey,
+                "alertSent" to item.alertSent
             )
         )
     }
 
-    override suspend fun updateSpent(uid: String, budgetId: String, spent: Double) {
-        col(uid).document(budgetId).update("spent" to spent)
+    override suspend fun updateSpentTracking(
+        uid: String,
+        budgetId: String,
+        spent: Double,
+        spentPeriodKey: String,
+        alertSent: Boolean
+    ) {
+        col(uid).document(budgetId).update(
+            "spent" to spent,
+            "spentPeriodKey" to spentPeriodKey,
+            "alertSent" to alertSent
+        )
     }
 
     override suspend fun deleteBudget(uid: String, budgetId: String) {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.ai.AnomalyAlertBus
 import fintrack.proyecto4.ai.AnomalyDetector
+import fintrack.proyecto4.budget.BudgetSpentTracker
 import fintrack.proyecto4.ocr.OcrResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,8 @@ class TransactionFormViewModel(
     private val categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     private val uploadReceipt: suspend (String) -> Result<String> = {
         Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
-    }
+    },
+    private val budgetSpentTracker: BudgetSpentTracker = BudgetSpentTracker()
 ) : ViewModel() {
 
     val isEditing: Boolean get() = editingTransaction != null
@@ -274,6 +276,21 @@ class TransactionFormViewModel(
                             if (alert != null) AnomalyAlertBus.post(alert)
                         } catch (_: Exception) {
                         }
+                    }
+                }
+
+                val categoriesToRecalculate = buildSet {
+                    if (isEditing && editingTransaction!!.type == TransactionType.EXPENSE) {
+                        add(editingTransaction.category)
+                    }
+                    if (transaction.type == TransactionType.EXPENSE) {
+                        add(transaction.category)
+                    }
+                }
+                categoriesToRecalculate.forEach { category ->
+                    try {
+                        budgetSpentTracker.recalculateAndMaybeAlert(uid, category)
+                    } catch (_: Exception) {
                     }
                 }
 

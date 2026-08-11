@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.budget.BudgetRepository
+import fintrack.proyecto4.budget.BudgetSpentTracker
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
@@ -33,6 +34,8 @@ import fintrack.proyecto4.navigation.NavController
 import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
+import fintrack.proyecto4.notification.NoOpNotificationRepository
+import fintrack.proyecto4.notification.NotificationRepository
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
@@ -140,6 +143,7 @@ fun App(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
+    notificationRepository: NotificationRepository = NoOpNotificationRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -154,10 +158,19 @@ fun App(
     },
     onGoogleSignInRequested: suspend () -> Result<String> = {
         Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
-    }
+    },
+    onShowBudgetAlert: (title: String, body: String) -> Unit = { _, _ -> }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
+    val budgetSpentTracker = remember(budgetRepository, transactionRepository, notificationRepository) {
+        BudgetSpentTracker(
+            budgetRepository = budgetRepository,
+            transactionRepository = transactionRepository,
+            notificationRepository = notificationRepository,
+            showLocalNotification = onShowBudgetAlert
+        )
+    }
 
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
@@ -293,12 +306,14 @@ fun App(
                             },
                             cameraContent = ocrCameraContent,
                             onPickReceiptImage = onPickReceiptImage,
-                            uploadReceiptPhoto = onUploadReceiptPhoto
+                            uploadReceiptPhoto = onUploadReceiptPhoto,
+                            budgetSpentTracker = budgetSpentTracker
                         )
 
                         is Screen.TransactionDetail -> TransactionDetailScreen(
                             transaction = screen.transaction,
                             transactionRepository = transactionRepository,
+                            budgetSpentTracker = budgetSpentTracker,
                             onBack = { navController.goBack() },
                             onEdit = { transaction ->
                                 navController.navigate(

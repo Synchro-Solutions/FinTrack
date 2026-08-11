@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -7,6 +8,50 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.serialization)
+}
+
+// Groq API key: se lee de local.properties (gitignored, nunca se commitea) o de una
+// variable de entorno GROQ_API_KEY (util para CI), nunca hardcodeada en el codigo fuente.
+// A diferencia de webApp/EnvConfig esto NO es estricto: si falta, el build sigue igual
+// (el chat IA y el plan de ahorro con IA simplemente no responden hasta que se agregue).
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun groqApiKeyValue(): String =
+    System.getenv("GROQ_API_KEY")
+        ?: localProperties.getProperty("groq.apiKey")
+        ?: ""
+
+val generatedGroqSecretsDir = layout.buildDirectory.dir("generated/groqSecrets/kotlin")
+
+// groqApiKey se calcula ADENTRO del task (no arriba, a nivel de script) a proposito: la
+// configuration cache no puede serializar una referencia a una propiedad top-level del
+// script capturada desde doLast (Gradle lo reporta como "script object reference"). Como
+// variable local del propio task, en cambio, se captura sin problema.
+val generateGroqSecrets by tasks.registering {
+    val groqApiKey = groqApiKeyValue()
+    inputs.property("groqApiKey", groqApiKey)
+    val outputDir = generatedGroqSecretsDir
+    outputs.dir(outputDir)
+
+    doLast {
+        val file = outputDir.get().file("fintrack/proyecto4/ai/GroqSecrets.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            package fintrack.proyecto4.ai
+
+            internal object GroqSecrets {
+                const val API_KEY = "$groqApiKey"
+            }
+
+            """.trimIndent()
+        )
+    }
 }
 
 kotlin {
@@ -60,6 +105,9 @@ kotlin {
             implementation(libs.camerax.view)
             implementation(libs.mlkit.textRecognition)
             implementation(libs.ktor.client.okhttp)
+        }
+        commonMain {
+            kotlin.srcDir(generateGroqSecrets)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

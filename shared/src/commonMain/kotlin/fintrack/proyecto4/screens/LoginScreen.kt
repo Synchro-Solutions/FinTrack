@@ -167,10 +167,14 @@ fun LoginScreen(
                 )
             }
 
-            // Card del formulario
+            // Card del formulario. Ancho tope en vez de fillMaxWidth() puro: en Android
+            // la pantalla ya es angosta y nunca se nota, pero en la version web (ventana
+            // de navegador mucho mas ancha) la tarjeta se estiraba a lo ancho de toda la
+            // pantalla y los campos/botones quedaban desproporcionados.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .widthIn(max = 420.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(CardBackground)
             ) {

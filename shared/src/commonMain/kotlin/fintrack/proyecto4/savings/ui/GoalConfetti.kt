@@ -12,35 +12,33 @@ import io.github.vinceglb.confettikit.core.emitter.Emitter
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Rafaga unica de confeti al cumplir una meta: sale desde el borde izquierdo y
- * derecho (altura media) en diagonal hacia el centro/arriba, y la gravedad propia
- * del motor de ConfettiKit hace que despues caiga. No es un loop: cada Party emite
- * una sola vez (Emitter.max) y se apaga sola: basta con dejar de componer este
- * elemento (p.ej. al cerrar el dialogo de meta cumplida) para detenerlo.
+ * Confeti al cumplir una meta: cae desde todo el borde superior de la pantalla (no desde
+ * los lados) simulando lluvia, con spread amplio para que se reparta a lo ancho en vez de
+ * caer en una sola columna. No es un loop: el Party emite durante [Emitter.duration] y
+ * se apaga sola; el llamador controla cuanto dura visible en pantalla dejando de componer
+ * este elemento (la fisica de caida de ConfettiKit sigue un rato mas tras el ultimo
+ * emitido, por eso el llamador le da un poco mas de tiempo montado que la duracion de
+ * emision antes de desmontarlo).
  */
 @Composable
 fun GoalConfetti(modifier: Modifier = Modifier) {
     // Verdes de marca (FinTrackColors) + blanco y dorado de advertencia para que
-    // el estallido no se vea monocromatico.
+    // la lluvia no se vea monocromatica.
     val palette = listOf(0x62C9A7, 0x41A87F, 0x91D9C1, 0xFFFFFF, 0xFBBF24)
 
-    val fromLeft = Party(
-        angle = Angle.RIGHT - 45,
-        spread = Spread.SMALL,
-        speed = 12f,
-        maxSpeed = 28f,
+    val fromTop = Party(
+        angle = Angle.BOTTOM,
+        spread = 100,
+        speed = 4f,
+        maxSpeed = 10f,
         damping = 0.9f,
         colors = palette,
-        position = Position.Relative(0.0, 0.5),
-        emitter = Emitter(duration = 200.milliseconds).max(60)
-    )
-    val fromRight = fromLeft.copy(
-        angle = fromLeft.angle - 90,
-        position = Position.Relative(1.0, 0.5)
+        position = Position.Relative(0.0, 0.0).between(Position.Relative(1.0, 0.0)),
+        emitter = Emitter(duration = 700.milliseconds).max(140)
     )
 
     ConfettiKit(
         modifier = modifier.fillMaxSize(),
-        parties = listOf(fromLeft, fromRight)
+        parties = listOf(fromTop)
     )
 }

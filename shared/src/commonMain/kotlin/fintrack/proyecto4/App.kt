@@ -208,7 +208,11 @@ fun App(
             val scope = rememberCoroutineScope()
 
             val ocrAssistantViewModel = remember {
-                OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
+                OcrAssistantViewModel(
+                    recognizeText = onRecognizeReceiptText,
+                    categoryRepository = categoryRepository,
+                    uid = AuthClient.currentUserId() ?: ""
+                )
             }
             val hazeState = remember { HazeState() }
 

@@ -297,7 +297,11 @@ fun App(
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
                                 onNavigateToMetas = { navController.navigate(Screen.Metas) },
-                                onShareText = onShareText
+                                onShareText = onShareText,
+                                onVerCategoria = { categoria ->
+                                    PendingCategoryFilter.post(categoria)
+                                    navController.navigate(Screen.Movimientos)
+                                }
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(

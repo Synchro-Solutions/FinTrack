@@ -40,6 +40,7 @@ import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.warningTextStrong
 
 @Composable
 fun NotificationsScreen(
@@ -101,7 +102,7 @@ private fun NotificationCard(notification: AppNotification) {
     val colors = LocalAppColors.current
     val (icon, accent) = when (notification.type) {
         NotificationType.BUDGET_EXCEEDED -> "🚨" to FinTrackColors.ErrorColor
-        NotificationType.BUDGET_ALERT -> "⚠️" to FinTrackColors.WarningColor
+        NotificationType.BUDGET_ALERT -> "⚠️" to colors.warningTextStrong
     }
 
     Row(

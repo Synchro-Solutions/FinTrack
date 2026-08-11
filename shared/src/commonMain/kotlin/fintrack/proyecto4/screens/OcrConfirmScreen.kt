@@ -31,6 +31,9 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningBorder
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.CustomCategory
 import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
@@ -314,9 +317,9 @@ fun OcrConfirmScreen(
 @Composable
 private fun WarningBanner() {
     val colors = LocalAppColors.current
-    val bannerBg = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.12f) else colors.subtleSurface
-    val bannerBorder = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.35f) else colors.border
-    val bannerTextColor = if (colors.isDark) FinTrackColors.WarningLight else colors.textPrimary
+    val bannerBg = colors.warningBg
+    val bannerBorder = colors.warningBorder
+    val bannerTextColor = colors.warningTextStrong
 
     Row(
         modifier = Modifier
@@ -329,7 +332,7 @@ private fun WarningBanner() {
         Icon(
             imageVector = Icons.Default.WarningAmber,
             contentDescription = null,
-            tint = FinTrackColors.WarningColor,
+            tint = bannerTextColor,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(10.dp))

@@ -138,7 +138,10 @@ fun LoginScreen(
                     androidx.compose.foundation.Image(
                         painter = painterResource(Res.drawable.ic_fintrack_logo),
                         contentDescription = null,
-                        modifier = Modifier.size(56.dp)
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
                     )
                 }
 

@@ -59,6 +59,8 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassCard
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
@@ -326,12 +328,17 @@ private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
         BudgetStatus.WARNING  -> "⚠ Alerta"
         BudgetStatus.OK       -> "OK"
     }
-    val statusColor = when (budget.status) {
+    // Texto (badge de estado y "%" de uso): en WARNING el ambar plano de progressColor
+    // no tiene contraste suficiente sobre fondo claro, así que el texto usa la variante
+    // fuerte del tema; la barra de progreso conserva el ambar decorativo original.
+    val statusTextColor = when (budget.status) {
         BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
-        BudgetStatus.WARNING  -> FinTrackColors.WarningColor
+        BudgetStatus.WARNING  -> colors.warningTextStrong
         BudgetStatus.OK       -> FinTrackColors.GreenPrimary
     }
+    val badgeBg = if (budget.status == BudgetStatus.WARNING) colors.warningBg
+                  else statusTextColor.copy(alpha = 0.12f)
     val usageText = if (budget.status == BudgetStatus.EXCEEDED) "Excedido"
                     else "${budget.usagePercentInt}%"
 
@@ -376,12 +383,12 @@ private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(statusColor.copy(alpha = 0.12f))
+                    .background(badgeBg)
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = statusLabel,
-                    color = statusColor,
+                    color = statusTextColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -402,7 +409,7 @@ private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
             )
             Text(
                 text = usageText,
-                color = progressColor,
+                color = statusTextColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )

@@ -23,6 +23,7 @@ import fintrack.proyecto4.savings.model.SavingsContribution
 import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.ai.ProjectionStatus
 import fintrack.proyecto4.ai.SavingsProjection
 import fintrack.proyecto4.util.formatColones
@@ -693,7 +694,7 @@ private fun DetailPriorityBadge(
             colors.textSecondary
 
         GoalPriority.MEDIUM ->
-            FinTrackColors.WarningColor
+            colors.warningTextStrong
 
         GoalPriority.HIGH ->
             FinTrackColors.ErrorColor
@@ -1049,7 +1050,7 @@ private fun ProjectionStatusCard(
             description =
                 "Tu ahorro mensual está por debajo de lo necesario."
             statusColor =
-                FinTrackColors.WarningColor
+                colors.warningTextStrong
         }
 
         ProjectionStatus.COMPLETED -> {

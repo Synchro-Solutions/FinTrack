@@ -29,10 +29,8 @@ coil = "3.2.0"
 androidx-credentials = "1.6.0"
 googleid = "1.1.1"
 haze = "1.7.2"
-confettikit = "0.8.0"
 
 [libraries]
-confettikit = { module = "io.github.vinceglb:confettikit", version.ref = "confettikit" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

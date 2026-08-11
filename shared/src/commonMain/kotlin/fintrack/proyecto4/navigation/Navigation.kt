@@ -23,10 +23,7 @@ internal val NavTransitionEasing = FastOutSlowInEasing
  */
 sealed interface Screen {
     data object Login : Screen
-
-    /** "¿Olvidaste tu contraseña?" — enlace de recuperación por email (US-04). */
     data object ForgotPassword : Screen
-
     data object Onboarding : Screen
     data object Dashboard : Screen
     data object Movimientos : Screen
@@ -61,6 +58,7 @@ sealed interface Screen {
     ) : Screen
 
     data object AiChat : Screen
+    data object Notifications : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object Reportes : Screen

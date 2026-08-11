@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
-import fintrack.proyecto4.budget.BudgetSpentTracker
+import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
@@ -76,6 +76,7 @@ fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
     editingTransaction: Transaction? = null,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetAlertService: BudgetAlertService? = null,
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
@@ -85,8 +86,7 @@ fun TransactionFormScreen(
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
     uploadReceiptPhoto: suspend (String) -> Result<String> = {
         Result.failure(UnsupportedOperationException("Subida de comprobantes no configurada"))
-    },
-    budgetSpentTracker: BudgetSpentTracker = BudgetSpentTracker()
+    }
 ) {
     val uid = AuthClient.currentUserId() ?: ""
     // remember (no viewModel(key=...)) a propósito: cada visita a esta pantalla debe partir
@@ -100,9 +100,9 @@ fun TransactionFormScreen(
             uid = uid,
             initialType = initialType,
             editingTransaction = editingTransaction,
+            budgetAlertService = budgetAlertService,
             categoryRepository = categoryRepository,
-            uploadReceipt = uploadReceiptPhoto,
-            budgetSpentTracker = budgetSpentTracker
+            uploadReceipt = uploadReceiptPhoto
         )
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()

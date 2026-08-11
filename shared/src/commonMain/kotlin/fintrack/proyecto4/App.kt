@@ -26,16 +26,18 @@ import androidx.compose.ui.unit.dp
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.auth.AuthRepository
 import fintrack.proyecto4.budget.BudgetRepository
-import fintrack.proyecto4.budget.BudgetSpentTracker
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.notifications.BudgetAlertService
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.navigation.FinTrackBottomBar
 import fintrack.proyecto4.navigation.LocalNavController
 import fintrack.proyecto4.navigation.NavController
 import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
-import fintrack.proyecto4.notification.NoOpNotificationRepository
-import fintrack.proyecto4.notification.NotificationRepository
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
@@ -43,25 +45,29 @@ import fintrack.proyecto4.onboarding.OnboardingViewModel
 import fintrack.proyecto4.screens.AiChatScreen
 import fintrack.proyecto4.screens.AguinaldoCalculatorScreen
 import fintrack.proyecto4.screens.AjustesScreen
+import fintrack.proyecto4.screens.CalculationHistoryScreen
 import fintrack.proyecto4.screens.CalculatorPlaceholderScreen
 import fintrack.proyecto4.screens.CurrencyConverterScreen
 import fintrack.proyecto4.screens.DashboardScreen
 import fintrack.proyecto4.screens.EditarPerfilScreen
 import fintrack.proyecto4.screens.FinancialCenterScreen
-import fintrack.proyecto4.screens.ForgotPasswordScreen
+import fintrack.proyecto4.screens.LiquidacionCalculatorScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
 import fintrack.proyecto4.screens.TransactionsScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
+import fintrack.proyecto4.screens.NotificationsScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
+import fintrack.proyecto4.screens.ReportesScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
 import fintrack.proyecto4.screens.TransactionFormScreen
 import fintrack.proyecto4.screens.VacacionesCalculatorScreen
+import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.theme.DarkAppColors
 import fintrack.proyecto4.theme.FinTrackAppBackground
 import fintrack.proyecto4.theme.FinTrackColors
@@ -73,6 +79,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.PendingCategoryFilter
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
 import kotlinx.coroutines.launch
@@ -142,8 +149,9 @@ fun App(
     onboardingRepository: OnboardingRepository = NoOpOnboardingRepository(),
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
-    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     notificationRepository: NotificationRepository = NoOpNotificationRepository(),
+    categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -158,19 +166,10 @@ fun App(
     },
     onGoogleSignInRequested: suspend () -> Result<String> = {
         Result.failure(UnsupportedOperationException("Google Sign-In no configurado"))
-    },
-    onShowBudgetAlert: (title: String, body: String) -> Unit = { _, _ -> }
+    }
 ) {
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
-    val budgetSpentTracker = remember(budgetRepository, transactionRepository, notificationRepository) {
-        BudgetSpentTracker(
-            budgetRepository = budgetRepository,
-            transactionRepository = transactionRepository,
-            notificationRepository = notificationRepository,
-            showLocalNotification = onShowBudgetAlert
-        )
-    }
 
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
@@ -212,6 +211,10 @@ fun App(
                 OcrAssistantViewModel(recognizeText = onRecognizeReceiptText)
             }
             val hazeState = remember { HazeState() }
+
+            val budgetAlertService = remember {
+                BudgetAlertService(budgetRepository, notificationRepository, onboardingRepository)
+            }
 
             CompositionLocalProvider(
                 LocalNavController provides navController,
@@ -278,6 +281,14 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
+                                notificationRepository = notificationRepository,
+                                onNavigateToNotifications = { navController.navigate(Screen.Notifications) },
+                                onNavigateToIngreso = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.INCOME))
+                                },
+                                onNavigateToGasto = {
+                                    navController.navigate(Screen.TransactionForm(TransactionType.EXPENSE))
+                                },
                                 onNavigateToOcr = {
                                     ocrAssistantViewModel.reset()
                                     navController.navigate(Screen.OcrAssistant)
@@ -293,6 +304,7 @@ fun App(
                             initialType = screen.initialType,
                             editingTransaction = screen.editingTransaction,
                             transactionRepository = transactionRepository,
+                            budgetAlertService = budgetAlertService,
                             categoryRepository = categoryRepository,
                             onBack = {
                                 navController.goBack()
@@ -306,14 +318,12 @@ fun App(
                             },
                             cameraContent = ocrCameraContent,
                             onPickReceiptImage = onPickReceiptImage,
-                            uploadReceiptPhoto = onUploadReceiptPhoto,
-                            budgetSpentTracker = budgetSpentTracker
+                            uploadReceiptPhoto = onUploadReceiptPhoto
                         )
 
                         is Screen.TransactionDetail -> TransactionDetailScreen(
                             transaction = screen.transaction,
                             transactionRepository = transactionRepository,
-                            budgetSpentTracker = budgetSpentTracker,
                             onBack = { navController.goBack() },
                             onEdit = { transaction ->
                                 navController.navigate(
@@ -348,6 +358,7 @@ fun App(
                         is Screen.OcrConfirm -> OcrConfirmScreen(
                             result = screen.result,
                             transactionRepository = transactionRepository,
+                            budgetAlertService = budgetAlertService,
                             categoryRepository = categoryRepository,
                             onCancel = {
                                 // Screen.OcrAssistant solo se alcanza desde el formulario manual
@@ -373,7 +384,10 @@ fun App(
                         is Screen.Presupuestos -> PresupuestosScreen(
                             budgetRepository = budgetRepository,
                             transactionRepository = transactionRepository,
-                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) }
+                            onNuevoPresupuesto = { navController.navigate(Screen.NuevoPresupuesto) },
+                            onTransactionClick = { transaction ->
+                                navController.navigate(Screen.TransactionDetail(transaction))
+                            }
                         )
                         is Screen.NuevoPresupuesto -> CreateBudgetScreen(
                             budgetRepository = budgetRepository,
@@ -386,6 +400,11 @@ fun App(
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
+                            onBack = { navController.goBack() }
+                        )
+
+                        is Screen.Notifications -> NotificationsScreen(
+                            notificationRepository = notificationRepository,
                             onBack = { navController.goBack() }
                         )
 
@@ -411,42 +430,50 @@ fun App(
                         )
 
                         is Screen.FinancialCenter -> FinancialCenterScreen(
-                            historyCount = 0,
                             transactionRepository = transactionRepository,
                             budgetRepository = budgetRepository
                         )
-                        is Screen.Reportes -> CalculatorPlaceholderScreen(
-                            title = "Reportes",
-                            description = "Aqui van los reportes financieros."
+                        is Screen.Reportes -> ReportesScreen(
+                            transactionRepository = transactionRepository,
+                            budgetRepository = budgetRepository,
+                            onBack = { navController.goBack() },
+                            onShareText = onShareText,
+                            onVerCategoria = { categoria ->
+                                PendingCategoryFilter.post(categoria)
+                                navController.navigate(Screen.Movimientos)
+                            }
                         )
                         is Screen.AguinaldoCalculator -> AguinaldoCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() }
                         )
                         is Screen.CurrencyConverter -> CurrencyConverterScreen(
                             onBack = { navController.goBack() }
                         )
                         is Screen.NetSalaryCalculator -> NetSalaryCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() },
                             onSaved = { navController.goBack() }
                         )
-                        is Screen.LiquidacionCalculator -> CalculatorPlaceholderScreen(
-                            title = "Liquidacion",
-                            description = "Aqui va la calculadora de liquidacion."
+                        is Screen.LiquidacionCalculator -> LiquidacionCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
+                            onBack = { navController.goBack() }
                         )
                         is Screen.CesantiaCalculator -> CalculatorPlaceholderScreen(
                             title = "Cesantia",
                             description = "Aqui va la calculadora de cesantia."
                         )
                         is Screen.VacacionesCalculator -> VacacionesCalculatorScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
                             onBack = { navController.goBack() }
                         )
                         is Screen.PreavisoCalculator -> CalculatorPlaceholderScreen(
                             title = "Preaviso",
                             description = "Aqui va la calculadora de preaviso."
                         )
-                        is Screen.CalculationHistory -> CalculatorPlaceholderScreen(
-                            title = "Historial",
-                            description = "Aqui va el historial de calculos guardados."
+                        is Screen.CalculationHistory -> CalculationHistoryScreen(
+                            calculationHistoryRepository = calculationHistoryRepository,
+                            onBack = { navController.goBack() }
                         )
                         }
                     }

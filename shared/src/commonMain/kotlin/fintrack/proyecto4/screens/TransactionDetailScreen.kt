@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
-import fintrack.proyecto4.budget.BudgetSpentTracker
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
@@ -50,7 +49,6 @@ private const val SuccessSnackbarDelayMillis = 900L
 fun TransactionDetailScreen(
     transaction: Transaction,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
-    budgetSpentTracker: BudgetSpentTracker = BudgetSpentTracker(),
     onBack: () -> Unit,
     onEdit: (Transaction) -> Unit,
     onDeleted: () -> Unit
@@ -232,12 +230,6 @@ fun TransactionDetailScreen(
                 coroutineScope.launch {
                     try {
                         transactionRepository.deleteTransaction(uid, transaction.id)
-                        if (transaction.type == TransactionType.EXPENSE) {
-                            try {
-                                budgetSpentTracker.recalculateAndMaybeAlert(uid, transaction.category)
-                            } catch (_: Exception) {
-                            }
-                        }
                         isDeleting = false
                         launch {
                             snackbarHostState.showSnackbar(

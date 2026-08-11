@@ -22,7 +22,7 @@ class FakeAuthRepository : AuthRepository {
 
     // Resultado que devolverá el próximo sendPasswordResetEmail — configurable por cada test
     var nextPasswordResetResult: PasswordResetResult = PasswordResetResult.Success
-    var passwordResetCallCount = 0
+    var sendPasswordResetCallCount = 0
     var lastPasswordResetEmail: String? = null
 
     override suspend fun signIn(email: String, password: String, rememberMe: Boolean): LoginResult {
@@ -39,7 +39,7 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun sendPasswordResetEmail(email: String): PasswordResetResult {
-        passwordResetCallCount++
+        sendPasswordResetCallCount++
         lastPasswordResetEmail = email
         return nextPasswordResetResult
     }
@@ -60,7 +60,7 @@ class FakeAuthRepository : AuthRepository {
         lastRememberMe = null
         signOutCalled = false
         nextPasswordResetResult = PasswordResetResult.Success
-        passwordResetCallCount = 0
+        sendPasswordResetCallCount = 0
         lastPasswordResetEmail = null
     }
 }

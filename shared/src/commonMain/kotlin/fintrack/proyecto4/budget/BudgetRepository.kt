@@ -5,15 +5,21 @@ import androidx.compose.ui.graphics.Color
 interface BudgetRepository {
     suspend fun getBudgets(uid: String): List<BudgetItem>
     suspend fun addBudget(uid: String, item: BudgetItem)
-    suspend fun updateSpentTracking(uid: String, budgetId: String, spent: Double, spentPeriodKey: String, alertSent: Boolean)
+    suspend fun updateSpent(uid: String, budgetId: String, spent: Double)
     suspend fun deleteBudget(uid: String, budgetId: String)
+    suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float)
+    suspend fun deactivateBudget(uid: String, budgetId: String)
+    suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean)
 }
 
 class NoOpBudgetRepository : BudgetRepository {
     override suspend fun getBudgets(uid: String): List<BudgetItem> = emptyList()
     override suspend fun addBudget(uid: String, item: BudgetItem) = Unit
-    override suspend fun updateSpentTracking(uid: String, budgetId: String, spent: Double, spentPeriodKey: String, alertSent: Boolean) = Unit
+    override suspend fun updateSpent(uid: String, budgetId: String, spent: Double) = Unit
     override suspend fun deleteBudget(uid: String, budgetId: String) = Unit
+    override suspend fun updateBudget(uid: String, budgetId: String, newLimit: Double, newThreshold: Float) = Unit
+    override suspend fun deactivateBudget(uid: String, budgetId: String) = Unit
+    override suspend fun markAlertSent(uid: String, budgetId: String, alertSent: Boolean, exceededSent: Boolean) = Unit
 }
 
 fun colorFromHex(hex: String): Color {

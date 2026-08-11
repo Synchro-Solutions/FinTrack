@@ -56,11 +56,9 @@ class FirebaseAuthRepository(private val sessionStore: SessionStore) : AuthRepos
             auth.sendPasswordResetEmail(email)
             PasswordResetResult.Success
         } catch (e: FirebaseAuthException) {
-            // Incluye "usuario no existe": se responde igual que un envío exitoso
-            // para no revelar si el correo está registrado.
             PasswordResetResult.Success
         } catch (e: Exception) {
-            PasswordResetResult.ConnectionError
+            PasswordResetResult.NetworkError("Error de conexión. Intente de nuevo.")
         }
     }
 

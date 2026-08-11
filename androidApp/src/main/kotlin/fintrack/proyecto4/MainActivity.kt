@@ -1,7 +1,5 @@
 package fintrack.proyecto4
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,8 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialOption
@@ -31,7 +27,9 @@ import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
-import fintrack.proyecto4.notification.FirestoreNotificationRepository
+import fintrack.proyecto4.history.FirestoreCalculationHistoryRepository
+import fintrack.proyecto4.notifications.AndroidNotifierContext
+import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
@@ -41,8 +39,6 @@ import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
-
-private const val BUDGET_ALERT_CHANNEL_ID = "budget_alerts"
 
 private val ComponentActivity.dataStore by preferencesDataStore(name = "fintrack_session")
 
@@ -88,14 +84,14 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* si se niega, showBudgetAlertNotification() simplemente no mostrará nada */ }
+    ) { /* si se niega, las notificaciones locales de alertas de presupuesto no se mostrarán */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        AndroidNotifierContext.appContext = applicationContext
         FirebaseEmulatorConfig.connectIfEnabled()
-        createBudgetAlertChannel()
         requestNotificationPermissionIfNeeded()
 
         val sessionStore = DataStoreSessionStore(dataStore)
@@ -103,8 +99,9 @@ class MainActivity : ComponentActivity() {
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
-        val categoryRepository = FirestoreCustomCategoryRepository()
         val notificationRepository = FirestoreNotificationRepository()
+        val categoryRepository = FirestoreCustomCategoryRepository()
+        val calculationHistoryRepository = FirestoreCalculationHistoryRepository()
 
         setContent {
             App(
@@ -112,8 +109,9 @@ class MainActivity : ComponentActivity() {
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
-                categoryRepository = categoryRepository,
                 notificationRepository = notificationRepository,
+                categoryRepository = categoryRepository,
+                calculationHistoryRepository = calculationHistoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },
@@ -135,20 +133,8 @@ class MainActivity : ComponentActivity() {
                 onShareText = { text -> shareText(text) },
                 onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) },
                 onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
-                onGoogleSignInRequested = { requestGoogleIdToken() },
-                onShowBudgetAlert = { title, body -> showBudgetAlertNotification(title, body) }
+                onGoogleSignInRequested = { requestGoogleIdToken() }
             )
-        }
-    }
-
-    private fun createBudgetAlertChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                BUDGET_ALERT_CHANNEL_ID,
-                "Alertas de presupuesto",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            NotificationManagerCompat.from(this).createNotificationChannel(channel)
         }
     }
 
@@ -159,26 +145,6 @@ class MainActivity : ComponentActivity() {
         ) {
             notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
-    }
-
-    /**
-     * Notificación local de sistema (no push real, ver INT-02): se dispara desde el propio
-     * cliente cuando BudgetSpentTracker detecta que un presupuesto cruzó su alertThreshold.
-     */
-    private fun showBudgetAlertNotification(title: String, body: String) {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        val notification = NotificationCompat.Builder(this, BUDGET_ALERT_CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-        NotificationManagerCompat.from(this).notify(title.hashCode(), notification)
     }
 
     private fun shareText(text: String) {

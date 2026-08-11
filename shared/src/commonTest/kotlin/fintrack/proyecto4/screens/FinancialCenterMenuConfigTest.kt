@@ -8,11 +8,11 @@ import kotlin.test.assertTrue
 class FinancialCenterMenuConfigTest {
 
     @Test
-    fun `menu financiero contiene las 6 herramientas esperadas`() {
+    fun `menu financiero contiene las 8 herramientas esperadas`() {
         val items = financialMenuItems()
 
-        assertEquals(6, items.size)
-        assertEquals(6, items.map { it.route }.distinct().size)
+        assertEquals(8, items.size)
+        assertEquals(8, items.map { it.route }.distinct().size)
     }
 
     @Test

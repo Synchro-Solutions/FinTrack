@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import fintrack.proyecto4.util.formatColones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,10 +87,10 @@ class AiChatViewModel(
             .entries
             .sortedByDescending { it.value }
             .take(5)
-            .joinToString(", ") { "${it.key}: ₡${it.value}" }
+            .joinToString(", ") { "${it.key}: ${formatColones(it.value)}" }
 
         val ultimosGastos = gastos.take(10).joinToString("\n") {
-            "- ${it.date}: ${it.description} (${it.category}) ₡${it.amount}"
+            "- ${it.date}: ${it.description} (${it.category}) ${formatColones(it.amount)}"
         }
 
         return """
@@ -97,9 +98,9 @@ Eres un asistente financiero personal integrado en FinTrack, una app de finanzas
 Responde SIEMPRE en español, de forma concisa, amigable y útil. Sin markdown excesivo.
 
 Datos financieros del usuario:
-- Balance actual: ₡$balance
-- Total ingresos: ₡$totalIngresos (${ingresos.size} transacciones)
-- Total gastos: ₡$totalGastos (${gastos.size} transacciones)
+- Balance actual: ${formatColones(balance)}
+- Total ingresos: ${formatColones(totalIngresos)} (${ingresos.size} transacciones)
+- Total gastos: ${formatColones(totalGastos)} (${gastos.size} transacciones)
 - Top categorías de gasto: $categorias
 
 Últimos gastos:

@@ -3,7 +3,6 @@ package fintrack.proyecto4.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -129,7 +128,7 @@ class ForgotPasswordViewModelTest {
     fun `el cooldown llega a cero luego de 60 segundos`() = runTest {
         viewModel.sendResetLink("user@email.com")
 
-        advanceTimeBy(60_000)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(0, viewModel.cooldownSeconds.value)
     }
@@ -137,7 +136,7 @@ class ForgotPasswordViewModelTest {
     @Test
     fun `tras terminar el cooldown se puede volver a enviar`() = runTest {
         viewModel.sendResetLink("user@email.com")
-        advanceTimeBy(60_000)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.sendResetLink("user@email.com")
 

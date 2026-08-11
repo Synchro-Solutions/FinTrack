@@ -3,6 +3,7 @@ package fintrack.proyecto4.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +39,8 @@ import fintrack.proyecto4.ai.CategoryForecast
 import fintrack.proyecto4.ai.ForecastState
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.util.formatColones
 
@@ -54,19 +57,21 @@ fun SpendingForecastSection(
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (!state.hasRequested) {
-            Button(
-                onClick = onGenerate,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
-            ) {
-                Text(
-                    "🔮  Predecir gastos del próximo mes",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = montserrat
-                )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier.height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
+                ) {
+                    Text(
+                        "🔮  Predecir gastos del próximo mes",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = montserrat
+                    )
+                }
             }
             return
         }
@@ -75,7 +80,7 @@ fun SpendingForecastSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(colors.surface)
+                .glassCard()
                 .padding(16.dp)
         ) {
             Row(
@@ -115,9 +120,10 @@ fun SpendingForecastSection(
                             color = FinTrackColors.GreenPrimary
                         )
                         Spacer(Modifier.width(10.dp))
-                        Text(
-                            "Calculando tu predicción…",
-                            color = colors.textSecondary,
+                        ShimmerText(
+                            text = "Calculando tu predicción…",
+                            baseColor = colors.textSecondary,
+                            accentColor = colors.primary,
                             fontSize = 13.sp,
                             fontFamily = montserrat
                         )

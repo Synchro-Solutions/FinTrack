@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -60,7 +61,7 @@ class SpendingForecastViewModel(
         if (_state.value.isLoading) return
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val dayKey = "$uid|${today.year}-${pad(today.monthNumber)}-${pad(today.dayOfMonth)}"
+        val dayKey = "$uid|${today.year}-${pad(today.month.number)}-${pad(today.day)}"
 
         if (!force) {
             dailyCache[dayKey]?.let { cached ->
@@ -76,7 +77,7 @@ class SpendingForecastViewModel(
                 val transactions = transactionRepository.getTransactions(uid)
                 val budgets = try { budgetRepository.getBudgets(uid) } catch (_: Exception) { emptyList() }
 
-                val months = lastThreeMonthKeys(today.year, today.monthNumber)
+                val months = lastThreeMonthKeys(today.year, today.month.number)
                 val gastos = transactions.filter { it.type == TransactionType.EXPENSE }
 
                 val presentMonths = months.filter { mk -> gastos.any { periodKeyOf(it.date) == mk } }

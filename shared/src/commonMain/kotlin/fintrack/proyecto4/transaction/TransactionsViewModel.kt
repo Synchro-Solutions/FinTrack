@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
  */
 class TransactionsViewModel(
     private val repository: TransactionRepository,
-    private val uid: String
+    private val uid: String,
+    private val categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransactionsUiState())
@@ -27,7 +28,19 @@ class TransactionsViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val transactions = repository.getTransactions(uid).sortedByDescending { it.createdAt }
-                _uiState.update { it.copy(isLoading = false, transactions = transactions, errorMessage = null) }
+                val customCategoryNames = try {
+                    categoryRepository.getCategories(uid).map { it.name }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        transactions = transactions,
+                        customCategoryNames = customCategoryNames,
+                        errorMessage = null
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "No se pudieron cargar los movimientos") }
             }

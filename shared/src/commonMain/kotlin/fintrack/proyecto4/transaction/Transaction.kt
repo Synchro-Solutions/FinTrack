@@ -12,5 +12,6 @@ data class Transaction(
     val category: String,
     val paymentMethod: PaymentMethod?,
     val date: String,
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    val receiptUrl: String? = null
 )

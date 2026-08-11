@@ -75,6 +75,17 @@ class SavingsFirestoreRepository {
 
                     notes = document
                         .get<String?>("notes")
+                        ?: "",
+
+                    aiMonthlySaving = document
+                        .get<Double?>("aiMonthlySaving"),
+
+                    aiCategoriesToReduce = document
+                        .get<List<String>?>("aiCategoriesToReduce")
+                        ?: emptyList(),
+
+                    aiExplanation = document
+                        .get<String?>("aiExplanation")
                         ?: ""
                 )
             }
@@ -97,7 +108,10 @@ class SavingsFirestoreRepository {
                     "category" to goal.category.name,
                     "colorName" to goal.colorName.name,
                     "priority" to goal.priority.name,
-                    "notes" to goal.notes
+                    "notes" to goal.notes,
+                    "aiMonthlySaving" to goal.aiMonthlySaving,
+                    "aiCategoriesToReduce" to goal.aiCategoriesToReduce,
+                    "aiExplanation" to goal.aiExplanation
                 )
             )
     }

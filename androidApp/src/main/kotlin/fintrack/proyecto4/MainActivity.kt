@@ -24,10 +24,14 @@ import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
+import fintrack.proyecto4.history.FirestoreCalculationHistoryRepository
+import fintrack.proyecto4.notifications.AndroidNotifierContext
+import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
 import fintrack.proyecto4.profile.CloudinaryUploader
+import fintrack.proyecto4.transaction.FirestoreCustomCategoryRepository
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -79,6 +83,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        AndroidNotifierContext.appContext = applicationContext
         FirebaseEmulatorConfig.connectIfEnabled()
 
         val sessionStore = DataStoreSessionStore(dataStore)
@@ -86,6 +91,9 @@ class MainActivity : ComponentActivity() {
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
+        val notificationRepository = FirestoreNotificationRepository()
+        val categoryRepository = FirestoreCustomCategoryRepository()
+        val calculationHistoryRepository = FirestoreCalculationHistoryRepository()
 
         setContent {
             App(
@@ -93,6 +101,9 @@ class MainActivity : ComponentActivity() {
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
+                notificationRepository = notificationRepository,
+                categoryRepository = categoryRepository,
+                calculationHistoryRepository = calculationHistoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },
@@ -113,6 +124,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onShareText = { text -> shareText(text) },
                 onUploadProfilePhoto = { path -> CloudinaryUploader.uploadProfilePhoto(path) },
+                onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
                 onGoogleSignInRequested = { requestGoogleIdToken() }
             )
         }

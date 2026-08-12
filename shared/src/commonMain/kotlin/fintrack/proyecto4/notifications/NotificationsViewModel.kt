@@ -32,4 +32,18 @@ class NotificationsViewModel(
             repository.markAllRead(uid)
         }
     }
+
+    /** Elimina físicamente la notificación (US-43); se llama tras confirmar el diálogo. */
+    fun delete(notification: AppNotification) {
+        viewModelScope.launch {
+            try {
+                repository.deleteNotification(uid, notification.id)
+            } catch (_: Exception) {
+                // Se quita de la lista local igualmente; la próxima carga reconcilia.
+            }
+            _state.value = _state.value.copy(
+                notifications = _state.value.notifications.filterNot { it.id == notification.id }
+            )
+        }
+    }
 }

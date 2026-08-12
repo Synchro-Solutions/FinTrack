@@ -35,6 +35,9 @@ sealed interface Screen {
     data object Mas : Screen
     data object Ajustes : Screen
 
+    /** Bandeja de notificaciones (US-43). */
+    data object Notifications : Screen
+
     /** Editar nombre, foto, ingreso y moneda del perfil (US-09). */
     data object EditarPerfil : Screen
 
@@ -61,7 +64,6 @@ sealed interface Screen {
     ) : Screen
 
     data object AiChat : Screen
-    data object Notifications : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object Reportes : Screen

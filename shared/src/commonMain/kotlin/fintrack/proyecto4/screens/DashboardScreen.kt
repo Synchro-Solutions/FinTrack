@@ -665,7 +665,10 @@ private fun LegendDot(color: Color, label: String) {
 private fun BarChart(data: List<MonthlyChartData>) {
     val colors = LocalAppColors.current
     val montserrat = montserratFamily()
-    val maxVal = data.maxOfOrNull { maxOf(it.ingresos, it.gastos) }?.toFloat() ?: 1f
+    // coerceAtLeast(1f) evita dividir entre 0 más abajo (item.ingresos / maxVal): un usuario
+    // sin transacciones tiene todos los meses en 0, y 0f/0f = NaN, que hace crashear la
+    // animación de las barras (Animatable.animateTo no acepta NaN).
+    val maxVal = (data.maxOfOrNull { maxOf(it.ingresos, it.gastos) }?.toFloat() ?: 1f).coerceAtLeast(1f)
     val maxH = 90.dp
 
     Row(
@@ -696,7 +699,10 @@ private fun BarChart(data: List<MonthlyChartData>) {
 
 @Composable
 private fun GradientBar(fraction: Float, width: Dp, brush: Brush, delayMillis: Int = 0) {
-    val targetFraction = fraction.coerceIn(0.03f, 1f)
+    // Blindaje: si llega un valor no finito (NaN/Infinity por una división inesperada),
+    // se trata como 0 para no pasar NaN a animateTo, que lanzaría IllegalStateException.
+    val safeFraction = if (fraction.isFinite()) fraction else 0f
+    val targetFraction = safeFraction.coerceIn(0.03f, 1f)
     val animatedFraction = remember { Animatable(0f) }
     LaunchedEffect(targetFraction) {
         animatedFraction.animateTo(

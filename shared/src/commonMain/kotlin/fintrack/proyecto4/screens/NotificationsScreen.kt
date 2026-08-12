@@ -18,14 +18,24 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +50,7 @@ import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationsViewModel
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.warningTextStrong
 
 @Composable
 fun NotificationsScreen(
@@ -50,6 +61,8 @@ fun NotificationsScreen(
     val uid = AuthClient.currentUserId() ?: ""
     val viewModel = viewModel(key = uid) { NotificationsViewModel(notificationRepository, uid) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    var pendingDelete by remember { mutableStateOf<AppNotification?>(null) }
 
     Column(
         modifier = Modifier
@@ -88,11 +101,80 @@ fun NotificationsScreen(
             ) {
                 item { Spacer(Modifier.height(4.dp)) }
                 items(state.notifications, key = { it.id }) { notification ->
-                    NotificationCard(notification)
+                    SwipeableNotificationCard(
+                        notification = notification,
+                        onRequestDelete = { pendingDelete = notification }
+                    )
                 }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+
+    pendingDelete?.let { target ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Eliminar notificación") },
+            text = { Text("¿Seguro que deseas eliminar esta notificación? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.delete(target)
+                    pendingDelete = null
+                }) {
+                    Text("Eliminar", color = FinTrackColors.ErrorColor)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text("Cancelar", color = colors.textSecondary)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun SwipeableNotificationCard(
+    notification: AppNotification,
+    onRequestDelete: () -> Unit
+) {
+    // confirmValueChange devuelve false a propósito: el swipe no borra directo, solo dispara
+    // el diálogo de confirmación (US-43) y la tarjeta regresa a su lugar. El borrado real
+    // ocurre solo si el usuario confirma.
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onRequestDelete()
+            }
+            false
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = { DeleteSwipeBackground() }
+    ) {
+        NotificationCard(notification)
+    }
+}
+
+@Composable
+private fun DeleteSwipeBackground() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(16.dp))
+            .background(FinTrackColors.ErrorColor)
+            .padding(horizontal = 20.dp),
+        contentAlignment = Alignment.CenterEnd
+    ) {
+        Icon(
+            imageVector = Icons.Default.DeleteOutline,
+            contentDescription = "Eliminar",
+            tint = Color.White,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
@@ -101,7 +183,7 @@ private fun NotificationCard(notification: AppNotification) {
     val colors = LocalAppColors.current
     val (icon, accent) = when (notification.type) {
         NotificationType.BUDGET_EXCEEDED -> "🚨" to FinTrackColors.ErrorColor
-        NotificationType.BUDGET_ALERT -> "⚠️" to FinTrackColors.WarningColor
+        NotificationType.BUDGET_ALERT -> "⚠️" to colors.warningTextStrong
     }
 
     Row(
@@ -152,7 +234,7 @@ private fun EmptyNotificationsState(modifier: Modifier = Modifier) {
         Text(text = "🔔", fontSize = 60.sp)
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Sin notificaciones",
+            text = "No tienes notificaciones",
             color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold

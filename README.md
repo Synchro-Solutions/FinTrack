@@ -61,7 +61,7 @@ Brindar una herramienta digital que permita a la persona usuaria:
 
 Para configurar el entorno de desarrollo y ejecutar el proyecto, sigue las instrucciones detalladas en la guía de configuración:
 
-➡️ **[Guía de Configuración (SETUP.md)](./SETUP.md)**
+➡️ **[Guía de Configuración (SETUP.md)](SETUP.md)**
 
 **Requisitos previos (resumen):**
 - **JDK 17** y **Android Studio** (última versión estable) con el plugin de **Kotlin Multiplatform**.

@@ -464,7 +464,7 @@ private fun GrossSalaryField(
                     if (value.isEmpty()) {
                         Text(
                             text = "0",
-                            color = FinTrackColors.WhiteAlpha40,
+                            color = colors.textSecondary,
                             fontFamily = montserrat,
                             fontSize = fontSize,
                             fontWeight = FontWeight.Medium
@@ -692,7 +692,7 @@ private fun InlineTextField(
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,
-                        color = FinTrackColors.WhiteAlpha40,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium

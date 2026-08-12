@@ -6,6 +6,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import fintrack.proyecto4.ocr.OcrResult
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionType
@@ -31,6 +34,9 @@ sealed interface Screen {
     data object Metas : Screen
     data object Mas : Screen
     data object Ajustes : Screen
+
+    /** Bandeja de notificaciones (US-43). */
+    data object Notifications : Screen
 
     /** Editar nombre, foto, ingreso y moneda del perfil (US-09). */
     data object EditarPerfil : Screen
@@ -58,7 +64,6 @@ sealed interface Screen {
     ) : Screen
 
     data object AiChat : Screen
-    data object Notifications : Screen
     data object NuevoPresupuesto : Screen
     data object FinancialCenter : Screen
     data object Reportes : Screen
@@ -88,25 +93,39 @@ enum class NavDirection {
 }
 
 /**
+ * Una pantalla dentro del backstack, con un [id] unico por cada vez que se empujo (no por
+ * tipo de pantalla): dos visitas a la misma [Screen] (p.ej. entrar a Metas, volver, entrar
+ * de nuevo) son dos entradas distintas. Ese id es lo que usa [NavHost] para darle a cada
+ * visita su propio [androidx.lifecycle.ViewModelStore] en vez de reusar uno compartido.
+ */
+data class BackStackEntry(val id: Long, val screen: Screen)
+
+/**
  * Mantiene la pila de pantallas (backstack) y la dirección de la última acción de navegación.
  */
 class NavController(initialScreen: Screen = Screen.Login) {
-    private val _backstack = mutableStateListOf<Screen>(initialScreen)
-    
-    val backstack: List<Screen> get() = _backstack
+    private var nextEntryId = 0L
+    private fun newEntry(screen: Screen) = BackStackEntry(nextEntryId++, screen)
+
+    private val _backstack = mutableStateListOf(newEntry(initialScreen))
+
+    val backstack: List<Screen> get() = _backstack.map { it.screen }
 
     var lastDirection by mutableStateOf(NavDirection.PUSH)
         private set
 
+    val currentEntry: BackStackEntry
+        get() = _backstack.last()
+
     val currentScreen: Screen
-        get() = _backstack.lastOrNull() ?: Screen.Login
+        get() = currentEntry.screen
 
     val canGoBack: Boolean
         get() = _backstack.size > 1
 
     fun navigate(screen: Screen) {
         lastDirection = NavDirection.PUSH
-        _backstack.add(screen)
+        _backstack.add(newEntry(screen))
     }
 
     fun goBack(): Boolean {
@@ -123,7 +142,7 @@ class NavController(initialScreen: Screen = Screen.Login) {
         if (_backstack.isNotEmpty()) {
             _backstack.removeAt(_backstack.lastIndex)
         }
-        _backstack.add(screen)
+        _backstack.add(newEntry(screen))
     }
 
     fun popToRoot() {
@@ -146,6 +165,17 @@ val LocalNavController = staticCompositionLocalOf<NavController> {
 /**
  * Contenedor de navegación que reacciona a los cambios en el NavController actual.
  * Proporciona transiciones horizontales premium según la dirección (PUSH / POP).
+ *
+ * Cada entrada del backstack recibe su propio [ViewModelStoreOwner]: sin esto, todas las
+ * pantallas comparten el ViewModelStore de la Activity (via LocalViewModelStoreOwner por
+ * defecto) y como este NavHost es propio, no Jetpack Navigation Compose, ningun
+ * `viewModel(key = ...)` se limpiaba nunca al salir de una pantalla. Recorrer muchas
+ * pantallas en una sesion iba dejando ViewModels y sus listeners de Firestore acumulados
+ * y vivos indefinidamente, degradando la app hasta sentirse "trabada" en la pantalla que
+ * tocara visitar despues. Ahora el store de cada entrada se limpia (`clear()`, que a su vez
+ * llama `onCleared()` en cada ViewModel) cuando Compose la descompone definitivamente tras
+ * un pop/replace — el `DisposableEffect` esta atado a la composicion real, no a cuando se
+ * remueve del backstack, asi que no corta nada a mitad de la animacion de salida.
  */
 @Composable
 fun NavHost(
@@ -154,7 +184,7 @@ fun NavHost(
     content: @Composable (Screen) -> Unit
 ) {
     AnimatedContent(
-        targetState = navController.currentScreen,
+        targetState = navController.currentEntry,
         transitionSpec = {
             val offsetSpec = tween<IntOffset>(NavTransitionDurationMillis, easing = NavTransitionEasing)
             val fadeSpec = tween<Float>(NavTransitionDurationMillis, easing = NavTransitionEasing)
@@ -173,7 +203,17 @@ fun NavHost(
         },
         modifier = modifier,
         label = "NavTransition"
-    ) { screen ->
-        content(screen)
+    ) { entry ->
+        val viewModelStoreOwner = remember(entry.id) {
+            object : ViewModelStoreOwner {
+                override val viewModelStore = ViewModelStore()
+            }
+        }
+        DisposableEffect(entry.id) {
+            onDispose { viewModelStoreOwner.viewModelStore.clear() }
+        }
+        CompositionLocalProvider(LocalViewModelStoreOwner provides viewModelStoreOwner) {
+            content(entry.screen)
+        }
     }
 }

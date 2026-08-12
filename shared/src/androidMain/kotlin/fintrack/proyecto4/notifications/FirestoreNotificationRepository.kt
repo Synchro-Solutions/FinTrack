@@ -2,16 +2,23 @@ package fintrack.proyecto4.notifications
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 class FirestoreNotificationRepository : NotificationRepository {
 
     private val db = Firebase.firestore
 
     private fun col(uid: String) = db.collection("users").document(uid).collection("notifications")
 
+    private fun retentionCutoffMillis(): Long =
+        Clock.System.now().toEpochMilliseconds() - NotificationRetentionDays * 24L * 60 * 60 * 1000
+
     override suspend fun getNotifications(uid: String): List<AppNotification> {
         return try {
-            col(uid).get().documents.mapNotNull { doc ->
+            val cutoff = retentionCutoffMillis()
+            val all = col(uid).get().documents.mapNotNull { doc ->
                 runCatching {
                     AppNotification(
                         id = doc.id,
@@ -26,7 +33,13 @@ class FirestoreNotificationRepository : NotificationRepository {
                         createdAt = try { doc.get<Long>("createdAt") } catch (_: Exception) { 0L }
                     )
                 }.getOrNull()
-            }.sortedByDescending { it.createdAt }
+            }
+
+            // Retención US-43: las de más de 30 días se eliminan físicamente y no se devuelven.
+            val (expired, vigentes) = all.partition { it.createdAt < cutoff }
+            expired.forEach { runCatching { col(uid).document(it.id).delete() } }
+
+            vigentes.sortedByDescending { it.createdAt }
         } catch (e: Exception) {
             emptyList()
         }
@@ -63,5 +76,9 @@ class FirestoreNotificationRepository : NotificationRepository {
         } catch (e: Exception) {
             0
         }
+    }
+
+    override suspend fun deleteNotification(uid: String, notificationId: String) {
+        col(uid).document(notificationId).delete()
     }
 }

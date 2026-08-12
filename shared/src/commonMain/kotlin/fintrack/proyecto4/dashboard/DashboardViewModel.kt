@@ -1,20 +1,25 @@
 package fintrack.proyecto4.dashboard
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fintrack.proyecto4.ai.FinancialAdviceService
+import fintrack.proyecto4.budget.BUDGET_CATEGORIES
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
+import fintrack.proyecto4.budget.colorFromHex
 import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
+import fintrack.proyecto4.reportes.CategoriaReporteItem
 import fintrack.proyecto4.savings.model.GoalStatus
 import fintrack.proyecto4.savings.repository.SavingsRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
+import fintrack.proyecto4.transaction.parseFormFieldDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -173,6 +178,27 @@ class DashboardViewModel(
         val chartData =
             buildMonthlyChartData(transactions, monthsBack = 6)
 
+        val gastosDelMesPorCategoria = transactions
+            .filter { it.type == TransactionType.EXPENSE && isCurrentMonth(it.date) }
+            .groupBy { it.category.ifBlank { "Otro" } }
+            .map { (categoria, txs) -> Triple(categoria, txs.sumOf { it.amount }, txs.size) }
+            .sortedWith(compareByDescending<Triple<String, Long, Int>> { it.second }.thenByDescending { it.third })
+
+        val totalGastosDelMes = gastosDelMesPorCategoria.sumOf { it.second }
+
+        val mayorGastoCategoria = gastosDelMesPorCategoria.firstOrNull()?.let { (categoria, monto, _) ->
+            TopCategoriaItem(
+                categoryName = categoria,
+                icon = categoryIcon(categoria),
+                color = categoryColor(categoria),
+                monto = monto,
+                porcentaje = if (totalGastosDelMes > 0) ((monto * 100) / totalGastosDelMes).toInt() else 0
+            )
+        }
+
+        val gastosPorCategoriaMes =
+            buildTop5ConOtros(gastosDelMesPorCategoria, totalGastosDelMes)
+
         val presupuestos = budgets.map { budget ->
             PresupuestoItem(
                 id = budget.id,
@@ -249,7 +275,10 @@ class DashboardViewModel(
                 notificationCount =
                     notificationCount,
 
-                ocrPendingCount = 0
+                ocrPendingCount = 0,
+
+                mayorGastoCategoria = mayorGastoCategoria,
+                gastosPorCategoriaMes = gastosPorCategoriaMes
             )
         }
 
@@ -446,6 +475,51 @@ class DashboardViewModel(
                         "control preciso de tu ahorro mensual."
             }
         }
+    }
+
+    private fun isCurrentMonth(dateStr: String): Boolean {
+        val date = parseFormFieldDate(dateStr) ?: return false
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        return date.year == today.year && date.monthNumber == today.monthNumber
+    }
+
+    /** Ícono/color de una categoría para la tarjeta "Mayor gasto este mes"; las categorías
+     *  personalizadas (fuera de BUDGET_CATEGORIES) caen en el mismo ícono/color que "Otro". */
+    private fun categoryIcon(categoryName: String): String =
+        BUDGET_CATEGORIES.firstOrNull { it.name == categoryName }?.icon
+            ?: BUDGET_CATEGORIES.last().icon
+
+    private fun categoryColor(categoryName: String): Color =
+        colorFromHex(
+            BUDGET_CATEGORIES.firstOrNull { it.name == categoryName }?.colorHex
+                ?: BUDGET_CATEGORIES.last().colorHex
+        )
+
+    /** Agrupa el desglose de categorías en las 5 de mayor gasto + "Otros" con el resto
+     *  (US Sprint 7: donut de gastos por categoría). */
+    private fun buildTop5ConOtros(
+        breakdown: List<Triple<String, Long, Int>>,
+        total: Long
+    ): List<CategoriaReporteItem> {
+        if (breakdown.isEmpty()) return emptyList()
+
+        val top5 = breakdown.take(5).map { (categoria, monto, _) ->
+            CategoriaReporteItem(
+                categoria = categoria,
+                monto = monto,
+                porcentaje = if (total > 0) ((monto * 100) / total).toInt() else 0
+            )
+        }
+
+        val resto = breakdown.drop(5)
+        if (resto.isEmpty()) return top5
+
+        val montoOtros = resto.sumOf { it.second }
+        return top5 + CategoriaReporteItem(
+            categoria = "Otros",
+            monto = montoOtros,
+            porcentaje = if (total > 0) ((montoOtros * 100) / total).toInt() else 0
+        )
     }
 
     private fun Transaction.toMovimientoItem(): MovimientoItem {

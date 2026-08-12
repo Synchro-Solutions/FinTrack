@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.budget.BudgetItem
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.roundToInt
@@ -210,7 +211,7 @@ fun EditBudgetDialog(
                 if (belowSpent) {
                     Text(
                         text = "El límite es menor al gasto actual",
-                        color = FinTrackColors.WarningColor,
+                        color = colors.warningTextStrong,
                         fontSize = 12.sp
                     )
                 }

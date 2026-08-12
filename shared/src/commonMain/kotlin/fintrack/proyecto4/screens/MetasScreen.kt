@@ -26,7 +26,6 @@ import fintrack.proyecto4.savings.ui.CreateGoalDialog
 import fintrack.proyecto4.savings.ui.EditGoalDialog
 import fintrack.proyecto4.savings.ui.GoalCard
 import fintrack.proyecto4.savings.ui.GoalCompletedDialog
-import fintrack.proyecto4.savings.ui.GoalConfetti
 import fintrack.proyecto4.savings.ui.GoalDetailDialog
 import fintrack.proyecto4.savings.viewmodel.GoalFilter
 import fintrack.proyecto4.savings.viewmodel.GoalSort
@@ -513,8 +512,6 @@ fun MetasScreen(
     }
 
     completedGoal?.let { goal ->
-        GoalConfetti()
-
         GoalCompletedDialog(
             goal = goal,
             onDismiss = {

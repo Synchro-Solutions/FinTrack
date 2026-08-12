@@ -106,9 +106,13 @@ fun ForgotPasswordScreen(
             verticalArrangement = Arrangement.Center
         ) {
 
+            // Ancho tope: mismo ajuste que LoginScreen, la tarjeta se estiraba a lo ancho
+            // de toda la pantalla en la version web (ventana de navegador mucho mas ancha
+            // que un telefono).
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .widthIn(max = 420.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(CardBackground)
             ) {

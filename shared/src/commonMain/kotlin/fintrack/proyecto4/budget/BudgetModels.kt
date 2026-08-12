@@ -3,6 +3,7 @@ package fintrack.proyecto4.budget
 import androidx.compose.ui.graphics.Color
 import fintrack.proyecto4.transaction.Transaction
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -82,6 +83,14 @@ data class BudgetItem(
         rawUsagePct >= 0.70f -> BudgetStatus.WARNING
         else -> BudgetStatus.OK
     }
+}
+
+/** Período mensual actual en formato "yyyy-MM", usado para saber a qué mes corresponde
+ *  el `spent` acumulado de un presupuesto. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+fun currentBudgetPeriodKey(): String {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    return "${today.year}-${today.month.number.toString().padStart(2, '0')}"
 }
 
 data class BudgetListState(

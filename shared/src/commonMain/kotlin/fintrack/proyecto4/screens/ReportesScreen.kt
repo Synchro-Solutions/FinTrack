@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,11 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,6 +65,7 @@ import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
@@ -418,95 +415,8 @@ private fun TendenciaSection(periodoLabel: String, data: List<MonthlyChartData>)
     }
 }
 
-// ── Gastos/ingresos por categoría (donut a mano con Canvas) ───────────────────
-
-@Composable
-private fun categoriaPalette(): List<Color> = listOf(
-    FinTrackColors.GreenPrimary,
-    FinTrackColors.IndigoLight,
-    FinTrackColors.VioletLight,
-    FinTrackColors.BlueMeta,
-    FinTrackColors.WarningLight,
-    FinTrackColors.RedLight,
-    FinTrackColors.GreenLight,
-    FinTrackColors.IndigoDark
-)
-
-@Composable
-private fun CategoriaDonutSection(
-    titulo: String,
-    items: List<CategoriaReporteItem>,
-    onCategoriaClick: (String) -> Unit
-) {
-    if (items.isEmpty()) return
-    val colors = LocalAppColors.current
-    val montserrat = montserratFamily()
-    val palette = categoriaPalette()
-
-    DarkCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(titulo, color = colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = montserrat)
-        Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DonutChart(
-                items = items,
-                colors = items.indices.map { palette[it % palette.size] },
-                modifier = Modifier.size(96.dp)
-            )
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items.take(5).forEachIndexed { index, item ->
-                    CategoriaLegendRow(
-                        item = item,
-                        color = palette[index % palette.size],
-                        onClick = { onCategoriaClick(item.categoria) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DonutChart(items: List<CategoriaReporteItem>, colors: List<Color>, modifier: Modifier = Modifier) {
-    val total = items.sumOf { it.monto }.coerceAtLeast(1L).toFloat()
-    Canvas(modifier = modifier) {
-        val strokeWidth = size.minDimension * 0.24f
-        var startAngle = -90f
-        items.forEachIndexed { index, item ->
-            val sweep = (item.monto / total) * 360f
-            drawArc(
-                color = colors[index],
-                startAngle = startAngle,
-                sweepAngle = sweep.coerceAtLeast(0f),
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-                topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
-                size = Size(size.width - strokeWidth, size.height - strokeWidth)
-            )
-            startAngle += sweep
-        }
-    }
-}
-
-@Composable
-private fun CategoriaLegendRow(item: CategoriaReporteItem, color: Color, onClick: () -> Unit) {
-    val colors = LocalAppColors.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-    ) {
-        Box(Modifier.size(8.dp).background(color, CircleShape))
-        Spacer(Modifier.width(6.dp))
-        Text(
-            item.categoria,
-            color = colors.textPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
-        Text("${formatColonesCompacto(item.monto)} · ${item.porcentaje}%", color = colors.textSecondary, fontSize = 11.sp)
-    }
-}
+// CategoriaDonutSection, DonutChart, CategoriaLegendRow y categoriaPalette viven en
+// ChartComponents.kt (compartidos con el Dashboard, ver US Sprint 7 "gasto por categoría").
 
 // ── Gasto por método de pago ────────────────────────────────────────────────
 
@@ -629,10 +539,18 @@ private fun PresupuestosResumenSection(presupuestos: List<BudgetItem>) {
 @Composable
 private fun PresupuestoResumenRow(budget: BudgetItem) {
     val colors = LocalAppColors.current
-    val statusColor = when (budget.status) {
+    val barColor = when (budget.status) {
         BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING -> FinTrackColors.WarningColor
+        BudgetStatus.OK -> FinTrackColors.GreenPrimary
+    }
+    // El "%" se lee como texto: en WARNING el ambar plano de barColor no tiene contraste
+    // suficiente sobre fondo claro, así que el texto usa la variante fuerte del tema.
+    val textColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
+        BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
+        BudgetStatus.WARNING -> colors.warningTextStrong
         BudgetStatus.OK -> FinTrackColors.GreenPrimary
     }
     Column {
@@ -644,7 +562,7 @@ private fun PresupuestoResumenRow(budget: BudgetItem) {
             Text(budget.categoryName, color = colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Text(
                 "${(budget.usagePct * 100).toInt()}%",
-                color = statusColor,
+                color = textColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -656,7 +574,7 @@ private fun PresupuestoResumenRow(budget: BudgetItem) {
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp)),
-            color = statusColor,
+            color = barColor,
             trackColor = colors.surfaceSecondary,
             strokeCap = StrokeCap.Round
         )

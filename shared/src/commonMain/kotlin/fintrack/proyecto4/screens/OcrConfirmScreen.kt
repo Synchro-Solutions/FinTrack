@@ -31,6 +31,9 @@ import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.theme.subtleSurface
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningBorder
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.CustomCategory
 import fintrack.proyecto4.transaction.CustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
@@ -106,32 +109,35 @@ fun OcrConfirmScreen(
             WarningBanner()
 
             FormCard {
-                OcrCardTitle("Monto (₡)")
+                OcrCardTitle("Monto (₡)", fromAi = result.amountFromAi)
                 Spacer(Modifier.height(10.dp))
                 OcrAmountField(
                     value = state.amount,
                     isMissing = state.amount.isBlank(),
+                    aiEnhanced = result.aiEnhanced,
                     onValueChange = viewModel::updateAmount
                 )
             }
 
             FormCard {
-                OcrCardTitle("Fecha")
+                OcrCardTitle("Fecha", fromAi = result.dateFromAi)
                 Spacer(Modifier.height(10.dp))
                 DateField(
                     value = state.date,
                     onClick = { showDatePicker = true },
                     placeholder = "Dato no detectado",
-                    isMissing = state.date.isBlank()
+                    isMissing = state.date.isBlank(),
+                    missingBorderColor = if (result.aiEnhanced) FinTrackColors.WarningColor else FinTrackColors.ErrorColor
                 )
 
                 Spacer(Modifier.height(16.dp))
 
-                OcrCardTitle("Comercio")
+                OcrCardTitle("Comercio", fromAi = result.merchantFromAi)
                 Spacer(Modifier.height(10.dp))
                 OcrTextField(
                     value = state.description,
                     isMissing = state.description.isBlank(),
+                    aiEnhanced = result.aiEnhanced,
                     onValueChange = viewModel::updateDescription
                 )
             }
@@ -142,7 +148,7 @@ fun OcrConfirmScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FormSectionTitle("Categoría")
+                    OcrCardTitle("Categoría", fromAi = result.suggestedCategory != null)
                     if (categoriesForType.isNotEmpty()) {
                         Text(
                             text = "Gestionar categorías",
@@ -314,9 +320,9 @@ fun OcrConfirmScreen(
 @Composable
 private fun WarningBanner() {
     val colors = LocalAppColors.current
-    val bannerBg = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.12f) else colors.subtleSurface
-    val bannerBorder = if (colors.isDark) FinTrackColors.WarningColor.copy(alpha = 0.35f) else colors.border
-    val bannerTextColor = if (colors.isDark) FinTrackColors.WarningLight else colors.textPrimary
+    val bannerBg = colors.warningBg
+    val bannerBorder = colors.warningBorder
+    val bannerTextColor = colors.warningTextStrong
 
     Row(
         modifier = Modifier
@@ -329,7 +335,7 @@ private fun WarningBanner() {
         Icon(
             imageVector = Icons.Default.WarningAmber,
             contentDescription = null,
-            tint = FinTrackColors.WarningColor,
+            tint = bannerTextColor,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(10.dp))
@@ -345,21 +351,26 @@ private fun WarningBanner() {
 /**
  * US-17/US-18: OcrResult no trae un score de confianza por campo (solo detecta o no),
  * así que se usa "campo vacío tras el prefill" como equivalente práctico de "confianza
- * baja" y se resalta con borde de advertencia (rojo, igual en ambos temas) para que el
- * usuario lo revise antes de confirmar. El borde desaparece en cuanto el usuario completa
- * el campo.
+ * baja" y se resalta con borde de advertencia para que el usuario lo revise antes de
+ * confirmar. El borde desaparece en cuanto el usuario completa el campo.
+ *
+ * Color del borde: ámbar cuando la IA corrió pero no pudo determinar el campo ("lo
+ * revisó y no supo"), rojo (comportamiento original, antes de la IA) cuando la IA nunca
+ * llegó a correr (ej. sin conexión) — mismo significado que tenía este borde antes.
  */
-private fun missingFieldBorder(isMissing: Boolean): Modifier =
+private fun missingFieldBorder(isMissing: Boolean, aiEnhanced: Boolean = false): Modifier =
     if (isMissing) {
-        Modifier.border(1.5.dp, FinTrackColors.ErrorColor, RoundedCornerShape(16.dp))
+        val color = if (aiEnhanced) FinTrackColors.WarningColor else FinTrackColors.ErrorColor
+        Modifier.border(1.5.dp, color, RoundedCornerShape(16.dp))
     } else {
         Modifier
     }
 
-/** Título de sección (mismo estilo que FormSectionTitle) + insignia "detectado por OCR",
- *  para los campos que sí vienen del asistente (monto, fecha, comercio). */
+/** Título de sección (mismo estilo que FormSectionTitle) + insignia de origen del dato:
+ *  "✓ IA" en verde cuando la IA corrigió/completó el campo, o "· detectado por OCR" cuando
+ *  viene solo del parser por regex (comportamiento original). */
 @Composable
-private fun OcrCardTitle(text: String) {
+private fun OcrCardTitle(text: String, fromAi: Boolean = false) {
     val colors = LocalAppColors.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -373,13 +384,14 @@ private fun OcrCardTitle(text: String) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
-                .background(colors.subtleSurface)
+                .background(if (fromAi) FinTrackColors.GreenPrimary.copy(alpha = 0.15f) else colors.subtleSurface)
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
             Text(
-                text = "· detectado por OCR",
+                text = if (fromAi) "✓ IA" else "· detectado por OCR",
                 color = FinTrackColors.GreenPrimary,
                 fontSize = 10.sp,
+                fontWeight = if (fromAi) FontWeight.Bold else FontWeight.Normal,
                 fontFamily = montserratFamily()
             )
         }
@@ -390,6 +402,7 @@ private fun OcrCardTitle(text: String) {
 private fun OcrAmountField(
     value: String,
     isMissing: Boolean,
+    aiEnhanced: Boolean = false,
     onValueChange: (String) -> Unit
 ) {
     val colors = LocalAppColors.current
@@ -423,7 +436,7 @@ private fun OcrAmountField(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .then(missingFieldBorder(isMissing)),
+            .then(missingFieldBorder(isMissing, aiEnhanced)),
         shape = RoundedCornerShape(16.dp),
         textStyle = MaterialTheme.typography.titleLarge.copy(
             color = colors.textPrimary,
@@ -439,6 +452,7 @@ private fun OcrAmountField(
 private fun OcrTextField(
     value: String,
     isMissing: Boolean,
+    aiEnhanced: Boolean = false,
     onValueChange: (String) -> Unit
 ) {
     val colors = LocalAppColors.current
@@ -456,7 +470,7 @@ private fun OcrTextField(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .then(missingFieldBorder(isMissing)),
+            .then(missingFieldBorder(isMissing, aiEnhanced)),
         shape = RoundedCornerShape(16.dp),
         textStyle = LocalTextStyle.current.copy(
             fontSize = 13.sp,

@@ -28,6 +28,7 @@ import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
 import fintrack.proyecto4.profile.CloudinaryUploader
+import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.transaction.FirestoreCustomCategoryRepository
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
         val categoryRepository = FirestoreCustomCategoryRepository()
+        val notificationRepository = FirestoreNotificationRepository()
 
         setContent {
             App(
@@ -96,6 +98,7 @@ class MainActivity : ComponentActivity() {
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
                 categoryRepository = categoryRepository,
+                notificationRepository = notificationRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },

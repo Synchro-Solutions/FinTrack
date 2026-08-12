@@ -33,6 +33,8 @@ import fintrack.proyecto4.navigation.NavController
 import fintrack.proyecto4.navigation.NavHost
 import fintrack.proyecto4.navigation.Screen
 import fintrack.proyecto4.navigation.mainScreens
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
+import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.ocr.OcrAssistantViewModel
 import fintrack.proyecto4.onboarding.NoOpOnboardingRepository
 import fintrack.proyecto4.onboarding.OnboardingRepository
@@ -49,6 +51,7 @@ import fintrack.proyecto4.screens.ForgotPasswordScreen
 import fintrack.proyecto4.screens.LoginScreen
 import fintrack.proyecto4.screens.MasScreen
 import fintrack.proyecto4.screens.MetasScreen
+import fintrack.proyecto4.screens.NotificationsScreen
 import fintrack.proyecto4.screens.TransactionsScreen
 import fintrack.proyecto4.screens.NetSalaryCalculatorScreen
 import fintrack.proyecto4.screens.OcrAssistantScreen
@@ -140,6 +143,7 @@ fun App(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
+    notificationRepository: NotificationRepository = NoOpNotificationRepository(),
     ocrCameraContent: @Composable (onCaptured: (String) -> Unit, onCancel: () -> Unit) -> Unit =
         { _, onCancel -> OcrCameraUnavailablePlaceholder(onCancel) },
     onPickReceiptImage: (onPicked: (String?) -> Unit) -> Unit = { onPicked -> onPicked(null) },
@@ -265,6 +269,7 @@ fun App(
                                 transactionRepository = transactionRepository,
                                 onboardingRepository = onboardingRepository,
                                 budgetRepository = budgetRepository,
+                                notificationRepository = notificationRepository,
                                 onNavigateToOcr = {
                                     ocrAssistantViewModel.reset()
                                     navController.navigate(Screen.OcrAssistant)
@@ -273,7 +278,13 @@ fun App(
                                 onNavigateToMovimientos = { navController.replace(Screen.Movimientos) },
                                 onNavigateToPresupuestos = { navController.replace(Screen.Presupuestos) },
                                 onNavigateToMetas = { navController.navigate(Screen.Metas) },
+                                onNavigateToNotifications = { navController.navigate(Screen.Notifications) },
                                 onShareText = onShareText
+                            )
+
+                            is Screen.Notifications -> NotificationsScreen(
+                                notificationRepository = notificationRepository,
+                                onBack = { navController.goBack() }
                             )
 
                         is Screen.TransactionForm -> TransactionFormScreen(

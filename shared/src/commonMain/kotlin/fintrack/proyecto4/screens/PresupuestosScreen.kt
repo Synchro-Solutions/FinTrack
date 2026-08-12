@@ -1,6 +1,7 @@
 package fintrack.proyecto4.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,6 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -27,6 +31,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,11 +53,16 @@ import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.BudgetStatus
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.ai.SpendingForecastViewModel
+import fintrack.proyecto4.budget.budgetTransactions
+import fintrack.proyecto4.budget.periodLabelFromKey
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.glassCard
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
+import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.util.formatColones
 
@@ -58,12 +70,16 @@ import fintrack.proyecto4.util.formatColones
 fun PresupuestosScreen(
     budgetRepository: BudgetRepository = NoOpBudgetRepository(),
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
-    onNuevoPresupuesto: () -> Unit = {}
+    onNuevoPresupuesto: () -> Unit = {},
+    onTransactionClick: (Transaction) -> Unit = {}
 ) {
     val colors = LocalAppColors.current
     val uid = AuthClient.currentUserId() ?: ""
-    val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid) }
+    val viewModel = viewModel(key = uid) { BudgetListViewModel(budgetRepository, uid, transactionRepository) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var selectedBudget by remember { mutableStateOf<BudgetItem?>(null) }
+    var showEdit by remember { mutableStateOf(false) }
+    var showDeactivate by remember { mutableStateOf(false) }
 
     val forecastViewModel = viewModel(key = "forecast_$uid") {
         SpendingForecastViewModel(transactionRepository, budgetRepository, uid)
@@ -107,7 +123,16 @@ fun PresupuestosScreen(
                 modifier = Modifier.padding(top = 22.dp)
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
+
+            if (state.availablePeriods.size > 1) {
+                PeriodSelector(
+                    periods = state.availablePeriods,
+                    selected = state.selectedPeriod,
+                    onSelect = { viewModel.selectPeriod(it) }
+                )
+                Spacer(Modifier.height(16.dp))
+            }
 
             if (!state.isLoading) {
                 LazyColumn(
@@ -129,11 +154,99 @@ fun PresupuestosScreen(
                     } else {
                         item { SummaryRow(state) }
                         items(state.budgets, key = { it.id }) { budget ->
-                            BudgetCard(budget)
+                            BudgetCard(budget, onClick = { selectedBudget = budget })
                         }
                     }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
+            }
+        }
+    }
+
+    val current = selectedBudget
+    if (current != null && !showEdit && !showDeactivate) {
+        BudgetActionsDialog(
+            budget = current,
+            transactions = budgetTransactions(state.transactions, current, state.selectedPeriod),
+            onDismiss = { selectedBudget = null },
+            onEdit = { showEdit = true },
+            onDeactivate = { showDeactivate = true },
+            onTransactionClick = { tx ->
+                selectedBudget = null
+                onTransactionClick(tx)
+            }
+        )
+    }
+
+    if (current != null && showEdit) {
+        EditBudgetDialog(
+            budget = current,
+            onDismiss = { showEdit = false; selectedBudget = null },
+            onSave = { newLimit, newThreshold ->
+                viewModel.updateBudget(current.id, newLimit, newThreshold)
+                showEdit = false
+                selectedBudget = null
+            }
+        )
+    }
+
+    if (current != null && showDeactivate) {
+        DeactivateBudgetDialog(
+            budget = current,
+            onDismiss = { showDeactivate = false; selectedBudget = null },
+            onConfirm = {
+                viewModel.deactivateBudget(current.id)
+                showDeactivate = false
+                selectedBudget = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun PeriodSelector(
+    periods: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val colors = LocalAppColors.current
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(colors.surface)
+                .clickable { expanded = true }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = periodLabelFromKey(selected),
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Cambiar período",
+                tint = colors.textSecondary
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            periods.forEach { period ->
+                DropdownMenuItem(
+                    text = { Text(periodLabelFromKey(period), color = colors.textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onSelect(period)
+                    }
+                )
             }
         }
     }
@@ -201,29 +314,40 @@ private fun SummaryCard(
 }
 
 @Composable
-private fun BudgetCard(budget: BudgetItem) {
+private fun BudgetCard(budget: BudgetItem, onClick: () -> Unit) {
     val colors = LocalAppColors.current
     val progressColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
         BudgetStatus.WARNING  -> FinTrackColors.WarningColor
         BudgetStatus.OK       -> FinTrackColors.GreenPrimary
     }
     val statusLabel = when (budget.status) {
-        BudgetStatus.CRITICAL -> "⚠ Crítico"
+        BudgetStatus.EXCEEDED -> "Excedido"
+        BudgetStatus.CRITICAL -> "Cerca del límite"
         BudgetStatus.WARNING  -> "⚠ Alerta"
         BudgetStatus.OK       -> "OK"
     }
-    val statusColor = when (budget.status) {
+    // Texto (badge de estado y "%" de uso): en WARNING el ambar plano de progressColor
+    // no tiene contraste suficiente sobre fondo claro, así que el texto usa la variante
+    // fuerte del tema; la barra de progreso conserva el ambar decorativo original.
+    val statusTextColor = when (budget.status) {
+        BudgetStatus.EXCEEDED -> FinTrackColors.ErrorColor
         BudgetStatus.CRITICAL -> FinTrackColors.ErrorColor
-        BudgetStatus.WARNING  -> FinTrackColors.WarningColor
+        BudgetStatus.WARNING  -> colors.warningTextStrong
         BudgetStatus.OK       -> FinTrackColors.GreenPrimary
     }
+    val badgeBg = if (budget.status == BudgetStatus.WARNING) colors.warningBg
+                  else statusTextColor.copy(alpha = 0.12f)
+    val usageText = if (budget.status == BudgetStatus.EXCEEDED) "Excedido"
+                    else "${budget.usagePercentInt}%"
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .glassCard()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(
@@ -259,12 +383,12 @@ private fun BudgetCard(budget: BudgetItem) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(statusColor.copy(alpha = 0.12f))
+                    .background(badgeBg)
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = statusLabel,
-                    color = statusColor,
+                    color = statusTextColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -272,6 +396,26 @@ private fun BudgetCard(budget: BudgetItem) {
         }
 
         Spacer(Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${formatColones(budget.spent.toLong())} de ${formatColones(budget.limit.toLong())}",
+                color = colors.textSecondary,
+                fontSize = 12.sp
+            )
+            Text(
+                text = usageText,
+                color = statusTextColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
 
         LinearProgressIndicator(
             progress = { budget.usagePct },
@@ -288,20 +432,24 @@ private fun BudgetCard(budget: BudgetItem) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = "${formatColones(budget.spent.toLong())} gastados",
-                color = colors.textSecondary,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "${formatColones(budget.remaining.toLong())} restante",
-                color = if (budget.status == BudgetStatus.OK) FinTrackColors.GreenPrimary
-                        else colors.textSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
+            if (budget.status == BudgetStatus.EXCEEDED) {
+                Text(
+                    text = "${formatColones((-budget.remaining).toLong())} excedido",
+                    color = FinTrackColors.ErrorColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "${formatColones(budget.remaining.toLong())} restante",
+                    color = if (budget.status == BudgetStatus.OK) FinTrackColors.GreenPrimary
+                            else colors.textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
@@ -319,14 +467,14 @@ private fun EmptyBudgetState(modifier: Modifier = Modifier) {
         Text(text = "💰", fontSize = 64.sp)
         Spacer(Modifier.height(20.dp))
         Text(
-            text = "Sin presupuestos aún",
+            text = "No tienes presupuestos activos",
             color = colors.textPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "No tienes presupuestos.\nToca + para crear uno.",
+            text = "Crea uno para empezar.",
             color = colors.textSecondary,
             fontSize = 14.sp,
             lineHeight = 20.sp,

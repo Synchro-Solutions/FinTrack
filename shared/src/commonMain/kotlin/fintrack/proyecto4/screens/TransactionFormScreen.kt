@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.notifications.BudgetAlertService
 import fintrack.proyecto4.screens.common.SuccessSnackbarHost
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.FinTrackTypography
@@ -75,6 +76,7 @@ fun TransactionFormScreen(
     initialType: TransactionType = TransactionType.EXPENSE,
     editingTransaction: Transaction? = null,
     transactionRepository: TransactionRepository = NoOpTransactionRepository(),
+    budgetAlertService: BudgetAlertService? = null,
     categoryRepository: CustomCategoryRepository = NoOpCustomCategoryRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {},
@@ -98,6 +100,7 @@ fun TransactionFormScreen(
             uid = uid,
             initialType = initialType,
             editingTransaction = editingTransaction,
+            budgetAlertService = budgetAlertService,
             categoryRepository = categoryRepository,
             uploadReceipt = uploadReceiptPhoto
         )
@@ -990,7 +993,10 @@ internal fun DateField(
     /** US-17/US-18: el OCR no da un score de confianza por campo (solo detecta o no), así
      *  que se usa "sin detectar" (campo vacío) como equivalente práctico de "confianza baja"
      *  y se resalta con borde de advertencia para que el usuario lo revise/complete. */
-    isMissing: Boolean = false
+    isMissing: Boolean = false,
+    /** Rojo (default) cuando nada detectó el campo; OcrConfirmScreen pasa ámbar cuando la IA
+     *  sí corrió pero no pudo determinar la fecha (distinto de "nunca se intentó"). */
+    missingBorderColor: Color = FinTrackColors.ErrorColor
 ) {
     val colors = LocalAppColors.current
     Box(
@@ -1021,7 +1027,7 @@ internal fun DateField(
                 .height(56.dp)
                 .then(
                     if (isMissing) {
-                        Modifier.border(1.5.dp, FinTrackColors.ErrorColor, RoundedCornerShape(16.dp))
+                        Modifier.border(1.5.dp, missingBorderColor, RoundedCornerShape(16.dp))
                     } else {
                         Modifier
                     }

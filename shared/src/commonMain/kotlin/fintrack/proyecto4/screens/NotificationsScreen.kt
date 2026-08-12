@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,10 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -35,28 +35,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.notifications.AppNotification
-import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationRepository
 import fintrack.proyecto4.notifications.NotificationType
+import fintrack.proyecto4.notifications.NoOpNotificationRepository
 import fintrack.proyecto4.notifications.NotificationsViewModel
-import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
-import fintrack.proyecto4.theme.glassCard
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import fintrack.proyecto4.theme.warningTextStrong
 
-/**
- * Bandeja de notificaciones (US-43). Lista ordenada por fecha (DESC), badge de no leídas
- * en el Dashboard, marcado como leídas al abrir y swipe para eliminar con confirmación.
- */
 @Composable
 fun NotificationsScreen(
     notificationRepository: NotificationRepository = NoOpNotificationRepository(),
@@ -69,24 +64,49 @@ fun NotificationsScreen(
 
     var pendingDelete by remember { mutableStateOf<AppNotification?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        ScreenHeader(title = "Notificaciones", onBack = onBack)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.bg)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = colors.textPrimary
+                )
+            }
+            Text(
+                text = "Notificaciones",
+                color = colors.textPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
 
-        when {
-            state.isEmpty -> EmptyNotifications(modifier = Modifier.weight(1f))
-            else -> LazyColumn(
+        if (!state.isLoading && state.notifications.isEmpty()) {
+            EmptyNotificationsState(modifier = Modifier.weight(1f))
+        } else {
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentPadding = PaddingValues(16.dp),
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                item { Spacer(Modifier.height(4.dp)) }
                 items(state.notifications, key = { it.id }) { notification ->
-                    SwipeableNotification(
+                    SwipeableNotificationCard(
                         notification = notification,
                         onRequestDelete = { pendingDelete = notification }
                     )
                 }
+                item { Spacer(Modifier.height(24.dp)) }
             }
         }
     }
@@ -114,13 +134,13 @@ fun NotificationsScreen(
 }
 
 @Composable
-private fun SwipeableNotification(
+private fun SwipeableNotificationCard(
     notification: AppNotification,
     onRequestDelete: () -> Unit
 ) {
-    // confirmValueChange devuelve false a propósito: no elimina en el swipe, solo dispara
-    // el diálogo de confirmación y deja que la tarjeta regrese a su posición. El borrado
-    // real ocurre únicamente si el usuario confirma (ver AlertDialog).
+    // confirmValueChange devuelve false a propósito: el swipe no borra directo, solo dispara
+    // el diálogo de confirmación (US-43) y la tarjeta regresa a su lugar. El borrado real
+    // ocurre solo si el usuario confirma.
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
@@ -135,7 +155,7 @@ private fun SwipeableNotification(
         enableDismissFromStartToEnd = false,
         backgroundContent = { DeleteSwipeBackground() }
     ) {
-        NotificationRow(notification)
+        NotificationCard(notification)
     }
 }
 
@@ -152,128 +172,79 @@ private fun DeleteSwipeBackground() {
         Icon(
             imageVector = Icons.Default.DeleteOutline,
             contentDescription = "Eliminar",
-            tint = androidx.compose.ui.graphics.Color.White,
+            tint = Color.White,
             modifier = Modifier.size(24.dp)
         )
     }
 }
 
 @Composable
-private fun NotificationRow(notification: AppNotification) {
+private fun NotificationCard(notification: AppNotification) {
     val colors = LocalAppColors.current
+    val (icon, accent) = when (notification.type) {
+        NotificationType.BUDGET_EXCEEDED -> "🚨" to FinTrackColors.ErrorColor
+        NotificationType.BUDGET_ALERT -> "⚠️" to colors.warningTextStrong
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .glassCard()
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(colors.surface)
+            .padding(14.dp),
+        verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(colors.surfaceSecondary),
+                .background(accent.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = notification.type.emoji(), fontSize = 20.sp)
+            Text(text = icon, fontSize = 18.sp)
         }
 
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = notification.title,
-                    color = colors.textPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = if (notification.isRead) FontWeight.Medium else FontWeight.Bold,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (!notification.isRead) {
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(colors.primary)
-                    )
-                }
-            }
-            if (notification.body.isNotBlank()) {
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = notification.body,
-                    color = colors.textSecondary,
-                    fontSize = 13.sp
-                )
-            }
-            Spacer(Modifier.height(4.dp))
             Text(
-                text = notificationTimeLabel(notification.createdAt),
+                text = notification.title,
+                color = colors.textPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = notification.body,
                 color = colors.textSecondary,
-                fontSize = 11.sp
+                fontSize = 13.sp
             )
         }
     }
 }
 
 @Composable
-private fun EmptyNotifications(modifier: Modifier = Modifier) {
+private fun EmptyNotificationsState(modifier: Modifier = Modifier) {
     val colors = LocalAppColors.current
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(colors.surfaceSecondary),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = null,
-                tint = colors.textSecondary,
-                modifier = Modifier.size(34.dp)
-            )
-        }
-        Spacer(Modifier.height(14.dp))
+        Text(text = "🔔", fontSize = 60.sp)
+        Spacer(Modifier.height(16.dp))
         Text(
             text = "No tienes notificaciones",
-            color = colors.textSecondary,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium
+            color = colors.textPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
         )
-    }
-}
-
-private fun NotificationType.emoji(): String = when (this) {
-    NotificationType.BUDGET -> "💸"
-    NotificationType.GOAL -> "🎯"
-    NotificationType.TIP -> "💡"
-    NotificationType.GENERAL -> "🔔"
-}
-
-/**
- * Etiqueta relativa ("Hace 5 min", "Ayer", "Hace 3 d") para la fecha de la notificación.
- */
-@OptIn(ExperimentalTime::class)
-private fun notificationTimeLabel(
-    createdAt: Long,
-    now: Long = Clock.System.now().toEpochMilliseconds()
-): String {
-    val diff = now - createdAt
-    if (diff < 60_000) return "Ahora"
-    val minutes = diff / 60_000
-    val hours = minutes / 60
-    val days = hours / 24
-    return when {
-        minutes < 60 -> "Hace $minutes min"
-        hours < 24 -> "Hace $hours h"
-        days == 1L -> "Ayer"
-        else -> "Hace $days d"
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Aquí verás las alertas de tus presupuestos.",
+            color = colors.textSecondary,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }

@@ -10,48 +10,45 @@ import kotlinx.coroutines.launch
 
 const val PASSWORD_RESET_COOLDOWN_SECONDS = 60
 
-private val EMAIL_REGEX = Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
+fun isValidEmailFormat(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
 
 sealed class ForgotPasswordUiState {
-    data object Idle : ForgotPasswordUiState()
-    data object Loading : ForgotPasswordUiState()
-
-    /** El correo de recuperación ya se solicitó; [secondsRemaining] cuenta hacia 0. */
-    data class Sent(val secondsRemaining: Int) : ForgotPasswordUiState()
-
-    /** Validación local (email vacío/inválido) o error de conexión real. */
+    object Idle : ForgotPasswordUiState()
+    object Loading : ForgotPasswordUiState()
+    object Sent : ForgotPasswordUiState()
     data class Error(val message: String) : ForgotPasswordUiState()
 }
 
-/**
- * Nunca distingue "usuario no existe" de un envío real: [AuthRepository.sendPasswordResetEmail]
- * ya colapsa ambos casos en [PasswordResetResult.Success] (ver AuthRepository.kt), así que aquí
- * ambos terminan mostrando el mismo mensaje de confirmación genérico.
- */
 class ForgotPasswordViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ForgotPasswordUiState>(ForgotPasswordUiState.Idle)
     val uiState: StateFlow<ForgotPasswordUiState> = _uiState
 
+    private val _cooldownSeconds = MutableStateFlow(0)
+    val cooldownSeconds: StateFlow<Int> = _cooldownSeconds
+
     private var cooldownJob: Job? = null
 
     fun sendResetLink(email: String) {
-        val trimmed = email.trim()
-        if (trimmed.isEmpty()) {
-            _uiState.value = ForgotPasswordUiState.Error("Ingresa tu correo electrónico")
-            return
-        }
-        if (!EMAIL_REGEX.matches(trimmed)) {
+        val trimmedEmail = email.trim()
+
+        if (!isValidEmailFormat(trimmedEmail)) {
             _uiState.value = ForgotPasswordUiState.Error("Ingresa un correo electrónico válido")
             return
         }
+        if (_cooldownSeconds.value > 0 || _uiState.value is ForgotPasswordUiState.Loading) return
 
         viewModelScope.launch {
             _uiState.value = ForgotPasswordUiState.Loading
-            when (authRepository.sendPasswordResetEmail(trimmed.lowercase())) {
-                is PasswordResetResult.Success -> startCooldown()
-                is PasswordResetResult.ConnectionError -> {
-                    _uiState.value = ForgotPasswordUiState.Error("Error de conexión. Intenta de nuevo.")
+            when (val result = authRepository.sendPasswordResetEmail(trimmedEmail.lowercase())) {
+                is PasswordResetResult.Success -> {
+                    _uiState.value = ForgotPasswordUiState.Sent
+                    startCooldown()
+                }
+                is PasswordResetResult.NetworkError -> {
+                    _uiState.value = ForgotPasswordUiState.Error(result.message)
                 }
             }
         }
@@ -60,22 +57,17 @@ class ForgotPasswordViewModel(private val authRepository: AuthRepository) : View
     private fun startCooldown() {
         cooldownJob?.cancel()
         cooldownJob = viewModelScope.launch {
-            for (remaining in PASSWORD_RESET_COOLDOWN_SECONDS downTo 0) {
-                _uiState.value = ForgotPasswordUiState.Sent(remaining)
-                if (remaining > 0) delay(1000)
+            _cooldownSeconds.value = PASSWORD_RESET_COOLDOWN_SECONDS
+            while (_cooldownSeconds.value > 0) {
+                delay(1_000)
+                _cooldownSeconds.value -= 1
             }
         }
     }
 
-    /** Limpia un error de validación/conexión cuando el usuario retoma la edición del campo. */
     fun clearError() {
         if (_uiState.value is ForgotPasswordUiState.Error) {
             _uiState.value = ForgotPasswordUiState.Idle
         }
-    }
-
-    override fun onCleared() {
-        cooldownJob?.cancel()
-        super.onCleared()
     }
 }

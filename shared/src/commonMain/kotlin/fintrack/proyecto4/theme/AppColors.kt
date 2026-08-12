@@ -22,7 +22,7 @@ data class AppColors(
 )
 
 val DarkAppColors = AppColors(
-    bg               = Color(0xFF1C4038),
+    bg               = Color(0xFF021A15),
     surface          = Color(0xFF254F44),
     surfaceSecondary = Color(0xFF2F6153),
     primary          = Color(0xFF62C9A7),
@@ -62,3 +62,27 @@ val LocalAppColors = compositionLocalOf { DarkAppColors }
  */
 val AppColors.subtleSurface: Color
     get() = if (isDark) surfaceSecondary else Color(0xFFE1E7F0)
+
+/**
+ * Fondo de banners/badges de advertencia. WarningColor/WarningLight en 12-18% de opacidad
+ * mezclados sobre [bg] dan un resultado oscuro en tema oscuro pero un tono casi blanco en
+ * claro (mismo problema que documenta [subtleSurface]) — aqui se fija un tinte amarillo palido
+ * que sí se distingue sobre fondo claro, en vez de depender de la mezcla translucida.
+ */
+val AppColors.warningBg: Color
+    get() = if (isDark) FinTrackColors.WarningColor.copy(alpha = 0.16f) else FinTrackColors.WarningLight.copy(alpha = 0.22f)
+
+val AppColors.warningBorder: Color
+    get() = FinTrackColors.WarningColor.copy(alpha = if (isDark) 0.45f else 0.55f)
+
+/**
+ * Texto de advertencia (titulos/labels cortos). [FinTrackColors.WarningText]/[FinTrackColors.WarningLight]
+ * son colores casi blancos pensados para leerse sobre un fondo oscuro; en tema claro se cambia a un
+ * ambar oscuro solido (buen contraste sobre blanco) en vez de reusar esos tonos palidos.
+ */
+val AppColors.warningTextStrong: Color
+    get() = if (isDark) FinTrackColors.WarningLight else FinTrackColors.AmberDark
+
+/** Version de [warningTextStrong] para texto de cuerpo, un punto menos saturada. */
+val AppColors.warningText: Color
+    get() = if (isDark) FinTrackColors.WarningText else FinTrackColors.AmberMid

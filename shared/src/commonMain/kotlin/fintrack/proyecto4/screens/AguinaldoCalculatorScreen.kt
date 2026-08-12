@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,12 +48,24 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.CalculationType
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.history.SavedCalculation
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.theme.warningBg
+import fintrack.proyecto4.theme.warningBorder
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.util.formatColones
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 private data class AguinaldoMonth(val label: String)
 
@@ -74,8 +88,12 @@ private object AguinaldoIntroState {
     var alreadyShown: Boolean = false
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
-fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
+fun AguinaldoCalculatorScreen(
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
+    onBack: () -> Unit = {}
+) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
     val amounts = remember { aguinaldoMonths.map { "" }.toMutableStateList() }
@@ -83,11 +101,14 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
     val clipboardManager = LocalClipboardManager.current
     var showIntroDialog by remember { mutableStateOf(!AguinaldoIntroState.alreadyShown) }
     val largeTextMode = false
+    val uid = AuthClient.currentUserId() ?: ""
+    val scope = rememberCoroutineScope()
 
     val values = amounts.map { it.toLongOrNull() ?: 0L }
     val totalSalary = values.sum()
     val estimatedAguinaldo = totalSalary / 12L
     val emptyMonths = amounts.count { it.isBlank() }
+    var saved by remember(totalSalary) { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -111,15 +132,15 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Text(
                         text = "Ingresa los salarios ordinarios de los ultimos 12 meses (dic-nov).",
-                        color = FinTrackColors.WarningText,
+                        color = colors.warningTextStrong,
                         fontFamily = montserrat,
                         fontSize = if (ultraCompactLayout) 11.sp else if (largeTextMode) 14.sp else 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(FinTrackColors.AmberDark.copy(alpha = 0.35f))
-                            .border(1.dp, FinTrackColors.WarningColor.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                            .background(colors.warningBg)
+                            .border(1.dp, colors.warningBorder, RoundedCornerShape(14.dp))
                             .padding(horizontal = 12.dp, vertical = if (ultraCompactLayout) 6.dp else if (compactLayout) 8.dp else 10.dp)
                     )
 
@@ -174,8 +195,27 @@ fun AguinaldoCalculatorScreen(onBack: () -> Unit = {}) {
                         largeTextMode = largeTextMode,
                         compactLayout = compactLayout,
                         ultraCompactLayout = ultraCompactLayout,
+                        saved = saved,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(formatColones(estimatedAguinaldo)))
+                        },
+                        onGuardar = {
+                            scope.launch {
+                                calculationHistoryRepository.saveCalculation(
+                                    uid,
+                                    SavedCalculation(
+                                        tipo = CalculationType.AGUINALDO,
+                                        fechaCalculo = Clock.System.now().toEpochMilliseconds(),
+                                        resumen = "Aguinaldo estimado: ${formatColones(estimatedAguinaldo)}",
+                                        montoPrincipal = estimatedAguinaldo,
+                                        detalle = mapOf(
+                                            "Salario acumulado (12 meses)" to formatColones(totalSalary),
+                                            "Meses con datos" to (12 - emptyMonths).toString()
+                                        )
+                                    )
+                                )
+                                saved = true
+                            }
                         }
                     )
 
@@ -308,7 +348,7 @@ private fun AmountInput(
                 if (value.isEmpty()) {
                     Text(
                         text = "0",
-                        color = FinTrackColors.WhiteAlpha40,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = if (ultraCompactLayout) 13.sp else if (compactLayout) 15.sp else if (largeTextMode) 18.sp else 17.sp,
                         fontWeight = FontWeight.Medium
@@ -359,6 +399,7 @@ private fun ValidationSlot(
     compactLayout: Boolean,
     ultraCompactLayout: Boolean
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -368,7 +409,7 @@ private fun ValidationSlot(
         if (emptyMonths > 0) {
             Text(
                 text = "Faltan $emptyMonths meses por completar.",
-                color = FinTrackColors.WarningText,
+                color = colors.warningTextStrong,
                 fontFamily = montserrat,
                 fontSize = if (ultraCompactLayout) 11.sp else if (compactLayout) 12.sp else if (largeTextMode) 14.sp else 13.sp,
                 fontWeight = FontWeight.Medium
@@ -385,7 +426,9 @@ private fun SummaryCard(
     largeTextMode: Boolean,
     compactLayout: Boolean,
     ultraCompactLayout: Boolean,
-    onCopy: () -> Unit
+    saved: Boolean,
+    onCopy: () -> Unit,
+    onGuardar: () -> Unit
 ) {
     val colors = LocalAppColors.current
     Card(
@@ -402,7 +445,7 @@ private fun SummaryCard(
             ) {
                 Text(
                     text = "Aguinaldo estimado",
-                    color = FinTrackColors.WarningText,
+                    color = colors.warningTextStrong,
                     fontFamily = montserrat,
                     fontSize = if (ultraCompactLayout) 12.sp else if (compactLayout) 13.sp else if (largeTextMode) 16.sp else 15.sp,
                     fontWeight = FontWeight.SemiBold
@@ -444,6 +487,26 @@ private fun SummaryCard(
                     fontSize = if (compactLayout) 9.sp else if (largeTextMode) 11.sp else 10.sp,
                     fontWeight = FontWeight.Medium
                 )
+            }
+
+            if (totalSalary > 0) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onGuardar, enabled = !saved) {
+                        Icon(
+                            imageVector = if (saved) Icons.Default.Check else Icons.Default.Save,
+                            contentDescription = null,
+                            tint = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                            modifier = Modifier.height(14.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = if (saved) "Guardado" else "Guardar en historial",
+                            color = if (saved) FinTrackColors.GreenPrimary else colors.textSecondary,
+                            fontFamily = montserrat,
+                            fontSize = if (ultraCompactLayout) 10.sp else if (compactLayout) 11.sp else if (largeTextMode) 13.sp else 12.sp
+                        )
+                    }
+                }
             }
         }
     }

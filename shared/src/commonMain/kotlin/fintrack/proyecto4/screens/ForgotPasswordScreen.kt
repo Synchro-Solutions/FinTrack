@@ -3,10 +3,12 @@ package fintrack.proyecto4.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +46,7 @@ import fintrack.shared.generated.resources.Res
 import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
 
-private const val GENERIC_CONFIRMATION_MESSAGE = "Si el email existe, recibirás un enlace en minutos"
+private const val CONFIRMATION_MESSAGE = "Si el email existe, recibirás un enlace en minutos"
 
 @Composable
 fun ForgotPasswordScreen(
@@ -53,16 +55,18 @@ fun ForgotPasswordScreen(
 ) {
     val viewModel = viewModel { ForgotPasswordViewModel(authRepository) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    var email by remember { mutableStateOf("") }
+    val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val montserrat = montserratFamily()
 
+    var email by remember { mutableStateOf("") }
+
     val isLoading = uiState is ForgotPasswordUiState.Loading
-    val sentState = uiState as? ForgotPasswordUiState.Sent
-    val cooldownActive = sentState != null && sentState.secondsRemaining > 0
-    val canSubmit = email.isNotBlank() && !isLoading && !cooldownActive
+    val isSent = uiState is ForgotPasswordUiState.Sent
+    val isOnCooldown = cooldownSeconds > 0
+    val canSubmit = email.isNotBlank() && !isLoading && !isOnCooldown
 
     Box(modifier = Modifier.fillMaxSize()) {
+
         androidx.compose.foundation.Image(
             painter = painterResource(Res.drawable.login_background),
             contentDescription = null,
@@ -84,188 +88,243 @@ fun ForgotPasswordScreen(
                 )
         )
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
+        Icon(
+            imageVector = Icons.Default.ArrowBack,
+            contentDescription = "Volver",
+            tint = White,
+            modifier = Modifier
+                .padding(top = 20.dp, start = 20.dp)
+                .size(28.dp)
+                .clickable(onClick = onBack)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            // Ancho tope: mismo ajuste que LoginScreen, la tarjeta se estiraba a lo ancho
+            // de toda la pantalla en la version web (ventana de navegador mucho mas ancha
+            // que un telefono).
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .widthIn(max = 420.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(CardBackground)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(WhiteAlpha10)
-                        .clickable(onClick = onBack),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("←", color = White, fontSize = 20.sp)
-                }
-            }
+                Column(modifier = Modifier.padding(28.dp)) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(CardBackground)
-                ) {
-                    Column(modifier = Modifier.padding(28.dp)) {
-                        Text(
-                            text = "¿Olvidaste tu contraseña?",
-                            color = White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = montserrat
-                        )
-                        Text(
-                            text = "Ingresa tu correo y te enviaremos un enlace para restablecerla",
-                            color = WhiteAlpha70,
-                            fontSize = 13.sp,
-                            fontFamily = montserrat,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(top = 2.dp, bottom = 24.dp)
-                        )
+                    Text(
+                        text = "¿Olvidaste tu contraseña?",
+                        color = White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserrat
+                    )
+                    Text(
+                        text = "Ingresa tu correo y te enviaremos un enlace para restablecerla",
+                        color = WhiteAlpha70,
+                        fontSize = 13.sp,
+                        fontFamily = montserrat,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
+                    )
 
-                        Text(
-                            text = "Correo electrónico",
-                            color = WhiteAlpha70,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = montserrat,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
-                        )
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = {
-                                email = it
-                                viewModel.clearError()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("correo@ejemplo.com", color = WhiteAlpha40) },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { if (canSubmit) viewModel.sendResetLink(email) }
-                            ),
-                            singleLine = true,
-                            enabled = !isLoading,
-                            isError = uiState is ForgotPasswordUiState.Error,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = White,
-                                unfocusedTextColor = White,
-                                focusedBorderColor = BorderFocused,
-                                unfocusedBorderColor = BorderDefault,
-                                errorBorderColor = ErrorColor,
-                                focusedContainerColor = WhiteAlpha10,
-                                unfocusedContainerColor = WhiteAlpha10,
-                                cursorColor = BorderFocused
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        val errorMessage = (uiState as? ForgotPasswordUiState.Error)?.message
-                        if (errorMessage != null) {
-                            Text(
-                                text = errorMessage,
-                                color = ErrorColor,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(top = 6.dp, start = 2.dp)
-                            )
-                        }
-
-                        if (sentState != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(GreenPrimary.copy(alpha = 0.15f))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = GENERIC_CONFIRMATION_MESSAGE,
-                                    color = GreenLight,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Button(
-                            onClick = { viewModel.sendResetLink(email) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            enabled = canSubmit,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent
-                            ),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
+                    if (isSent) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        brush = if (canSubmit) {
-                                            Brush.horizontalGradient(
-                                                colors = listOf(GreenDark, GreenPrimary, GreenLight)
-                                            )
-                                        } else {
-                                            Brush.horizontalGradient(
-                                                colors = listOf(
-                                                    GreenDark.copy(alpha = 0.4f),
-                                                    GreenPrimary.copy(alpha = 0.4f)
-                                                )
-                                            )
-                                        },
-                                        shape = RoundedCornerShape(14.dp)
-                                    ),
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(GreenPrimary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                when {
-                                    isLoading -> CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = White,
-                                        strokeWidth = 2.5.dp
-                                    )
-                                    cooldownActive -> Text(
-                                        text = "Reenviar en ${sentState.secondsRemaining}s",
-                                        color = WhiteAlpha70,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontFamily = montserrat
-                                    )
-                                    else -> Text(
-                                        text = "Enviar enlace",
-                                        color = White,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = montserrat,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.MarkEmailRead,
+                                    contentDescription = null,
+                                    tint = GreenLight,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = CONFIRMATION_MESSAGE,
+                                color = White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = montserrat,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Revisa también tu carpeta de spam. El enlace expira en 1 hora.",
+                                color = WhiteAlpha70,
+                                fontSize = 12.sp,
+                                fontFamily = montserrat,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+                    }
+
+                    FieldLabelForgot("Correo electrónico")
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            viewModel.clearError()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("correo@ejemplo.com", color = WhiteAlpha40) },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { if (canSubmit) viewModel.sendResetLink(email) }
+                        ),
+                        singleLine = true,
+                        enabled = !isLoading,
+                        isError = uiState is ForgotPasswordUiState.Error,
+                        colors = greenTextFieldColorsForgot(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    // Validación inline / error
+                    val errorMessage = (uiState as? ForgotPasswordUiState.Error)?.message
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage,
+                            color = ErrorColor,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = { viewModel.sendResetLink(email) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        enabled = canSubmit,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        contentPadding = PaddingValues(0.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = if (canSubmit) {
+                                        Brush.horizontalGradient(
+                                            colors = listOf(GreenDark, GreenPrimary, GreenLight)
+                                        )
+                                    } else {
+                                        Brush.horizontalGradient(
+                                            colors = listOf(
+                                                GreenDark.copy(alpha = 0.4f),
+                                                GreenPrimary.copy(alpha = 0.4f)
+                                            )
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(14.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when {
+                                isLoading -> CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = White,
+                                    strokeWidth = 2.5.dp
+                                )
+                                isOnCooldown -> Text(
+                                    text = "Reenviar en ${cooldownSeconds}s",
+                                    color = White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = montserrat
+                                )
+                                isSent -> Text(
+                                    text = "Enviar de nuevo",
+                                    color = White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = montserrat,
+                                    letterSpacing = 0.5.sp
+                                )
+                                else -> Text(
+                                    text = "Enviar enlace",
+                                    color = White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = montserrat,
+                                    letterSpacing = 0.5.sp
+                                )
                             }
                         }
                     }
                 }
             }
+
+            Row(
+                modifier = Modifier.padding(top = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "¿Ya la recordaste? ",
+                    color = WhiteAlpha70,
+                    fontSize = 13.sp,
+                    fontFamily = montserrat
+                )
+                TextButton(
+                    onClick = onBack,
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "Volver a iniciar sesión",
+                        color = GreenLight,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = montserrat
+                    )
+                }
+            }
         }
     }
 }
+
+@Composable
+private fun FieldLabelForgot(text: String) {
+    Text(
+        text = text,
+        color = WhiteAlpha70,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFamily = montserratFamily(),
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
+    )
+}
+
+@Composable
+private fun greenTextFieldColorsForgot() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = White,
+    unfocusedTextColor = White,
+    focusedBorderColor = BorderFocused,
+    unfocusedBorderColor = BorderDefault,
+    errorBorderColor = ErrorColor,
+    focusedContainerColor = WhiteAlpha10,
+    unfocusedContainerColor = WhiteAlpha10,
+    cursorColor = BorderFocused
+)

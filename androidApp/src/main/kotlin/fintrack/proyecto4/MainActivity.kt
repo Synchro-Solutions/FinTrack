@@ -2,14 +2,17 @@ package fintrack.proyecto4
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialOption
 import androidx.credentials.CustomCredential
@@ -24,11 +27,13 @@ import fintrack.proyecto4.auth.DataStoreSessionStore
 import fintrack.proyecto4.auth.FirebaseAuthRepository
 import fintrack.proyecto4.budget.FirestoreBudgetRepository
 import fintrack.proyecto4.firebase.FirebaseEmulatorConfig
+import fintrack.proyecto4.history.FirestoreCalculationHistoryRepository
+import fintrack.proyecto4.notifications.AndroidNotifierContext
+import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.ocr.CameraXCaptureScreen
 import fintrack.proyecto4.ocr.recognizeReceiptText
 import fintrack.proyecto4.onboarding.FirestoreOnboardingRepository
 import fintrack.proyecto4.profile.CloudinaryUploader
-import fintrack.proyecto4.notifications.FirestoreNotificationRepository
 import fintrack.proyecto4.transaction.FirestoreCustomCategoryRepository
 import fintrack.proyecto4.transaction.FirestoreTransactionRepository
 import java.io.File
@@ -77,19 +82,26 @@ class MainActivity : ComponentActivity() {
         callback?.invoke(uri?.let { copyUriToOcrFile(it) })
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* si se niega, las notificaciones locales de alertas de presupuesto no se mostrarán */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        AndroidNotifierContext.appContext = applicationContext
         FirebaseEmulatorConfig.connectIfEnabled()
+        requestNotificationPermissionIfNeeded()
 
         val sessionStore = DataStoreSessionStore(dataStore)
         val authRepository = FirebaseAuthRepository(sessionStore)
         val onboardingRepository = FirestoreOnboardingRepository()
         val budgetRepository = FirestoreBudgetRepository()
         val transactionRepository = FirestoreTransactionRepository()
-        val categoryRepository = FirestoreCustomCategoryRepository()
         val notificationRepository = FirestoreNotificationRepository()
+        val categoryRepository = FirestoreCustomCategoryRepository()
+        val calculationHistoryRepository = FirestoreCalculationHistoryRepository()
 
         setContent {
             App(
@@ -97,8 +109,9 @@ class MainActivity : ComponentActivity() {
                 onboardingRepository = onboardingRepository,
                 budgetRepository = budgetRepository,
                 transactionRepository = transactionRepository,
-                categoryRepository = categoryRepository,
                 notificationRepository = notificationRepository,
+                categoryRepository = categoryRepository,
+                calculationHistoryRepository = calculationHistoryRepository,
                 ocrCameraContent = { onCaptured, onCancel ->
                     CameraXCaptureScreen(onCaptured = onCaptured, onCancel = onCancel)
                 },
@@ -122,6 +135,15 @@ class MainActivity : ComponentActivity() {
                 onUploadReceiptPhoto = { path -> CloudinaryUploader.uploadReceiptPhoto(path) },
                 onGoogleSignInRequested = { requestGoogleIdToken() }
             )
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

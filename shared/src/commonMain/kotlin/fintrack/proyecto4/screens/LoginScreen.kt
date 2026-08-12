@@ -48,6 +48,7 @@ import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha40
 import fintrack.proyecto4.theme.FinTrackColors.WhiteAlpha70
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.shared.generated.resources.Res
+import fintrack.shared.generated.resources.ic_fintrack_logo
 import fintrack.shared.generated.resources.ic_google_logo
 import fintrack.shared.generated.resources.login_background
 import org.jetbrains.compose.resources.painterResource
@@ -130,15 +131,17 @@ fun LoginScreen(
                             brush = Brush.radialGradient(
                                 colors = listOf(GreenLight, GreenDark)
                             ),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = androidx.compose.foundation.shape.CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "$",
-                        color = White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Black
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(Res.drawable.ic_fintrack_logo),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
                     )
                 }
 
@@ -164,10 +167,14 @@ fun LoginScreen(
                 )
             }
 
-            // Card del formulario
+            // Card del formulario. Ancho tope en vez de fillMaxWidth() puro: en Android
+            // la pantalla ya es angosta y nunca se nota, pero en la version web (ventana
+            // de navegador mucho mas ancha) la tarjeta se estiraba a lo ancho de toda la
+            // pantalla y los campos/botones quedaban desproporcionados.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .widthIn(max = 420.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(CardBackground)
             ) {
@@ -260,7 +267,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Recordarme + Olvidé mi contraseña
+                    // Recordarme / Olvidé mi contraseña
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,15 +290,17 @@ fun LoginScreen(
                                 fontSize = 14.sp
                             )
                         }
+
                         TextButton(
                             onClick = { navController.navigate(Screen.ForgotPassword) },
-                            contentPadding = PaddingValues(0.dp)
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             Text(
                                 text = "¿Olvidaste tu contraseña?",
                                 color = GreenLight,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = montserrat
                             )
                         }
                     }

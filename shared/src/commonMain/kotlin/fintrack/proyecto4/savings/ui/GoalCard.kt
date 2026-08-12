@@ -23,6 +23,7 @@ import fintrack.proyecto4.savings.model.SavingsGoal
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
 import fintrack.proyecto4.theme.glassCard
+import fintrack.proyecto4.theme.warningTextStrong
 import fintrack.proyecto4.util.formatColones
 
 @Composable
@@ -350,7 +351,7 @@ private fun PriorityBadge(
             colors.textSecondary
 
         GoalPriority.MEDIUM ->
-            FinTrackColors.WarningColor
+            colors.warningTextStrong
 
         GoalPriority.HIGH ->
             FinTrackColors.ErrorColor

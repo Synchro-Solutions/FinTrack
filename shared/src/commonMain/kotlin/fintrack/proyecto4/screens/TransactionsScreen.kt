@@ -50,6 +50,7 @@ import fintrack.proyecto4.transaction.DateScope
 import fintrack.proyecto4.transaction.NoOpCustomCategoryRepository
 import fintrack.proyecto4.transaction.NoOpTransactionRepository
 import fintrack.proyecto4.transaction.PaymentMethod
+import fintrack.proyecto4.transaction.PendingCategoryFilter
 import fintrack.proyecto4.transaction.Transaction
 import fintrack.proyecto4.transaction.TransactionRepository
 import fintrack.proyecto4.transaction.TransactionType
@@ -87,6 +88,16 @@ fun TransactionsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
+
+        PendingCategoryFilter.consume()?.let { categoria ->
+            viewModel.applyAdvancedFilters(
+                dateScope = DateScope.ALL,
+                customDateFrom = null,
+                customDateTo = null,
+                category = categoria,
+                paymentMethod = null
+            )
+        }
     }
 
     // El movimiento recién creado queda primero en la lista (ordenada por fecha de creación

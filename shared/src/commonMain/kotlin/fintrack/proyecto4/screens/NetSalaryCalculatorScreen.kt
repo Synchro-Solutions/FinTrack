@@ -33,6 +33,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -45,11 +46,22 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import fintrack.proyecto4.auth.AuthClient
+import fintrack.proyecto4.history.CalculationHistoryRepository
+import fintrack.proyecto4.history.CalculationType
+import fintrack.proyecto4.history.NoOpCalculationHistoryRepository
+import fintrack.proyecto4.history.SavedCalculation
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
+import fintrack.proyecto4.util.formatColones
+import kotlinx.coroutines.launch
 import kotlin.math.round
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /** Rebaja adicional opcional agregada manualmente por el usuario (ej. pensión, préstamo). */
 private data class Deduction(val name: String, val amount: Long)
@@ -87,14 +99,6 @@ private fun calculateEstimatedIncomeTax(grossSalary: Long): Long {
 
 private fun calculateCcssContribution(grossSalary: Long, ratePercent: Double): Long =
     round(grossSalary * ratePercent / 100.0).toLong()
-
-/** Formatea un monto en colones con separador de miles '.', ej. 850000 -> "₡850.000", -50000 -> "-₡50.000". */
-private fun formatColonesDot(amount: Long): String {
-    val isNegative = amount < 0
-    val abs = if (isNegative) -amount else amount
-    val grouped = abs.toString().reversed().chunked(3).joinToString(".").reversed()
-    return "${if (isNegative) "-" else ""}₡$grouped"
-}
 
 private fun sanitizeDigitsInput(input: String): String = input.filter(Char::isDigit)
 
@@ -140,13 +144,17 @@ private fun formatThousandsWithDots(digits: String): String {
     return digits.reversed().chunked(3).joinToString(".").reversed()
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun NetSalaryCalculatorScreen(
+    calculationHistoryRepository: CalculationHistoryRepository = NoOpCalculationHistoryRepository(),
     onBack: () -> Unit = {},
     onSaved: () -> Unit = {}
 ) {
     val montserrat = montserratFamily()
     val colors = LocalAppColors.current
+    val uid = AuthClient.currentUserId() ?: ""
+    val scope = rememberCoroutineScope()
 
     var grossSalaryText by remember { mutableStateOf("") }
     var ccssRatePercent by remember { mutableStateOf(DEFAULT_CCSS_RATE_PERCENT) }
@@ -175,7 +183,6 @@ fun NetSalaryCalculatorScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         ScreenHeader(
             title = "Salario neto estimado",
@@ -225,9 +232,9 @@ fun NetSalaryCalculatorScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).glassCard(),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(
@@ -281,13 +288,13 @@ fun NetSalaryCalculatorScreen(
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = null,
-                                tint = FinTrackColors.BlueMeta,
+                                tint = FinTrackColors.GreenPrimary,
                                 modifier = Modifier.height(16.dp)
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = "Agregar rebaja",
-                                color = FinTrackColors.BlueMeta,
+                                color = FinTrackColors.GreenPrimary,
                                 fontFamily = montserrat,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp
@@ -329,14 +336,33 @@ fun NetSalaryCalculatorScreen(
                 }
             }
 
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Button(
-                onClick = { onSaved() },
+                onClick = {
+                    scope.launch {
+                        calculationHistoryRepository.saveCalculation(
+                            uid,
+                            SavedCalculation(
+                                tipo = CalculationType.SALARIO_NETO,
+                                fechaCalculo = Clock.System.now().toEpochMilliseconds(),
+                                resumen = "Salario neto estimado: ${formatColones(netSalary)}",
+                                montoPrincipal = netSalary,
+                                detalle = mapOf(
+                                    "Salario bruto" to formatColones(grossSalary),
+                                    "CCSS trabajador" to formatColones(ccssAmount),
+                                    "Renta estimada" to formatColones(incomeTax),
+                                    "Otras rebajas" to formatColones(otherDeductionsTotal)
+                                )
+                            )
+                        )
+                        onSaved()
+                    }
+                },
                 enabled = grossSalary > 0,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Text(
                     text = "Guardar cálculo",
@@ -344,6 +370,7 @@ fun NetSalaryCalculatorScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
+            }
             }
         }
     }
@@ -437,7 +464,7 @@ private fun GrossSalaryField(
                     if (value.isEmpty()) {
                         Text(
                             text = "0",
-                            color = FinTrackColors.WhiteAlpha40,
+                            color = colors.textSecondary,
                             fontFamily = montserrat,
                             fontSize = fontSize,
                             fontWeight = FontWeight.Medium
@@ -468,7 +495,7 @@ private fun BreakdownRow(label: String, amount: Long, montserrat: FontFamily) {
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = formatColonesDot(amount),
+            text = formatColones(amount),
             color = if (amount < 0) FinTrackColors.ErrorColor else colors.textPrimary,
             fontFamily = montserrat,
             fontSize = 14.sp,
@@ -497,7 +524,7 @@ private fun DeductionRow(deduction: Deduction, montserrat: FontFamily, onRemove:
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = formatColonesDot(-deduction.amount),
+            text = formatColones(-deduction.amount),
             color = FinTrackColors.ErrorColor,
             fontFamily = montserrat,
             fontSize = 13.sp,
@@ -536,7 +563,7 @@ private fun NetSalaryBanner(
             fontWeight = FontWeight.Medium
         )
         Text(
-            text = formatColonesDot(netSalary),
+            text = formatColones(netSalary),
             color = FinTrackColors.White,
             fontFamily = montserrat,
             fontSize = 32.sp,
@@ -618,7 +645,7 @@ private fun AddDeductionPanel(
                 enabled = canConfirm,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.BlueMeta)
+                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.GreenDark)
             ) {
                 Text(text = "Agregar", fontFamily = montserrat, fontWeight = FontWeight.SemiBold)
             }
@@ -665,7 +692,7 @@ private fun InlineTextField(
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,
-                        color = FinTrackColors.WhiteAlpha40,
+                        color = colors.textSecondary,
                         fontFamily = montserrat,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -731,8 +758,8 @@ private fun EditParamsDialog(
                         checked = autoTax,
                         onCheckedChange = { autoTax = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = FinTrackColors.GreenPrimary,
-                            checkedTrackColor = FinTrackColors.GreenPrimary.copy(alpha = 0.5f),
+                            checkedThumbColor = FinTrackColors.GreenDark,
+                            checkedTrackColor = FinTrackColors.GreenDark.copy(alpha = 0.5f),
                             uncheckedThumbColor = colors.textPrimary,
                             uncheckedTrackColor = colors.surfaceSecondary
                         )

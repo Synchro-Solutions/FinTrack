@@ -7,3 +7,10 @@ local.properties
 .DS_Store
 .kotlin/
 androidApp/google-services.json
+webApp/.env
+
+# Firebase CLI / emulator artifacts
+firebase/.firebase/
+firebase/*-debug.log
+firebase/firestore-debug.log
+firebase/ui-debug.log

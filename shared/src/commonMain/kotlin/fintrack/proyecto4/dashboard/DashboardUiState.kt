@@ -1,11 +1,13 @@
 package fintrack.proyecto4.dashboard
 
 import androidx.compose.ui.graphics.Color
+import fintrack.proyecto4.reportes.CategoriaReporteItem
 
 data class DashboardUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val userName: String = "Usuario",
+    val fotoUrl: String? = null,
     val mesActual: String = "",
     val saldoVisible: Boolean = true,
     val kpis: KpiData = KpiData(),
@@ -15,7 +17,18 @@ data class DashboardUiState(
     val consejoFinanciero: String = "",
     val ultimosMovimientos: List<MovimientoItem> = emptyList(),
     val notificationCount: Int = 0,
-    val ocrPendingCount: Int = 0
+    val ocrPendingCount: Int = 0,
+    val mayorGastoCategoria: TopCategoriaItem? = null,
+    val gastosPorCategoriaMes: List<CategoriaReporteItem> = emptyList()
+)
+
+/** Categoría de mayor gasto del mes en curso (US Sprint 7: "Mayor gasto este mes"). */
+data class TopCategoriaItem(
+    val categoryName: String,
+    val icon: String,
+    val color: Color,
+    val monto: Long,
+    val porcentaje: Int
 )
 
 data class KpiData(

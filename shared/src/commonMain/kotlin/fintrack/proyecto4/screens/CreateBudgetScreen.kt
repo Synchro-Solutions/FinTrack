@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +35,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +57,7 @@ import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.budget.colorFromHex
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.util.formatColones
 import kotlin.math.roundToInt
 
@@ -71,10 +74,17 @@ fun CreateBudgetScreen(
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(state.selectedCategory, state.limitAmount, state.canSave, state.isSaving) {
+        println(
+            "DEBUG_BUDGET selectedCategory=${state.selectedCategory} " +
+                "limitAmount='${state.limitAmount}' parsed=${state.limitAmount.toDoubleOrNull()} " +
+                "canSave=${state.canSave} isSaving=${state.isSaving}"
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
     ) {
         // Top bar
         Row(
@@ -90,9 +100,10 @@ fun CreateBudgetScreen(
                     tint = colors.textPrimary
                 )
             }
-            Text(
+            ShimmerText(
                 text = "Nuevo presupuesto",
-                color = colors.textPrimary,
+                baseColor = colors.textPrimary,
+                accentColor = colors.primary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -168,17 +179,22 @@ fun CreateBudgetScreen(
         }
 
         // Botón crear
-        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Button(
                 onClick = { viewModel.save(onSaved) },
                 enabled = state.canSave && !state.isSaving,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .defaultMinSize(minWidth = 200.dp)
                     .height(54.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FinTrackColors.GreenPrimary,
-                    disabledContainerColor = FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                    containerColor = FinTrackColors.GreenDark,
+                    disabledContainerColor = FinTrackColors.GreenDark.copy(alpha = 0.4f)
                 )
             ) {
                 if (state.isSaving) {
@@ -280,8 +296,8 @@ private fun AlertSlider(
         steps = 8,
         modifier = Modifier.fillMaxWidth(),
         colors = SliderDefaults.colors(
-            thumbColor = FinTrackColors.GreenPrimary,
-            activeTrackColor = FinTrackColors.GreenPrimary,
+            thumbColor = FinTrackColors.GreenDark,
+            activeTrackColor = FinTrackColors.GreenDark,
             inactiveTrackColor = LocalAppColors.current.surfaceSecondary
         )
     )

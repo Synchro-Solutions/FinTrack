@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerText
 import fintrack.proyecto4.theme.montserratFamily
 
 
@@ -40,7 +40,7 @@ fun ScreenHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.ArrowBack,
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Volver",
             tint = colors.textPrimary,
             modifier = Modifier
@@ -50,9 +50,10 @@ fun ScreenHeader(
 
         Spacer(Modifier.width(18.dp))
 
-        Text(
+        ShimmerText(
             text = title,
-            color = colors.textPrimary,
+            baseColor = colors.textPrimary,
+            accentColor = colors.primary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = montserrat,

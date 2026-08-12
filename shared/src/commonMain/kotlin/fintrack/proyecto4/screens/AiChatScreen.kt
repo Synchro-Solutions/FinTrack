@@ -11,7 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,8 @@ import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.screens.common.ScreenHeader
 import fintrack.proyecto4.theme.FinTrackColors
 import fintrack.proyecto4.theme.LocalAppColors
+import fintrack.proyecto4.theme.ShimmerIcon
+import fintrack.proyecto4.theme.glassCard
 import fintrack.proyecto4.theme.montserratFamily
 import fintrack.proyecto4.transaction.TransactionRepository
 
@@ -60,27 +63,11 @@ fun AiChatScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.bg)
             .imePadding()
     ) {
         ScreenHeader(
             title = "Asistente IA",
-            onBack = onBack,
-            trailingContent = {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                            ),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("✦", color = Color.White, fontSize = 14.sp)
-                }
-            }
+            onBack = onBack
         )
 
         // Lista de mensajes
@@ -122,7 +109,7 @@ private fun ChatBubble(message: AiChatMessage) {
         verticalAlignment = Alignment.Bottom
     ) {
         if (!isUser) {
-            // Avatar del asistente
+            // Avatar del asistente: mismo icono + shimmer que el item "Asistente IA" del nav.
             Box(
                 modifier = Modifier
                     .size(30.dp)
@@ -134,7 +121,13 @@ private fun ChatBubble(message: AiChatMessage) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✦", color = Color.White, fontSize = 13.sp)
+                ShimmerIcon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    baseColor = Color.White,
+                    accentColor = colors.primaryLight,
+                    modifier = Modifier.size(16.dp)
+                )
             }
             Spacer(Modifier.width(8.dp))
         }
@@ -197,7 +190,13 @@ private fun TypingIndicator() {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text("✦", color = Color.White, fontSize = 13.sp)
+            ShimmerIcon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                baseColor = Color.White,
+                accentColor = colors.primaryLight,
+                modifier = Modifier.size(16.dp)
+            )
         }
         Spacer(Modifier.width(8.dp))
         Box(
@@ -230,10 +229,17 @@ private fun ChatInputBar(
 
     val canSend = text.isNotBlank() && !isLoading
 
+    // En claro esta barra vive sobre la zona ya saturada en primary del degradado
+    // (FinTrackAppBackground), así que se integra con fondo/texto transparentes en
+    // vez de tapar con un panel opaco; en oscuro no hay ese verde detrás, se deja como
+    // estaba.
+    val isLight = !colors.isDark
+    val fieldTextColor = if (isLight) Color.White else colors.textPrimary
+
     Surface(
-        color = colors.surface,
+        color = if (isLight) Color.Transparent else colors.surface,
         tonalElevation = 0.dp,
-        shadowElevation = 8.dp
+        shadowElevation = if (isLight) 0.dp else 8.dp
     ) {
         Row(
             modifier = Modifier
@@ -242,26 +248,42 @@ private fun ChatInputBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // En claro el campo flota transparente sobre el degradado (ver comentario
+            // arriba), pero eso hace que el shimmer del placeholder pierda contraste
+            // cuando el fondo detrás queda claro. Se le agrega un panel esmerilado
+            // (glassCard) para que siempre haya un fondo oscuro consistente debajo del
+            // texto, sin tapar el degradado como una superficie opaca lo haría.
+            val fieldModifier = if (isLight) {
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .glassCard()
+            } else {
+                Modifier.weight(1f)
+            }
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
+                modifier = fieldModifier,
                 placeholder = {
+                    // Color solido (sin shimmer): el brillo animado se perdia contra el
+                    // fondo variable y a veces quedaba casi ilegible. Solido siempre se
+                    // distingue igual, sea cual sea el fondo detras.
                     Text(
                         "Pregúntame algo...",
-                        color = colors.textSecondary,
+                        color = if (isLight) Color.White else colors.textSecondary,
                         fontSize = 14.sp,
                         fontFamily = montserrat
                     )
                 },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = colors.bg,
-                    unfocusedContainerColor = colors.bg,
+                    focusedContainerColor = if (isLight) Color.Transparent else colors.bg,
+                    unfocusedContainerColor = if (isLight) Color.Transparent else colors.bg,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = colors.textPrimary,
-                    unfocusedTextColor = colors.textPrimary,
-                    cursorColor = FinTrackColors.GreenPrimary
+                    focusedTextColor = fieldTextColor,
+                    unfocusedTextColor = fieldTextColor,
+                    cursorColor = if (isLight) Color.White else FinTrackColors.GreenPrimary
                 ),
                 shape = RoundedCornerShape(24.dp),
                 singleLine = false,
@@ -276,20 +298,24 @@ private fun ChatInputBar(
                 )
             )
 
+            // En claro el boton se queda siempre en el verde oscuro solido (igual al
+            // fondo del avatar del chat), en vez de atenuarse al 40% de opacidad cuando
+            // esta deshabilitado: ese fondo casi blanco-verdoso se perdia contra el
+            // degradado claro. En oscuro se mantiene la atenuacion como estaba.
+            val sendButtonBrush = if (canSend || isLight) {
+                Brush.linearGradient(listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary))
+            } else {
+                Brush.linearGradient(
+                    listOf(
+                        FinTrackColors.GreenDark.copy(alpha = 0.4f),
+                        FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
+                    )
+                )
+            }
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .background(
-                        brush = if (canSend) Brush.linearGradient(
-                            listOf(FinTrackColors.GreenDark, FinTrackColors.GreenPrimary)
-                        ) else Brush.linearGradient(
-                            listOf(
-                                FinTrackColors.GreenDark.copy(alpha = 0.4f),
-                                FinTrackColors.GreenPrimary.copy(alpha = 0.4f)
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
+                    .background(brush = sendButtonBrush, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 IconButton(
@@ -298,7 +324,7 @@ private fun ChatInputBar(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Send,
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Enviar",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)

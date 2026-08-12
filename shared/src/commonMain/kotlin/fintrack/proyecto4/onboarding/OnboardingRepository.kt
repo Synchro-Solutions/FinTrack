@@ -6,7 +6,8 @@ data class UserProfile(
     val income: Double,
     val currency: String,
     val privacyAccepted: Boolean,
-    val termsAccepted: Boolean
+    val termsAccepted: Boolean,
+    val budgetAlertEnabled: Boolean = true
 )
 
 interface OnboardingRepository {

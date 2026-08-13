@@ -1,0 +1,13 @@
+{
+  "name": "fintrack-seed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Script de datos de ejemplo (Firestore) para FinTrack. Herramienta de desarrollo aparte, no forma parte de la app.",
+  "type": "commonjs",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "firebase": "^10.14.0"
+  }
+}

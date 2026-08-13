@@ -234,7 +234,7 @@ private fun ChatInputBar(
     // vez de tapar con un panel opaco; en oscuro no hay ese verde detrás, se deja como
     // estaba.
     val isLight = !colors.isDark
-    val fieldTextColor = if (isLight) Color.White else colors.textPrimary
+    val fieldTextColor = if (isLight) Color.Black else colors.textPrimary
 
     Surface(
         color = if (isLight) Color.Transparent else colors.surface,
@@ -271,7 +271,7 @@ private fun ChatInputBar(
                     // distingue igual, sea cual sea el fondo detras.
                     Text(
                         "Pregúntame algo...",
-                        color = if (isLight) Color.White else colors.textSecondary,
+                        color = if (isLight) FinTrackColors.GreenDark else colors.textSecondary,
                         fontSize = 14.sp,
                         fontFamily = montserrat
                     )

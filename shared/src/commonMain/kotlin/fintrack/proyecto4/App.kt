@@ -62,6 +62,7 @@ import fintrack.proyecto4.screens.NotificationsScreen
 import fintrack.proyecto4.screens.OcrConfirmScreen
 import fintrack.proyecto4.screens.CreateBudgetScreen
 import fintrack.proyecto4.screens.OnboardingScreen
+import fintrack.proyecto4.screens.RegisterScreen
 import fintrack.proyecto4.screens.PresupuestosScreen
 import fintrack.proyecto4.screens.ReportesScreen
 import fintrack.proyecto4.screens.TransactionDetailScreen
@@ -261,6 +262,14 @@ fun App(
                                 }
                             )
 
+                            is Screen.Register -> RegisterScreen(
+                                authRepository = authRepository,
+                                // Cuenta nueva → onboarding. replace para que "atrás" no regrese
+                                // al formulario de registro ya completado.
+                                onRegistered = { navController.replace(Screen.Onboarding) },
+                                onBack = { navController.goBack() }
+                            )
+
                             is Screen.ForgotPassword -> ForgotPasswordScreen(
                                 authRepository = authRepository,
                                 onBack = { navController.goBack() }
@@ -408,7 +417,10 @@ fun App(
 
                         is Screen.AiChat -> AiChatScreen(
                             transactionRepository = transactionRepository,
-                            onBack = { navController.goBack() }
+                            // AiChat es pestaña del bottom bar: al entrar por la barra el backstack
+                            // queda en su raíz y goBack() no tiene a dónde volver (flecha muerta).
+                            // Si no hay a dónde retroceder, se vuelve al Dashboard.
+                            onBack = { if (!navController.goBack()) navController.replace(Screen.Dashboard) }
                         )
 
                         is Screen.Notifications -> NotificationsScreen(

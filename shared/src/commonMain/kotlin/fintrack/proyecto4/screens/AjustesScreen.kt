@@ -1,6 +1,5 @@
 package fintrack.proyecto4.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -205,19 +204,20 @@ fun AjustesScreen(
         Spacer(Modifier.height(28.dp))
 
         // ── Cerrar sesión ────────────────────────────────────────────────────
-        // Fondo tintado (no transparente puro): un borde solo sobre el degradado
-        // del fondo se perdia, sin peso visual. El tinte rojo suave le da presencia
-        // sin volverlo un boton de "peligro" opaco tipo alerta.
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Button(
-                onClick = onCerrarSesion,
-                modifier = Modifier.height(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FinTrackColors.ErrorColor.copy(alpha = 0.14f)),
-                border = BorderStroke(1.5.dp, FinTrackColors.ErrorColor)
-            ) {
-                Text("Cerrar sesión", color = FinTrackColors.ErrorColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            }
+        // Boton rojo solido (no tintado/transparente): sobre el fondo claro el tinte al
+        // 14% casi no se veia. Rojo pleno con texto blanco le da presencia y contraste.
+        Button(
+            onClick = onCerrarSesion,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = FinTrackColors.ErrorColor,
+                contentColor = FinTrackColors.White
+            )
+        ) {
+            Text("Cerrar sesión", color = FinTrackColors.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(28.dp))

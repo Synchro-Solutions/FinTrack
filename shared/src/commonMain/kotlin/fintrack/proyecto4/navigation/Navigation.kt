@@ -26,6 +26,10 @@ internal val NavTransitionEasing = FastOutSlowInEasing
  */
 sealed interface Screen {
     data object Login : Screen
+
+    /** Registro de cuenta nueva con email y contraseña (US-01). */
+    data object Register : Screen
+
     data object ForgotPassword : Screen
     data object Onboarding : Screen
     data object Dashboard : Screen

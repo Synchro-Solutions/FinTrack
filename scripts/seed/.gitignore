@@ -1,0 +1,7 @@
+# Config de Firebase (no commitear credenciales del proyecto)
+google-services.json
+serviceAccountKey.json
+
+# Dependencias
+node_modules/
+package-lock.json

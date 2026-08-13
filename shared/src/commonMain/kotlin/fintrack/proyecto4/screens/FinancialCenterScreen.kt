@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,10 +34,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import fintrack.proyecto4.ai.SpendingForecastViewModel
-import fintrack.proyecto4.auth.AuthClient
 import fintrack.proyecto4.budget.BudgetRepository
 import fintrack.proyecto4.budget.NoOpBudgetRepository
 import fintrack.proyecto4.navigation.LocalNavController
@@ -79,12 +74,6 @@ fun FinancialCenterScreen(
     val colors = LocalAppColors.current
 
     val menuItems = financialMenuItems()
-
-    val uid = AuthClient.currentUserId() ?: ""
-    val forecastViewModel = viewModel(key = "forecast_fc_$uid") {
-        SpendingForecastViewModel(transactionRepository, budgetRepository, uid)
-    }
-    val forecastState by forecastViewModel.state.collectAsStateWithLifecycle()
 
     BoxWithConstraints(
         modifier = Modifier
@@ -134,13 +123,6 @@ fun FinancialCenterScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SpendingForecastSection(
-                        state = forecastState,
-                        onGenerate = { forecastViewModel.generateForecast() },
-                        onRegenerate = { forecastViewModel.generateForecast(force = true) }
-                    )
-                }
                 items(menuItems) { item ->
                     FinancialCard(
                         item = item,

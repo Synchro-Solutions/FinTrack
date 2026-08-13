@@ -461,7 +461,7 @@ fun LoginScreen(
                     fontFamily = montserratFamily()
                 )
                 TextButton(
-                    onClick = { /* TODO: navegar a registro */ },
+                    onClick = { navController.navigate(Screen.Register) },
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(
